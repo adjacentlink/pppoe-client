@@ -1,0 +1,6 @@
+sbin/rfc4938client
+sbin/rfc4938pppoe
+sbin/rfc4938ctl
+etc/pppoe-client/rfc4938.conf
+etc/init.d/rfc4938clientd
+usr/share/doc/pppoe-client/*

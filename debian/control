@@ -1,0 +1,13 @@
+Source: pppoe-client
+Section: unknown
+Priority: extra
+Maintainer: Adjacent Link <adjacentlink.com>
+Build-Depends: debhelper (>= 7), autotools-dev
+Standards-Version: 3.8.3
+
+Package: pppoe-client-rfc4938
+Architecture: any
+Section: binary
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: rfc4938 pppoe client application
+

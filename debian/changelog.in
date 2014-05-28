@@ -1,0 +1,6 @@
+pppoe-client (@VERSION@-1) stable; urgency=low
+
+    [ Adjacent Link LLC ]
+    * For a complete changelog see the ChangeLog file in the /usr/share/doc/ directory.
+
+ -- Adjacent Link LLC <adjacentlink.com>  Wed, 10 Apr 2013 08:01:00 -0400

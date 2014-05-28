@@ -1,0 +1,52 @@
+Summary: pppoe-client
+Name: pppoe-client
+Version: @VERSION@
+Release: 1%{?dist}
+License: GPL 
+Group: Applications/System
+URL: http://adjacentlink.com
+Source0: %{name}-%{version}.tar.gz
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+Requires: ppp >= 2.3.7 emane
+Prefix: /usr
+Vendor: Adjacent Link Inc.
+
+%description
+rfc4938 compliant pppoe client application
+
+
+%package rfc4938
+Summary: pppoe client application
+Group: Applications/System
+
+%description rfc4938
+rfc4938 client application, pppoe client child application and
+pppoe client cli controller
+Group: Applications/System
+
+%prep
+%setup -q
+
+%build
+./configure --prefix=%{prefix} --exec-prefix=%{prefix} --sysconfdir=/etc
+make
+
+%install
+make DESTDIR=${RPM_BUILD_ROOT} install
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%post
+
+%postun
+
+%files rfc4938
+%defattr(-,root,root,-)
+%{prefix}/sbin/rfc4938client
+%{prefix}/sbin/rfc4938pppoe
+%{prefix}/sbin/rfc4938ctl
+%{_sysconfdir}/init.d/rfc4938clientd
+%{_sysconfdir}/pppoe-client/rfc4938.conf
+
+
