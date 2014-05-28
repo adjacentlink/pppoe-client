@@ -1,0 +1,34 @@
+# configure output
+**/Makefile
+config.log
+config.status
+libtool
+autom4te.cache
+
+# object files/dependencies
+*.la
+*.lo
+*.o
+**/.deps
+**/.libs
+
+# rpm
+pppoe-client.spec
+.rpmbuild
+
+# deb
+.debbuild
+
+# dist
+pppoe-client-*.tar.gz
+
+# sample conf
+conf/rfc4938.conf
+
+# scripts
+scripts/rfc4938clientd
+
+# applications
+src/ctrl/rfc4938ctl
+src/pppoe/rfc4938pppoe
+src/rfc4938client
