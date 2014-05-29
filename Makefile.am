@@ -7,21 +7,17 @@ SUBDIRS=      \
 
 ACLOCAL_AMFLAGS="-Im4"
 
+edit = sed \
+       -e 's|@VERSION[@]|$(VERSION)|g'
+
 dist-hook: pppoe-client.spec
 
 cleantar:
 	@(rm -f pppoe-client*.tar.gz)
 
-if HAVE_DEB
-cleandeb:
-	dh_clean
-else
-cleandeb:
-endif
-
 RPMARCH=`rpm --showrc | awk '/^build arch/ {print $$4}'`
 
-rpm:	clean-local dist-gzip
+rpm:	dist-gzip
 	mkdir -p .rpmbuild/BUILD \
 	.rpmbuild/SPECS \
 	.rpmbuild/SOURCES \
@@ -34,19 +30,28 @@ rpm:	clean-local dist-gzip
 	@echo "============================================================"
 	@echo "RPMs located in .rpmbuild/RPMS and .rpmbuild/SRPMS"
 
-clean-local:	cleantar
+clean-local:	cleantar cleandeb
 	-rm -rf .rpmbuild
-	-rm -fr debian/tmp
-	-rm -fr debian/pppoe-client-rfc4938
+	-rm -rf .debbuild
+	-rm -f debian/changelog
 
 if HAVE_DEB
-deb: debian/changelog
-	dpkg-buildpackage -b -us -uc
 
-debian/%:	debian/%.in
-	if test -f $@; then chmod u+w $@; fi
-	$(edit) $< > $@
-	chmod g-w,u-w $@
+deb: dist-gzip 
+	mkdir -p .debbuild
+	cp -f $(PACKAGE)-$(VERSION).tar.gz .debbuild
+	cd .debbuild && tar xzf $(PACKAGE)-$(VERSION).tar.gz
+	$(edit) .debbuild/$(PACKAGE)-$(VERSION)/debian/changelog.in > \
+          .debbuild/$(PACKAGE)-$(VERSION)/debian/changelog
+	cd .debbuild/$(PACKAGE)-$(VERSION) && dpkg-buildpackage -F -us -uc
+	@echo "============================================================"
+	@echo "debs located in .debbuild"
+cleandeb:
+	dh_clean
+else
+
+cleandeb:
+
 endif
 
 EXTRA_DIST =            \
@@ -60,8 +65,4 @@ EXTRA_DIST =            \
  license.txt            \
  debian
 
-DISTCLEANFILES = .rpmbuild debian/changelog build-stamp
-
-edit = sed \
-       -e 's|@VERSION[@]|$(VERSION)|g'
 

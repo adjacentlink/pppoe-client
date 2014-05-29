@@ -341,6 +341,9 @@ SUBDIRS = \
  scripts
 
 ACLOCAL_AMFLAGS = "-Im4"
+edit = sed \
+       -e 's|@VERSION[@]|$(VERSION)|g'
+
 RPMARCH = `rpm --showrc | awk '/^build arch/ {print $$4}'`
 EXTRA_DIST = \
  AUTHORS                \
@@ -352,10 +355,6 @@ EXTRA_DIST = \
  pppoe-client.spec.in   \
  license.txt            \
  debian
-
-DISTCLEANFILES = .rpmbuild debian/changelog build-stamp
-edit = sed \
-       -e 's|@VERSION[@]|$(VERSION)|g'
 
 all: all-recursive
 
@@ -727,7 +726,6 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
-	-test -z "$(DISTCLEANFILES)" || rm -f $(DISTCLEANFILES)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -827,11 +825,7 @@ dist-hook: pppoe-client.spec
 cleantar:
 	@(rm -f pppoe-client*.tar.gz)
 
-@HAVE_DEB_TRUE@cleandeb:
-@HAVE_DEB_TRUE@	dh_clean
-@HAVE_DEB_FALSE@cleandeb:
-
-rpm:	clean-local dist-gzip
+rpm:	dist-gzip
 	mkdir -p .rpmbuild/BUILD \
 	.rpmbuild/SPECS \
 	.rpmbuild/SOURCES \
@@ -844,18 +838,24 @@ rpm:	clean-local dist-gzip
 	@echo "============================================================"
 	@echo "RPMs located in .rpmbuild/RPMS and .rpmbuild/SRPMS"
 
-clean-local:	cleantar
+clean-local:	cleantar cleandeb
 	-rm -rf .rpmbuild
-	-rm -fr debian/tmp
-	-rm -fr debian/pppoe-client-rfc4938
+	-rm -rf .debbuild
+	-rm -f debian/changelog
 
-@HAVE_DEB_TRUE@deb: debian/changelog
-@HAVE_DEB_TRUE@	dpkg-buildpackage -b -us -uc
+@HAVE_DEB_TRUE@deb: dist-gzip 
+@HAVE_DEB_TRUE@	mkdir -p .debbuild
+@HAVE_DEB_TRUE@	cp -f $(PACKAGE)-$(VERSION).tar.gz .debbuild
+@HAVE_DEB_TRUE@	cd .debbuild && tar xzf $(PACKAGE)-$(VERSION).tar.gz
+@HAVE_DEB_TRUE@	$(edit) .debbuild/$(PACKAGE)-$(VERSION)/debian/changelog.in > \
+@HAVE_DEB_TRUE@          .debbuild/$(PACKAGE)-$(VERSION)/debian/changelog
+@HAVE_DEB_TRUE@	cd .debbuild/$(PACKAGE)-$(VERSION) && dpkg-buildpackage -F -us -uc
+@HAVE_DEB_TRUE@	@echo "============================================================"
+@HAVE_DEB_TRUE@	@echo "debs located in .debbuild"
+@HAVE_DEB_TRUE@cleandeb:
+@HAVE_DEB_TRUE@	dh_clean
 
-@HAVE_DEB_TRUE@debian/%:	debian/%.in
-@HAVE_DEB_TRUE@	if test -f $@; then chmod u+w $@; fi
-@HAVE_DEB_TRUE@	$(edit) $< > $@
-@HAVE_DEB_TRUE@	chmod g-w,u-w $@
+@HAVE_DEB_FALSE@cleandeb:
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

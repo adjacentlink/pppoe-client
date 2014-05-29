@@ -30,6 +30,7 @@
 
 
 #include <ace/Guard_T.h>
+#include <ace/Condition_T.h>
 #include <ace/OS_NS_time.h>
 #include <ace/Thread_Mutex.h>
 #include <ace/Condition_Thread_Mutex.h>

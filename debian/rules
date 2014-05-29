@@ -80,7 +80,7 @@ install: build
 	cp -f $(CURDIR)/ChangeLog $(CURDIR)/debian/tmp/usr/share/doc/pppoe-client
 	cp -f $(CURDIR)/NEWS $(CURDIR)/debian/tmp/usr/share/doc/pppoe-client
 	cp -f $(CURDIR)/README $(CURDIR)/debian/tmp/usr/share/doc/pppoe-client
-	cp -f $(CURDIR)/HOWTO $(CURDIR)/debian/tmp/usr/share/doc/pppoe-client
+	cp -f $(CURDIR)/INSTALL $(CURDIR)/debian/tmp/usr/share/doc/pppoe-client
 
 
 # Build architecture-independent files here.
