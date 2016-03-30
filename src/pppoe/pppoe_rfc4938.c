@@ -1137,6 +1137,13 @@ compute_peer_credits (PPPoEConnection * conn, PPPoEPacket * packet)
    * Credits are calculated based on ppp payload, therefore you must 
    * subtract the PPP header out from the PPPoE payload
    */
+
+  if(conn->mode == MODE_RFC4938_ONLY)
+   {
+     return (credits);
+   }
+  else
+   {
   UINT16_t len = ntohs (packet->pppoe_length) - PPP_OVERHEAD;
 
   credits = len / conn->peer_credit_scalar;
@@ -1147,6 +1154,7 @@ compute_peer_credits (PPPoEConnection * conn, PPPoEPacket * packet)
     }
 
   return (credits);
+}
 }
 
 /***********************************************************************
@@ -1238,3 +1246,28 @@ get_word_from_buff (UINT8_t * p, int i)
   return (ntohs(u.word));
 }
 
+
+void add_peer_credits(PPPoEConnection *conn, UINT16_t credits)
+{
+   if((conn->peer_credits + credits) < MAX_CREDITS)
+     {
+       conn->peer_credits += credits;
+     }
+   else
+     {
+       conn->peer_credits = MAX_CREDITS;
+     }
+}
+
+
+void del_peer_credits(PPPoEConnection *conn, UINT16_t credits)
+{
+   if(conn->peer_credits > credits)
+     {
+       conn->peer_credits -= credits;
+     }
+   else
+     {
+       conn->peer_credits = 0;
+     }
+}

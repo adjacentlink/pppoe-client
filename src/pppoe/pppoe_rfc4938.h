@@ -101,5 +101,6 @@ extern UINT16_t get_fcn_from_credit_tag(PPPoETag *tag);
 extern UINT16_t get_bcn_from_credit_tag(PPPoETag *tag);
 extern UINT16_t get_seq_from_sequence_tag(PPPoETag *tag);
 
-
+extern void add_peer_credits(PPPoEConnection *conn, UINT16_t credits);
+extern void del_peer_credits(PPPoEConnection *conn, UINT16_t credits);
 #endif

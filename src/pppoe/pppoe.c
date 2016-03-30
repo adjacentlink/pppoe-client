@@ -834,7 +834,7 @@ handle_session_frame_from_ac (PPPoEConnection * conn, PPPoEPacket * packet, int 
     }
 
   /* decrement peer credits */
-  conn->peer_credits -= consumed_credits;
+  del_peer_credits(conn, consumed_credits);
 
   PPPOE_DEBUG_PACKET ("%s:(%u,%hu): payload len %d, consumed_credits %hu, of %hu peer_credits = %hu using scalar %hu\n",
                       __func__, conn->peer_id, conn->sessionId, ntohs (packet->pppoe_length),
