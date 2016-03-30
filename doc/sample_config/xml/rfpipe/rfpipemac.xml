@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mac SYSTEM "file:///EMANE_INSTALL_DIR/share/emane/dtd/mac.dtd">
+<mac name="RF-PIPE MAC" library="rfpipemaclayer">
+  <param name="pcrcurveuri"                   value="rfpipepcr.xml"/>
+  <param name="datarate"                      value="1M"/>
+  <param name="flowcontrolenable"             value="off"/>
+  <param name="radiometricenable"             value="on"/>
+  <param name="radiometricreportinterval"     value="10"/>
+</mac>

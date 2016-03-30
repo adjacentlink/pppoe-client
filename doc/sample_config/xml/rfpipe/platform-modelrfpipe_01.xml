@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE platform SYSTEM "file:///EMANE_INSTALL_DIR/share/emane/dtd/platform.dtd">
+<platform name="Workstation 1">
+
+  <param name="otamanagergroup"     value="224.1.2.8:45702"/>
+  <param name="eventservicegroup"   value="224.1.2.8:45703"/>
+  <param name="otamanagerdevice"    value="backchan0"/>
+  <param name="eventservicedevice"  value="backchan0" />
+  <param name="controlportendpoint" value="127.0.0.1:47000" />
+
+  <nem name="JTR-001"  id="1" definition="rfpipenem.xml" transport="external">
+    <param name="transportendpoint" value="127.0.0.1:8001"/>
+    <param name="platformendpoint"  value="127.0.0.1:9001"/>
+  </nem>
+
+</platform>

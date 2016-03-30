@@ -1,0 +1,24 @@
+
+
+# node 1 pppoe server
+pppoe-server -F -I eth0 -S rfpipe -L 11.0.0.1
+
+
+# node 2 pppoe server
+pppoe-server -F -I eth0 -S rfpipe -L 11.0.0.2
+
+
+#entries for /etc/ppp/pppoe-server-options 
+
+# PPP options for the PPPoE server
+lock
+noauth
+passive
+debug
+noipdefault
+nodeflate
+noccp
+nobsdcomp
+nopcomp
+ipcp-accept-local
+ipcp-accept-remote
