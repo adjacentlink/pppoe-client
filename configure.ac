@@ -46,11 +46,8 @@ AC_ARG_WITH(profile,
 AC_ARG_WITH(debug,
            [  --with-debug            add debug support (off)])
 
-AC_ARG_VAR([ACE_CFLAGS],[C compiler flags for ACE])
-AC_ARG_VAR([ACE_LIBS], [linker flags for ACE])
-
-AC_ARG_VAR([libemane_CFLAGS],[C compiler flags for ACE])
-AC_ARG_VAR([libemane_LIBS], [linker flags for ACE])
+AC_ARG_VAR([libemane_CFLAGS],[C compiler flags for EMANE])
+AC_ARG_VAR([libemane_LIBS], [linker flags for EMANE])
 
 PKG_CHECK_MODULES([libxml2], libxml-2.0)
 PKG_CHECK_MODULES([protobuf], protobuf)
@@ -65,34 +62,20 @@ CXXFLAGS="$CXXFLAGS -W -Wall -g0 -O3"
 _cppflags=${CPPFLAGS}
 _ldflags=${LDFLAGS}
 
-# ACE check
-if test "${ACE_CFLAGS}" != ""; then
-   CPPFLAGS="${ACE_CFLAGS} ${CPPFLAGS}"
-fi
-
-if test "${ACE_LIBS}" != ""; then
-   LDFLAGS="${ACE_LIBS} ${LDFLAGS}"
-fi
-
-AC_CHECK_HEADER(ace/OS_main.h,
- [AC_CHECK_LIB([ACE],main,[ACE_LIBS+=' -lACE'],[AC_MSG_ERROR("ACE not installed")])],
- [AC_MSG_ERROR("Missing ACE development headers")])
-
-
 # Reverting to original cpp and ld flags
 CPPFLAGS=${_cppflags}
 LDFLAGS=${_ldflags}
 
 # libemane check
 if test "${libemane_CFLAGS}" == ""; then
-   libemane_CFLAGS="${libxml2_CFLAGS} ${ACE_CFLAGS} ${protobuf_CFLAGS} ${libpcre_CFLAGS} ${libuuid_CFLAGS}"
+   libemane_CFLAGS="${libxml2_CFLAGS} ${protobuf_CFLAGS} ${libpcre_CFLAGS} ${libuuid_CFLAGS}"
 fi
 
 CPPFLAGS="${libemane_CFLAGS} ${CPPFLAGS} -std=c++11"
 
 
 if test "${libemane_LIBS}" == ""; then
-   libemane_LIBS="-lemane -lrt ${libxml2_LIBS} ${ACE_LIBS} ${protobuf_LIBS} ${libpcre_LIBS} ${libuuid_LIBS}"
+   libemane_LIBS="-lemane -lrt ${libxml2_LIBS} ${protobuf_LIBS} ${libpcre_LIBS} ${libuuid_LIBS}"
 fi
 
 LDFLAGS="${libemane_LIBS} ${LDFLAGS}"

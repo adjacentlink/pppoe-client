@@ -54,7 +54,6 @@
 #define DEFAULT_CREDIT_THRESHOLD       0.25  
 #define DEFAULT_SESSION_TIMEOUT        60  
 
-
 static struct rfc4938config_vars CONFIG;
 
 /*
@@ -162,7 +161,7 @@ rfc4938_config_read_config_file (char *filename)
       else if (strncmp (argv[0], "IFACE", strlen ("IFACE")) == 0)
         {
           memset  (CONFIG.interface_name, 0, sizeof(CONFIG.interface_name));
-          strncpy (CONFIG.interface_name, argv[1], strlen (argv[1]));
+          strncpy (CONFIG.interface_name, argv[1], sizeof(CONFIG.interface_name));
         }
 
       /* max_neighbors */
@@ -193,7 +192,7 @@ rfc4938_config_read_config_file (char *filename)
       else if (strncmp (argv[0], "SERVICE_NAME", strlen ("SERVICE_NAME")) == 0)
         {
           memset  (CONFIG.service_name, 0, sizeof(CONFIG.service_name));
-          strncpy (CONFIG.service_name, argv[1], strlen (argv[1]));
+          strncpy (CONFIG.service_name, argv[1], sizeof(CONFIG.service_name));
         }
 
       /* debug_level */
@@ -240,21 +239,21 @@ rfc4938_config_read_config_file (char *filename)
       else if (strncmp (argv[0], "PLATFORM_ENDPOINT", strlen ("PLATFORM_ENDPOINT")) == 0)
         {
           memset  (CONFIG.platform_endpoint, 0, sizeof(CONFIG.platform_endpoint));
-          strncpy (CONFIG.platform_endpoint, argv[1], strlen (argv[1]));
+          strncpy (CONFIG.platform_endpoint, argv[1], sizeof(CONFIG.platform_endpoint));
         }
 
       /* use transport endpoint */
       else if (strncmp (argv[0], "TRANSPORT_ENDPOINT", strlen ("TRANSPORT_ENDPOINT")) == 0)
         {
           memset  (CONFIG.transport_endpoint, 0, sizeof(CONFIG.transport_endpoint));
-          strncpy (CONFIG.transport_endpoint, argv[1], strlen (argv[1]));
+          strncpy (CONFIG.transport_endpoint, argv[1], sizeof(CONFIG.transport_endpoint));
         }
 
       /* pppoe binary path */
       else if (strncmp (argv[0], "PPPOE_BINARY_PATH", strlen ("PPPOE_BINARY_PATH")) == 0)
         {
           memset (CONFIG.pppoe_binary_path, 0, sizeof(CONFIG.pppoe_binary_path));
-          strncpy (CONFIG.pppoe_binary_path, argv[1], strlen (argv[1]));
+          strncpy (CONFIG.pppoe_binary_path, argv[1], sizeof(CONFIG.pppoe_binary_path));
         }
 
       /* grant */

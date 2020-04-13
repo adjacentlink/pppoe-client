@@ -173,7 +173,7 @@ rfc4938_neighbor_print_all (void)
  *     Prints all active neighbor info to a string.
  *
  * Inputs:
- *     *dgram: pointer to string of length SHOWLEN
+ *     dgram: pointer to string of length SHOWLEN
  *
  * Outputs:
  *     dgram: formated string with neighbor information
@@ -182,25 +182,30 @@ rfc4938_neighbor_print_all (void)
  *
  */
 void
-rfc4938_neighbor_print_all_string (char **dgram)
+rfc4938_neighbor_print_all_string (char *dgram, size_t max_len)
 {
   rfc4938_neighbor_element_t *nbr = neighbor_head;
 
-  char tmp_str[LNLEN];
+  char tmp_str[LNLEN] = {0};
 
-  sprintf (*dgram, "Neighbor\t Active\n");
-  while (nbr)
+  int total_len = snprintf (dgram, max_len, "Neighbor\t Active\n");
+
+  while (nbr && total_len < max_len)
     {
-       sprintf (tmp_str, "%u\t\t ", nbr->neighbor_id);
-       strncat (*dgram, tmp_str, strlen (tmp_str));
+       int len = snprintf (tmp_str, LNLEN, "%u\t\t ", nbr->neighbor_id);
+       strncat (dgram, tmp_str, max_len - total_len);
 
-       sprintf (tmp_str, "%s\n", rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
-       strncat (*dgram, tmp_str, strlen (tmp_str));
+       total_len += len;
+
+       len = snprintf (tmp_str, LNLEN, "%s\n", rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
+       strncat (dgram, tmp_str, max_len - total_len);
+
+       total_len += len;
 
       /* move to the next element */
       nbr = nbr->next;
     }
-  strncat (*dgram, "\n", strlen ("\n"));
+  strncat (dgram, "\n", max_len - total_len);
 
   return;
 }

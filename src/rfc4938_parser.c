@@ -633,9 +633,9 @@ rfc4938_parser_cli_show_session_i (void)
 {
   char dgram[SHOWLEN];
 
-  char *ptr = &dgram[0];
+  memset(dgram, 0x0, SHOWLEN);
 
-  rfc4938_neighbor_print_all_string (&ptr);
+  rfc4938_neighbor_print_all_string (dgram, SHOWLEN);
 
   int z = rfc4938_io_send_udp_packet (LOCALHOST, 
                                          rfc4938_config_get_ctl_port(), 

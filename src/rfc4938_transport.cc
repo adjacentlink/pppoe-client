@@ -41,7 +41,6 @@ extern "C" {
 
 #include "emane/application/transportbuilder.h"
 #include "emane/controls/serializedcontrolmessage.h"
-#include "emane/utils/spawnmemberfunc.h"
 
 #define DR_KBS   0x00
 #define DR_MBS   0x01
@@ -53,10 +52,13 @@ extern "C" {
 #include <map>
 #include <algorithm>
 #include <queue>
+#include <thread>
 
 
 namespace {
    std::unique_ptr<EMANE::Application::TransportManager> pTransportManager;
+
+   std::unique_ptr<EMANE::NEMLayer> pNemLayer;
 
    PPPoETransport * pTransport{};
 
@@ -107,7 +109,7 @@ namespace {
 
 
 PPPoETransport::PPPoETransport (EMANE::NEMId id, EMANE::PlatformServiceProvider * p) :
-   EMANE::Transport{id, p},
+   EMANE::NEMLayer{id, p},
    helloTimedEventId_{},
    flowControlClient_{*this},
    u64MaxSysDataRate_{},
@@ -221,7 +223,7 @@ void PPPoETransport::postStart()
        flowControlClient_.start();
      }
 
-   EMANE::Utils::spawn(*this, &PPPoETransport::processWorkQueue_i, &workQueueThread_);
+   workQueueThread_ = std::thread(&PPPoETransport::processWorkQueue_i, this);
  }
 
 
@@ -234,15 +236,7 @@ void PPPoETransport::stop()
    // unblock the worker queue
    workQueue_.cancel();
 
-   // check thread id
-   if(workQueueThread_ != 0)
-    {
-      // join thread
-      ACE_OS::thr_join(workQueueThread_, NULL, NULL);
-
-      // reset value
-      workQueueThread_ = 0;
-    }
+   workQueueThread_.join();
 
    if(rfc4938_config_is_flow_control_enabled())
      {
@@ -954,7 +948,7 @@ PPPoETransport::enqueueWorkItem_i(WorkItem & item)
 }
 
 
-ACE_THR_FUNC_RETURN 
+void *
 PPPoETransport::processWorkQueue_i()
 {
   // all processing should run on this thread
@@ -1091,12 +1085,12 @@ int rfc4938_transport_setup (const char *platform, const char *transport, unsign
   RFC4938_DEBUG_EVENT("%s:(%u): begin\n",  __func__, rfc4938_config_get_node_id()); 
 
   EMANE::Application::TransportBuilder tb;
-
-  pTransport = tb.buildTransport<PPPoETransport>(id, {});
+#warning "Transport Builder TODO"
+  pNemLayer = tb.buildTransport(id, {}, {});
 
   EMANE::Application::TransportAdapters adapters;
 
-  std::unique_ptr<EMANE::Transport> ptr{pTransport};
+  std::unique_ptr<EMANE::NEMLayer> ptr{pTransport};
 
   EMANE::ConfigurationUpdateRequest items {
      EMANE::ConfigurationNameStringValues("platformendpoint",  {platform}),

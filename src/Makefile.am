@@ -4,7 +4,7 @@ rfc4938client_CXXFLAGS =    \
  $(libemane_CFLAGS)       
 
 rfc4938client_LDFLAGS =     \
- $(libemane_LIBS)      
+ $(libemane_LIBS)
 
 rfc4938client_SOURCES =     \
  rfc4938.c                  \

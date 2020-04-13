@@ -29,13 +29,8 @@
 #define RFC4938_TRANSPORT_TYPES_H
 
 
-#include <ace/Guard_T.h>
-#include <ace/Condition_T.h>
-#include <ace/OS_NS_time.h>
-#include <ace/Thread_Mutex.h>
-#include <ace/Condition_Thread_Mutex.h>
-
 #include "emane/transport.h"
+#include "emane/nemlayer.h"
 #include "emane/flowcontrolclient.h"
 
 #include "emane/utils/randomnumberdistribution.h"
@@ -47,6 +42,9 @@
 #include <set>
 #include <map>
 #include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include <cstdint>
 
@@ -164,19 +162,18 @@ struct WorkItem {
   {
    public:
      WorkerQueue() :
-       bCancel_(false), 
-       cond_(qmutex_)
+       bCancel_(false)
      { }
 
      virtual ~WorkerQueue() { }
 
      T dequeue() 
       {
-        ACE_Guard<ACE_Thread_Mutex> m(qmutex_);
+        std::unique_lock<std::mutex> m(qmutex_);
 
         while(queue_.empty() && !bCancel_) 
          {
-           cond_.wait();
+           cond_.wait(m);
          }
 
         if (bCancel_)
@@ -193,25 +190,25 @@ struct WorkItem {
 
     void enqueue(T &item)
      {
-       ACE_Guard<ACE_Thread_Mutex> m(qmutex_);
+       std::lock_guard<std::mutex> m(qmutex_);
 
        queue_.push(item);
 
-       cond_.signal();
+       cond_.notify_one();
      }
 
     void cancel()
      {
-       ACE_Guard<ACE_Thread_Mutex> m(qmutex_);
+       std::lock_guard<std::mutex> m(qmutex_);
  
        bCancel_ = true;
 
-       cond_.signal();
+       cond_.notify_one();
      }
 
     size_t size()
      {
-       ACE_Guard<ACE_Thread_Mutex> m(qmutex_);
+       std::lock_guard<std::mutex> m(qmutex_);
  
        return queue_.size(); 
      }
@@ -221,9 +218,9 @@ struct WorkItem {
 
      std::queue<T> queue_;
 
-     ACE_Thread_Mutex qmutex_;
+     std::mutex qmutex_;
 
-     ACE_Condition<ACE_Thread_Mutex> cond_;
+     std::condition_variable cond_;
   };
 
 
@@ -246,7 +243,7 @@ typedef std::set<std::uint16_t>  NEMIdSet;
      { return (pNbrMetric_ && pSelfMetric_ && pQueueMetric_); }
  };
 
-class PPPoETransport : public EMANE::Transport
+class PPPoETransport : public EMANE::NEMLayer
 {
   public:
    PPPoETransport (EMANE::NEMId id, EMANE::PlatformServiceProvider * p);
@@ -298,7 +295,7 @@ class PPPoETransport : public EMANE::Transport
 
    std::uint64_t u64MaxSysDataRate_;
 
-   ACE_thread_t workQueueThread_;
+   std::thread workQueueThread_;
 
    WorkerQueue<WorkItem> workQueue_;
 
@@ -328,7 +325,7 @@ class PPPoETransport : public EMANE::Transport
 
    void enqueueWorkItem_i(WorkItem & item);
 
-   ACE_THR_FUNC_RETURN processWorkQueue_i();  
+   void * processWorkQueue_i();  
 
    EMANE::Utils::RandomNumberDistribution<std::mt19937,
                                  std::uniform_real_distribution<float>> RNDZeroToOne_;

@@ -96,7 +96,7 @@ void
 rfc4938_neighbor_print_all(void);
 
 void
-rfc4938_neighbor_print_all_string (char **dgram);
+rfc4938_neighbor_print_all_string (char *dgram, size_t max);
 
 int
 rfc4938_neighbor_release(
