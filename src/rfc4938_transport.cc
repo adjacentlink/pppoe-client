@@ -58,8 +58,6 @@ extern "C" {
 namespace {
    std::unique_ptr<EMANE::Application::TransportManager> pTransportManager;
 
-   std::unique_ptr<EMANE::NEMLayer> pNemLayer;
-
    PPPoETransport * pTransport{};
 
    EMANE::Microseconds reportDelay{100};
@@ -109,7 +107,7 @@ namespace {
 
 
 PPPoETransport::PPPoETransport (EMANE::NEMId id, EMANE::PlatformServiceProvider * p) :
-   EMANE::NEMLayer{id, p},
+   EMANE::Transport{id, p},
    helloTimedEventId_{},
    flowControlClient_{*this},
    u64MaxSysDataRate_{},
@@ -1080,23 +1078,25 @@ PPPoETransport::processWorkQueue_i()
 
 // external api functions
 
-int rfc4938_transport_setup (const char *platform, const char *transport, unsigned long id)
+int rfc4938_transport_setup (const char *pzPlatformEndpoint, const char *pzTransportEndpoint, unsigned long id)
 {
   RFC4938_DEBUG_EVENT("%s:(%u): begin\n",  __func__, rfc4938_config_get_node_id()); 
 
   EMANE::Application::TransportBuilder tb;
-#warning "Transport Builder TODO"
-  pNemLayer = tb.buildTransport(id, {}, {});
 
-  EMANE::Application::TransportAdapters adapters;
+  auto tpair =
+    tb.buildTransportWithAdapter<PPPoETransport>(
+      id,
+      {},
+      pzPlatformEndpoint,
+      pzTransportEndpoint);
 
-  std::unique_ptr<EMANE::NEMLayer> ptr{pTransport};
+  pTransport = std::get<0>(tpair);
 
-  EMANE::ConfigurationUpdateRequest items {
-     EMANE::ConfigurationNameStringValues("platformendpoint",  {platform}),
-     EMANE::ConfigurationNameStringValues("transportendpoint", {transport})};
+  EMANE::Application::TransportAdapters adapters{};
 
-  adapters.push_back(tb.buildTransportAdapter(ptr, items));
+  adapters.push_back(std::move(std::get<1>(tpair)));
+
 
   uuid_t tuuid{};
 

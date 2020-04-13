@@ -30,7 +30,6 @@
 
 
 #include "emane/transport.h"
-#include "emane/nemlayer.h"
 #include "emane/flowcontrolclient.h"
 
 #include "emane/utils/randomnumberdistribution.h"
@@ -243,7 +242,7 @@ typedef std::set<std::uint16_t>  NEMIdSet;
      { return (pNbrMetric_ && pSelfMetric_ && pQueueMetric_); }
  };
 
-class PPPoETransport : public EMANE::NEMLayer
+class PPPoETransport : public EMANE::Transport
 {
   public:
    PPPoETransport (EMANE::NEMId id, EMANE::PlatformServiceProvider * p);

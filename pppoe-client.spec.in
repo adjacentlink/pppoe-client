@@ -7,7 +7,7 @@ Group: Applications/System
 URL: http://adjacentlink.com
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Requires: ppp >= 2.3.7 emane
+Requires: ppp >= 2.3.7 emane > 1.0.0
 Prefix: /usr
 Vendor: Adjacent Link Inc.
 
