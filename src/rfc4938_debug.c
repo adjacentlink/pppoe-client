@@ -29,7 +29,7 @@
  *
  *----------------------------------------------------------------------------*/
 #include "rfc4938_debug.h"
-#define RFC4938_DEFAULT_DEBUG ( 0 )
+#define RFC4938_DEFAULT_DEBUG ( 1 )
 
 static UINT32_t rfc4938_debugs = RFC4938_DEFAULT_DEBUG;
 

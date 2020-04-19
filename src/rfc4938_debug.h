@@ -37,7 +37,7 @@
 
 #include <syslog.h>
 
-// #define RFC4938_PRINTF_ENABLED
+#define RFC4938_PRINTF_ENABLED
 #define RFC4938_DEBUG_ENABLED        //enables debugs
 //#undef RFC4938_DEBUG_ENABLED       //disables all debugs
 

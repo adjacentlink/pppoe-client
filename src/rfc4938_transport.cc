@@ -122,9 +122,7 @@ PPPoETransport::PPPoETransport (EMANE::NEMId id, EMANE::PlatformServiceProvider 
 
 
 PPPoETransport::~PPPoETransport() 
- { 
-   disableHellos();
- }
+ { }
 
 
 void PPPoETransport::processUpstreamPacket(EMANE::UpstreamPacket & pkt, const EMANE::ControlMessages & msgs) 

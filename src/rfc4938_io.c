@@ -62,6 +62,8 @@ static int rfc4938_io_txsock = -1;
 
 static sem_t sem;
 
+static int terminated = 0;
+
 int rfc4938_io_signal_pipe[2]; 
 
 int rfc4938_vif_fd  = -1; 
@@ -206,14 +208,14 @@ rfc4938_io_listen_for_messages (void)
      return -1;
    }
 
-  while(1)
+  while(! terminated)
     {
       fd_set readable;
 
       int max_fd = rfc4938_io_getall_readable(&readable);
 
       // block here
-      while (1)
+      while (! terminated)
        {
          num_fd_ready = select (max_fd + 1, &readable, NULL, NULL, NULL);
 
@@ -332,13 +334,13 @@ rfc4938_io_handle_signal_event ()
 
   if (read (rfc4938_io_signal_pipe[PIPE_RD_FD], &signal_code, sizeof(signal_code)) != sizeof(signal_code))
     {
-      RFC4938_DEBUG_ERROR ("rfc4938_io_handle_signal_event(): Could NOT read from pipe");
+      RFC4938_DEBUG_ERROR ("rfc4938_io_handle_signal_event(): Could NOT read from pipe\n");
 
       return;
     }
   else
    {
-      RFC4938_DEBUG_EVENT ("rfc4938_io_handle_signal_event(): read signal code [%c] read from pipe", signal_code);
+      RFC4938_DEBUG_EVENT ("rfc4938_io_handle_signal_event(): read signal code [%c] read from pipe\n", signal_code);
    }
 
   switch (signal_code)
@@ -354,7 +356,7 @@ rfc4938_io_handle_signal_event ()
       {
         rfc4938_parser_cli_terminate_session (0, 0);
 
-        exit (0);
+        terminated = 1;
       } break;
 
     /* deleted entry */
@@ -548,7 +550,7 @@ static int rfc4938_io_send_frame_to_child(UINT16_t session_id, UINT16_t port, vo
     }
   else
    {
-      RFC4938_DEBUG_ERROR ("%s:(%u): failed to send frame to child payload len %d, msg len %d",
+      RFC4938_DEBUG_ERROR ("%s:(%u): failed to send frame to child payload len %d, msg len %d\n",
                            __func__, rfc4938_config_get_node_id(), payloadlen, buflen);
    }
 
