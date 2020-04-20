@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nem SYSTEM 'file:///usr/share/emane/dtd/nem.dtd'>
+<nem type="unstructured">
+  <mac definition="rfpipe_mac.xml"/>
+  <phy>
+    <param name="txpower"             value="0.0"/>
+    <param name="propagationmodel"    value="precomputed"/>
+
+    <param name="bandwidth"           value="${bandwidth_hz}"/>
+    <param name="frequency"           value="${frequency_hz}"/>
+    <param name="frequencyofinterest" value="${frequency_hz}"/>
+    <param name="subid"               value="${sub_id}"/>
+  </phy>
+
+</nem>

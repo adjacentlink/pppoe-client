@@ -36,10 +36,14 @@ How to build, install and run rfc4938 client.
 
 4a) Get the rp-pppoe package "yum install rp-pppoe"
  
+    XXX SHOW STOPPER XXX THIS IS NOT COMPAT WITH pppoe-rfc4938
+
     -or-
 
 4b) Build the rfc4938 server namely "rp-pppoe-3.10-rfc4938". Note that the configure command
     resides in the src directory: ./configure --prefix=/$HOME/TESTDIR && make install
+
+    XXX SHOW STOPPER XXX THIS IS NOT AVAILABLE
 
 5) Edit /etc/ppp/pppoe-server-options as follows:
 	lock
@@ -63,8 +67,8 @@ How to build, install and run rfc4938 client.
    instead the following command is used from the directory that contains 
    pppoe-server and the correct pppoe application provided by the rp-pppoe-3.10-rfc4938 installation:
 
-	# ./pppoe-server -F -X -I $ETH_INTERFACE_NAME -S manet_radio -Q $FULL_PATH_TO_PPPOE -L 11.0.0.$NODE_ID
-	# ./pppoe-server -F -X -I eth1 -S manet_radio -Q /home/jgiovatto/V0.9.x/sbin/pppoe   -L 11.0.0.1
+	# pppoe-server -F -X -I $ETH_INTERFACE_NAME -S manet_radio -Q $FULL_PATH_TO_PPPOE -L 11.0.0.$NODE_ID
+	# pppoe-server -F -X -I eth1 -S manet_radio -Q /tmp/pppoe/sbin   -L 11.0.0.1
 
   
   Notes: use ./pppoe-server --help to view all the command line options, used options explained below:

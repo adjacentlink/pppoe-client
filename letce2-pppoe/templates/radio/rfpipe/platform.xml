@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<%
+from letce2.utils.network import CIDRNotation
+%>
+<!DOCTYPE platform  SYSTEM 'file:///usr/share/emane/dtd/platform.dtd'>
+<platform>
+  <param name="otamanagerchannelenable" value="on"/>
+  <param name="otamanagerdevice"        value="${control_interface}"/>
+  <param name="otamanagergroup"         value="224.1.2.8:45702"/>
+  <param name="eventservicegroup"       value="224.1.2.8:45703"/>
+  <param name="eventservicedevice"      value="${control_interface}"/>
+  <param name="controlportendpoint"     value="0.0.0.0:47000"/>
+
+  <nem id="${nem_id}" definition="rfpipe_nem.xml" transport="external">
+    <param name="transportendpoint" value="127.0.0.1:8001"/>
+    <param name="platformendpoint"  value="127.0.0.1:9001"/>
+  </nem>
+
+</platform>
