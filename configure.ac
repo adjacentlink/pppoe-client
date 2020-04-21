@@ -123,7 +123,10 @@ AM_CONDITIONAL(HAVE_DEB,$HAVE_DEB)
 AC_OUTPUT(
  Makefile 
  src/Makefile
- src/pppoe/Makefile
+ src/pppoe-client/Makefile
+ src/pppoe-client/pppoe/Makefile
+ src/pppoe-server/Makefile
+ src/pppoe-server/pppoe/Makefile
  src/ctrl/Makefile
  conf/Makefile
  scripts/Makefile

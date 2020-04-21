@@ -1,7 +1,7 @@
 How to build, install and run rfc4938 client.
 
 
-1) Build the pppoe-client:
+1) Build the pppoe-client with subprocess rfc4938pppoe, pppoe-server with subprocess rfc4938pppoes rfc4938 mods:
   to build binaries/config for a local install, maybe the best bet until its verified to work
   # ./configure --prefix=/tmp/pppoe && make install
 
@@ -11,11 +11,11 @@ How to build, install and run rfc4938 client.
 
 2) Review the installed files
 
-   Just focusing on the pppoe client files we should see the following installed files:
+   We should see the following installed files:
 
   # tree /tmp/pppoe
 
-/tmp/pppoe
+/tmp/pppoe/
 ├── etc
 │   ├── init.d
 │   │   └── rfc4938clientd
@@ -24,63 +24,9 @@ How to build, install and run rfc4938 client.
 └── sbin
     ├── rfc4938client
     ├── rfc4938ctl
-    └── rfc4938pppoe
+    ├── rfc4938pppoe
+    ├── rfc4938pppoes
+    └── rfc4938server
 
 
-3) View the config file paying close attention to the 
-   IFACE, 
-   NODE_ID, 
-   VIF_MODE, 
-   PLATFORM/TRANSPORT ENDPOINTS and
-   PPPOE_BINARY_PATH this is where rfc4938pppoe was installed during step 1
-
-4a) Get the rp-pppoe package "yum install rp-pppoe"
- 
-    XXX SHOW STOPPER XXX THIS IS NOT COMPAT WITH pppoe-rfc4938
-
-    -or-
-
-4b) Build the rfc4938 server namely "rp-pppoe-3.10-rfc4938". Note that the configure command
-    resides in the src directory: ./configure --prefix=/$HOME/TESTDIR && make install
-
-    XXX SHOW STOPPER XXX THIS IS NOT AVAILABLE
-
-5) Edit /etc/ppp/pppoe-server-options as follows:
-	lock
-	noauth
-	passive
-	debug
-	noipdefault
-	nodeflate
-	noccp
-	nobsdcomp
-	nopcomp
-	ipcp-accept-local
-	ipcp-accept-remote
-
-6) The client can be started using the init script found in /etc/init.d or just use the simple command below:
-
-	# ./rfc4938client -f CONFIG_FILE
-
-
-7) The server scripts have not been tested yet and are a little compilcated, 
-   instead the following command is used from the directory that contains 
-   pppoe-server and the correct pppoe application provided by the rp-pppoe-3.10-rfc4938 installation:
-
-	# pppoe-server -F -X -I $ETH_INTERFACE_NAME -S manet_radio -Q $FULL_PATH_TO_PPPOE -L 11.0.0.$NODE_ID
-	# pppoe-server -F -X -I eth1 -S manet_radio -Q /tmp/pppoe/sbin   -L 11.0.0.1
-
-  
-  Notes: use ./pppoe-server --help to view all the command line options, used options explained below:
-         the -F option keeps the aplication running in the foreground
-         the -X option runs the server with rfc4938 flow control
-         the -I option specifies the interface used to communicate w/client
-         the -S option specifies the service name, this MUST match the SERVICE_NAME in the client conf.
-         the -Q option specifies the full path to the pppoe application that supports rfc4938, there may
-                be other non rfc4938 "pppoe" applications on the box from the standard distribution. Setting
-                your PATH env variable will work also but the full path method is always safer.
-         the -L option specifies the local ip ppp interface address, this MUST be different on each node.
-
-8) Last start the emane platform making sure that the mac has enabled the following:
-     <param name="flowcontrolenable"             value="on"/>
-     <param name="radiometricenable:"             value="on"/>
+3) See letce2-pppoe for running the whole pppoe pile.

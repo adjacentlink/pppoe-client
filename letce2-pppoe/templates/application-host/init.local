@@ -35,11 +35,11 @@ start_pppoe_server()
   local lclip=$3
   local config=$4
 
-  pppoe-server -I "$devname" -S rfc4938 -Q "$pppoepath" -L "$lclip" -O "$config"
+  ${pppoe_path}/rfc4938server -X -I "$devname" -S rfc4938 -Q "$pppoepath" -L "$lclip" -O "$config"
 }
 
 start_pppoe_server \
 	${lan_interface} \
-	${pppoe_path}/rfc4938pppoe \
+	${pppoe_path}/rfc4938pppoes \
         ${lcl_ipaddr} \
         $top_dir/$node_name/pppoe_server.conf

@@ -46,6 +46,8 @@ rm -rf $RPM_BUILD_ROOT
 %{prefix}/sbin/rfc4938client
 %{prefix}/sbin/rfc4938pppoe
 %{prefix}/sbin/rfc4938ctl
+%{prefix}/sbin/rfc4938server
+%{prefix}/sbin/rfc4938pppoes
 %{_sysconfdir}/init.d/rfc4938clientd
 %{_sysconfdir}/pppoe-client/rfc4938.conf
 

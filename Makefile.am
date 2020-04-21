@@ -1,8 +1,6 @@
-SUBDIRS=      \
- src          \
- src/pppoe    \
- src/ctrl     \
- conf         \
+SUBDIRS=          \
+ src              \
+ conf             \
  scripts
 
 ACLOCAL_AMFLAGS="-Im4"

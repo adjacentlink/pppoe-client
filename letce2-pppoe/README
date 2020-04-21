@@ -1,0 +1,80 @@
+letce2-tutorial
+==
+
+# Introduction
+
+The Lightweight Experiment Template Configuration Environment
+([letce2][1]) provides a hierarchical mechanism for generating
+experiment configuration using the [Mako][2] template engine.
+
+[1]: https://github.com/adjacentlink/letce2
+[2]: https://https://www.makotemplates.org
+
+$ cd exp-01
+$ make
+letce2 \
+	lxc \
+	build \
+	../node.cfg.d/rfpipe_pppoe.cfg \
+	../node.cfg.d/application-host.cfg \
+	experiment.cfg
+
+
+The `letce2 lxc build` command, which is used by the make all rule,
+takes as input all the configuration files making up the experiment
+definition. For exp-foo, `node.cfg.d/foo.cfg` contains
+the configuration definition for an foo radio node and
+`experiment.cfg` contains server (host) configuration, configuration
+that is common to all nodes, and the declaration and configuration of
+each node in the experiment.
+
+The output of `letce2 lxc build` is a directory for every node defined
+in the experiment. For 10 nodes, this results in 10 node directories:
+`node-1` through `node-10`, and one server directory: `host`.
+
+# Experiment Start and Stop
+
+An experiment can be run with the `letce2 lxc start` command:
+
+letce2 lxc start
+
+then ssh 10.99.0.1 aka node-1/radio-1 
+
+client/radio side processes should look like this:
+
+   emane platform.xml -r -d -l 2 -f /home/user/Devel/pppoe/pppoe-client/letce2-pppoe/exp-01/persist/radio-1/var/log/emane.log --pidfile /home/user/Deve
+   /tmp/pppoe/sbin/rfc4938client -f pppoe_client.conf
+   /tmp/pppoe/sbin/rfc4938pppoe -U -Ilan0 -Srfc4938 -y2 -Y1 -R0 -r10001 -x0 -c50893 -z3 -g256 -T60 -E36:a6:10:67:70:9
+
+then ssh 10.99.1.1 aka host-1/router-1 
+
+server/router side process should look like this:
+
+   tmp/pppoe/sbin/rfc4938server -X -I lan0 -S rfc4938 -Q /tmp/pppoe/sbin/rfc4938pppoes -L 11.0.0.1 -O /home/user/Devel/pppoe/pppoe-client/letce2-pppoe/exp-
+   pppd pty /tmp/pppoe/sbin/rfc4938pppoes -n -I lan0 -e 1:36:a6:10:67:70:09 -x 256:743,744 -S 'rfc4938' file /home/user/Devel/pppoe/pppoe-client/letce2-pppo
+   /tmp/pppoe/sbin/rfc4938pppoes -n -I lan0 -e 1:36:a6:10:67:70:09 -x 256:743,744 -S rfc4938
+
+server/router interface list should include a ppp interface to the other node:
+
+ppp0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
+        inet 11.0.0.1  netmask 255.255.255.255  destination 11.0.0.2
+        ppp  txqueuelen 3  (Point-to-Point Protocol)
+        RX packets 2  bytes 20 (20.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 2  bytes 20 (20.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+[user@router-1 ~]$ ping 11.0.0.2
+PING 11.0.0.2 (11.0.0.2) 56(84) bytes of data.
+64 bytes from 11.0.0.2: icmp_seq=1 ttl=64 time=9.75 ms
+64 bytes from 11.0.0.2: icmp_seq=2 ttl=64 time=13.7 ms
+64 bytes from 11.0.0.2: icmp_seq=3 ttl=64 time=14.5 ms
+
+
+Similarly an experiment can be stopped with the `letce2 lxc stop`
+command:
+
+$ letce2 lxc stop
+
+
+

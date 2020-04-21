@@ -37,8 +37,8 @@
  *
  *---------------------------------------------------------------------------*/
 
-#include "../rfc4938.h"
-#include "../rfc4938_config.h"
+#include "../pppoe-client/rfc4938.h"
+#include "../pppoe-client/rfc4938_config.h"
 
 int rfc4938ctl_send_show_message(void);
 
