@@ -71,6 +71,50 @@ PING 11.0.0.2 (11.0.0.2) 56(84) bytes of data.
 64 bytes from 11.0.0.2: icmp_seq=3 ttl=64 time=14.5 ms
 
 
+
+tcpdump of lan0 should yield something like this:
+
+17:52:29.846533 PPPoE PADI [Service-Name "rfc4938"] [Host-Uniq 0x0000005C]
+17:52:29.846709 PPPoE PADO [AC-Name "router-1"] [Service-Name "rfc4938"] [AC-Cookie 0xA30C619A3DF110F9EA4A608397216D3719000000] [Host-Uniq 0x0000005C]
+17:52:29.847429 PPPoE PADR [Service-Name "rfc4938"] [Host-Uniq 0x0000005C] [AC-Cookie 0xA30C619A3DF110F9EA4A608397216D3719000000] [TAG-0x106 0x01000000]
+17:52:29.848010 PPPoE PADS [ses 0x1] [Service-Name "rfc4938"] [Host-Uniq 0x0000005C] [TAG-0x106 0x80000100]
+17:52:29.872856 PPPoE PAD-a [ses 0x1] [TAG-0x108 0x0001] [TAG-0x106 0x80000100]
+17:52:29.873759 PPPoE PAD-b [ses 0x1] [TAG-0x108 0x0001] [TAG-0x106 0x0100FFFF]
+17:52:30.863842 PPPoE  [ses 0x1] unknown PPP protocol (0x0001) 
+	0x0000:  0600 0400 0000 ffc0 2101 0100 0a05 066b
+	0x0010:  83ba b2
+17:52:30.869064 PPPoE  [ses 0x1] LCP, Conf-Request (0x01), id 1, length 12
+17:52:30.870643 PPPoE  [ses 0x1] unknown PPP protocol (0x0001) 
+	0x0000:  0600 0400 0000 fec0 2102 0100 0a05 061a
+	0x0010:  4476 14
+17:52:30.874784 PPPoE  [ses 0x1] LCP, Conf-Ack (0x02), id 1, length 12
+17:52:30.875517 PPPoE  [ses 0x1] unknown PPP protocol (0x0001) 
+	0x0000:  0600 0400 0000 fd80 2101 0100 0a03 060b
+	0x0010:  0000 01
+17:52:30.877208 PPPoE  [ses 0x1] IPCP, Conf-Request (0x01), id 1, length 12
+17:52:30.878326 PPPoE  [ses 0x1] unknown PPP protocol (0x0001) 
+	0x0000:  0600 0400 0000 fc80 2102 0100 0a03 060b
+	0x0010:  0000 02
+17:52:30.880474 PPPoE  [ses 0x1] IPCP, Conf-Ack (0x02), id 1, length 12
+17:52:39.838014 PPPoE PAD-c [ses 0x1] [TAG-0x107 0x00006464000000010001]
+17:53:05.373986 PPPoE  [ses 0x1] unknown PPP protocol (0x0001) 
+	0x0000:  0600 0400 0000 fa00 2145 0000 5431 dd40
+	0x0010:  0040 01f2 c90b 0000 010b 0000 0208 0044
+	0x0020:  6000 5100 0141 6b9f 5e00 0000 000e b105
+	0x0030:  0000 0000 0010 1112 1314 1516 1718 191a
+	0x0040:  1b1c 1d1e 1f20 2122 2324 2526 2728 292a
+	0x0050:  2b2c 2d2e 2f30 3132 3334 3536 37
+17:53:05.381039 PPPoE  [ses 0x1] IP 11.0.0.2 > 11.0.0.1: ICMP echo reply, id 81, seq 1, length 64
+17:53:06.376146 PPPoE  [ses 0x1] unknown PPP protocol (0x0001) 
+	0x0000:  0600 0400 0000 f800 2145 0000 5435 a740
+	0x0010:  0040 01ee ff0b 0000 010b 0000 0208 00b3
+	0x0020:  5800 5100 0242 6b9f 5e00 0000 009e b705
+	0x0030:  0000 0000 0010 1112 1314 1516 1718 191a
+	0x0040:  1b1c 1d1e 1f20 2122 2324 2526 2728 292a
+	0x0050:  2b2c 2d2e 2f30 3132 3334 3536 37
+17:53:06.388620 PPPoE  [ses 0x1] IP 11.0.0.2 > 11.0.0.1: ICMP echo reply, id 81, seq 2, length 64
+
+
 Similarly an experiment can be stopped with the `letce2 lxc stop`
 command:
 
