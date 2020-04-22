@@ -54,15 +54,29 @@ server/router side process should look like this:
    pppd pty /tmp/pppoe/sbin/rfc4938pppoes -n -I lan0 -e 1:36:a6:10:67:70:09 -x 256:743,744 -S 'rfc4938' file /home/user/Devel/pppoe/pppoe-client/letce2-pppo
    /tmp/pppoe/sbin/rfc4938pppoes -n -I lan0 -e 1:36:a6:10:67:70:09 -x 256:743,744 -S rfc4938
 
-server/router interface list should include a ppp interface to the other node:
 
-ppp0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
+server/router routing table for 5 nodes
+
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         10.98.1.1	0.0.0.0         UG    0      0        0 lan0
+10.98.1.0	0.0.0.0         255.255.255.0   U     0      0        0 lan0
+10.99.0.0	0.0.0.0         255.255.0.0     U     0      0        0 backchan0
+11.0.0.2        0.0.0.0         255.255.255.255 UH    0      0        0 ppp1
+11.0.0.3        0.0.0.0         255.255.255.255 UH    0      0        0 ppp3
+11.0.0.4        0.0.0.0         255.255.255.255 UH    0      0        0 ppp2
+11.0.0.5        0.0.0.0         255.255.255.255 UH    0      0        0 ppp0
+
+server/router interface list should include a ppp interface(s) to the other node(s):
+
+ppp1: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
         inet 11.0.0.1  netmask 255.255.255.255  destination 11.0.0.2
         ppp  txqueuelen 3  (Point-to-Point Protocol)
-        RX packets 2  bytes 20 (20.0 B)
+        RX packets 42  bytes 3380 (3.3 KiB)
         RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 2  bytes 20 (20.0 B)
+        TX packets 43  bytes 3390 (3.3 KiB)
         TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
 
 [user@router-1 ~]$ ping 11.0.0.2
 PING 11.0.0.2 (11.0.0.2) 56(84) bytes of data.
