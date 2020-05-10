@@ -127,7 +127,7 @@ PPPoETransport::~PPPoETransport()
 
 void PPPoETransport::processUpstreamPacket(EMANE::UpstreamPacket & pkt, const EMANE::ControlMessages & msgs) 
  { 
-   RFC4938_DEBUG_PACKET("%s:(%hu): pkt len %zd, src %hu", 
+   RFC4938_DEBUG_PACKET("%s:(%hu): pkt len %zd, src %hu\n", 
                         __func__, 
                         id_, 
                         pkt.length(), 
@@ -137,7 +137,7 @@ void PPPoETransport::processUpstreamPacket(EMANE::UpstreamPacket & pkt, const EM
 
    if(isAHello(pkt.get(), pkt.length()))
     {
-      RFC4938_DEBUG_PACKET("%s:(%hu): consume hello from %hu", 
+      RFC4938_DEBUG_PACKET("%s:(%hu): consume hello from %hu\n", 
                            __func__, 
                            id_, 
                            pkt.getPacketInfo().getSource()); 
@@ -625,8 +625,12 @@ void PPPoETransport::handleMetricMessage_i(const MetricUpdate * pUpdate)
 
    auto NbrMetrics = pUpdate->pNbrMetric_->getNeighborMetrics();
 
+   RFC4938_DEBUG_EVENT("%s:(%hu): %zu entries\n", __func__, id_, NbrMetrics.size());
+
    for(auto metric : NbrMetrics)
     {
+      RFC4938_DEBUG_EVENT("%s:(%hu): nbr %hu\n", __func__, id_, metric.getId());
+
       // sum up the bw consumption
       totalBandWidthConsumption += metric.getBandwidthConsumption();
 

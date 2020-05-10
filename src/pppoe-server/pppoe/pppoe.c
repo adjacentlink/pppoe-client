@@ -72,6 +72,8 @@ PPPoEConnection *Connection = NULL; /* Must be global -- used
 
 static UINT16_t computePeerCredits (PPPoEConnection * conn, PPPoEPacket * packet);
 
+FILE * LoggerFp = NULL;
+
 #define PPP_OVERHEAD 2
 #define PEER_SCALE_FACTOR 64
 
@@ -155,7 +157,7 @@ sessionDiscoveryPacket(PPPoEPacket *packet)
 	return;
     }
 
-    syslog(LOG_INFO,
+    LOGGER(LOG_INFO,
 	   "Session %d terminated -- received PADT from peer",
 	   (int) ntohs(packet->session));
     parsePacket(packet, parseLogErrs, NULL);
@@ -185,7 +187,7 @@ sessionDiscoveryPacket(PPPoEConnection *conn)
 
     /* Check length */
     if (ntohs(packet.length) + HDR_SIZE > len) {
-	syslog(LOG_ERR, "Bogus PPPoE length field (%u)",
+	LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
 	       (unsigned int) ntohs(packet.length));
 	return;
     }
@@ -215,7 +217,7 @@ sessionDiscoveryPacket(PPPoEConnection *conn)
 	fflush(conn->debugFile);
     }
 #endif
-    syslog(LOG_INFO,
+    LOGGER(LOG_INFO,
 	   "Session %d terminated -- received PADT from peer",
 	   (int) ntohs(packet.session));
     parsePacket(&packet, parseLogErrs, NULL);
@@ -348,7 +350,7 @@ sendPADG (PPPoEConnection *conn, UINT16_t credits)
     /* set PADC is pending */
     conn->padcPending = 1;
 
-    syslog(LOG_INFO, "pppoe(%u): Sent PADG packet with fcn:0x%04x bcn:0x%04x seq:0x%04x",
+    LOGGER(LOG_INFO, "pppoe(%u): Sent PADG packet with fcn:0x%04x bcn:0x%04x seq:0x%04x",
                        ntohs(conn->session), credits, conn->hostCredits, conn->padgSequence);
 
 }
@@ -372,7 +374,7 @@ processRfc4938Packet(PPPoEConnection *conn)
 
     /* grab the packet */
     if ((size = recv(conn->rfc4938Socket, &packet, sizeof(PPPoEPacket), 0)) < 0) {
-        syslog(LOG_ERR, "recv (processRfc4938Packet)");
+        LOGGER(LOG_ERR, "recv (processRfc4938Packet)");
         return ;
     }
 
@@ -389,15 +391,15 @@ processRfc4938Packet(PPPoEConnection *conn)
     /* sanity check */
     if (packet.code != CODE_PADG && packet.code != CODE_PADC &&
         packet.code != CODE_PADQ) {
-        syslog(LOG_ERR, "Unexpected packet code %d", (int) packet.code);
+        LOGGER(LOG_ERR, "Unexpected packet code %d", (int) packet.code);
         return;
     }
     if (packet.ver != 1) {
-        syslog(LOG_ERR, "Unexpected packet version %d", (int) packet.ver);
+        LOGGER(LOG_ERR, "Unexpected packet version %d", (int) packet.ver);
         return;
     }
     if (packet.type != 1) {
-        syslog(LOG_ERR, "Unexpected packet type %d", (int) packet.type);
+        LOGGER(LOG_ERR, "Unexpected packet type %d", (int) packet.type);
         return;
     }
     if (memcmp(packet.ethHdr.h_dest, conn->myEth, ETH_ALEN)) {
@@ -410,14 +412,14 @@ processRfc4938Packet(PPPoEConnection *conn)
     }
 
     if (packet.session != conn->session) {
-        syslog(LOG_ERR, "Unexpected packet session %d",
+        LOGGER(LOG_ERR, "Unexpected packet session %d",
                            (int) ntohs(packet.session));
         return;
     }
 
     plen = ntohs(packet.length);
     if (plen + HDR_SIZE > size) {
-        syslog(LOG_ERR, "Bogus length field in RFC4938 packet %d (%d)",
+        LOGGER(LOG_ERR, "Bogus length field in RFC4938 packet %d (%d)",
                (int) plen, (int) size);
         return;
     }
@@ -429,7 +431,7 @@ processRfc4938Packet(PPPoEConnection *conn)
             return; /* not a valid PADG, ignore it */
         }
 
-       syslog(LOG_INFO, "pppoe(%u): Recv PADG packet with fcn:0x%04x bcn:0x%04x",
+       LOGGER(LOG_INFO, "pppoe(%u): Recv PADG packet with fcn:0x%04x bcn:0x%04x",
               ntohs(conn->session), GET_FCN(conn->creditPtr), GET_BCN(conn->creditPtr));
 
         /* update the current credits */
@@ -460,7 +462,7 @@ processRfc4938Packet(PPPoEConnection *conn)
         if (conn->sequence != conn->padgSequence) {
             conn->creditPtr = NULL; /* prepare for next time */
 
-            syslog(LOG_ERR, "pppoe(%hu): Recv PADC with incorrect seq num %hu != %hu, ignore", 
+            LOGGER(LOG_ERR, "pppoe(%hu): Recv PADC with incorrect seq num %hu != %hu, ignore", 
                    htons(conn->session), conn->sequence, conn->padgSequence);
 
             return; /* This is not the PADC we are looking for */
@@ -478,7 +480,7 @@ processRfc4938Packet(PPPoEConnection *conn)
             conn->hostCredits = RFC_MAX_CREDITS;
         }
 
-       syslog(LOG_INFO, "pppoe(%hu): Recv PADC FCN (host credits) old/new %hu/%hu, BCN (peer credits) old/new %hu/%hu, seq:0x%04x", 
+       LOGGER(LOG_INFO, "pppoe(%hu): Recv PADC FCN (host credits) old/new %hu/%hu, BCN (peer credits) old/new %hu/%hu, seq:0x%04x", 
               htons(conn->session),
               oldHostCredits, conn->hostCredits, 
               oldPeerCredits, conn->peerCredits, 
@@ -517,7 +519,7 @@ processRfc4938Packet(PPPoEConnection *conn)
                    ntohs(packet.length) + HDR_SIZE, 0,
                    (const struct sockaddr *) &address,
                    sizeof(struct sockaddr_in)) < 0) {
-            syslog(LOG_ERR, "sendto (forwardRfc4938Packet)");
+            LOGGER(LOG_ERR, "sendto (forwardRfc4938Packet)");
             return;
         }
     }
@@ -609,7 +611,7 @@ session(PPPoEConnection *conn)
 	    fatalSys("select (session)");
 	}
 	if (r == 0) { /* Inactivity timeout */
-	    syslog(LOG_ERR, "Inactivity timeout... something wicked happened on session %d",
+	    LOGGER(LOG_ERR, "Inactivity timeout... something wicked happened on session %d",
 		   (int) ntohs(conn->session));
 	    sendPADT(conn, "RP-PPPoE: Inactivity timeout");
 	    exit(EXIT_FAILURE);
@@ -702,7 +704,7 @@ session(PPPoEConnection *conn)
 static void
 sigPADT(int src)
 {
-  syslog(LOG_DEBUG,"Received signal %d on session %d.",
+  LOGGER(LOG_DEBUG,"Received signal %d on session %d.",
 	 (int)src, (int) ntohs(Connection->session));
   sendPADTf(Connection, "RP-PPPoE: Received signal %d", src);
   exit(EXIT_SUCCESS);
@@ -810,8 +812,10 @@ main(int argc, char *argv[])
     /* For signal handler */
     Connection = &conn;
 
+#ifdef HAVE_SYSLOG_H
     /* Initialize syslog */
     openlog("pppoe", LOG_PID, LOG_DAEMON);
+#endif
 
     options = "I:VAT:"
 #ifdef DEBUGGING_ENABLED
@@ -920,6 +924,8 @@ main(int argc, char *argv[])
 			optarg, strerror(errno));
 		exit(EXIT_FAILURE);
 	    }
+            LoggerFp = conn.debugFile;
+
 	    fprintf(conn.debugFile, "rp-pppoe-%s\n", VERSION);
 	    fflush(conn.debugFile);
 	    break;
@@ -1010,7 +1016,7 @@ main(int argc, char *argv[])
 		printErr("Unable to set line discipline to N_HDLC.  Make sure your kernel supports the N_HDLC line discipline, or do not use the SYNCHRONOUS option.  Quitting.");
 		exit(EXIT_FAILURE);
 	    } else {
-		syslog(LOG_INFO,
+		LOGGER(LOG_INFO,
 		       "Changed pty line discipline to N_HDLC for synchronous mode");
 	    }
 	    /* There is a bug in Linux's select which returns a descriptor
@@ -1211,7 +1217,7 @@ asyncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
 
     /* Check length */
     if (ntohs(packet.length) + HDR_SIZE > len) {
-	syslog(LOG_ERR, "Bogus PPPoE length field (%u)",
+	LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
 	       (unsigned int) ntohs(packet.length));
 	return;
     }
@@ -1235,15 +1241,15 @@ asyncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
 
     /* Sanity check */
     if (packet.code != CODE_SESS) {
-	syslog(LOG_ERR, "Unexpected packet code %d", (int) packet.code);
+	LOGGER(LOG_ERR, "Unexpected packet code %d", (int) packet.code);
 	return;
     }
     if (packet.ver != 1) {
-	syslog(LOG_ERR, "Unexpected packet version %d", (int) packet.ver);
+	LOGGER(LOG_ERR, "Unexpected packet version %d", (int) packet.ver);
 	return;
     }
     if (packet.type != 1) {
-	syslog(LOG_ERR, "Unexpected packet type %d", (int) packet.type);
+	LOGGER(LOG_ERR, "Unexpected packet type %d", (int) packet.type);
 	return;
     }
     if (memcmp(packet.ethHdr.h_dest, conn->myEth, ETH_ALEN)) {
@@ -1262,7 +1268,7 @@ asyncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
     }
     plen = ntohs(packet.length);
     if (plen + HDR_SIZE > len) {
-	syslog(LOG_ERR, "Bogus length field in session packet %d (%d)",
+	LOGGER(LOG_ERR, "Bogus length field in session packet %d (%d)",
 	       (int) plen, (int) len);
 	return;
     }
@@ -1289,7 +1295,7 @@ asyncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
             conn->hostCredits = RFC_MAX_CREDITS;
         }
 
-       syslog(LOG_INFO, "pppoe(%hu): Recv Inband PADG update FCN (host credits) old/new %hu/%hu, BCN (peer credits) old/new %hu/%hu", 
+       LOGGER(LOG_INFO, "pppoe(%hu): Recv Inband PADG update FCN (host credits) old/new %hu/%hu, BCN (peer credits) old/new %hu/%hu", 
               htons(conn->session),
               oldHostCredits, conn->hostCredits, 
               oldPeerCredits, conn->peerCredits);
@@ -1298,7 +1304,7 @@ asyncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
 
       conn->peerCredits -= delPeerCredits;
 
-      syslog(LOG_INFO, "pppoe(%hu): decrement %hu credits from %hu peer_credits = %hu", 
+      LOGGER(LOG_INFO, "pppoe(%hu): decrement %hu credits from %hu peer_credits = %hu", 
               htons(conn->session), delPeerCredits, oldPeerCredits, conn->peerCredits);
     }
 
@@ -1380,7 +1386,7 @@ syncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
 
     /* Check length */
     if (ntohs(packet.length) + HDR_SIZE > len) {
-	syslog(LOG_ERR, "Bogus PPPoE length field (%u)",
+	LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
 	       (unsigned int) ntohs(packet.length));
 	return;
     }
@@ -1404,15 +1410,15 @@ syncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
 
     /* Sanity check */
     if (packet.code != CODE_SESS) {
-	syslog(LOG_ERR, "Unexpected packet code %d", (int) packet.code);
+	LOGGER(LOG_ERR, "Unexpected packet code %d", (int) packet.code);
 	return;
     }
     if (packet.ver != 1) {
-	syslog(LOG_ERR, "Unexpected packet version %d", (int) packet.ver);
+	LOGGER(LOG_ERR, "Unexpected packet version %d", (int) packet.ver);
 	return;
     }
     if (packet.type != 1) {
-	syslog(LOG_ERR, "Unexpected packet type %d", (int) packet.type);
+	LOGGER(LOG_ERR, "Unexpected packet type %d", (int) packet.type);
 	return;
     }
     if (memcmp(packet.ethHdr.h_dest, conn->myEth, ETH_ALEN)) {
@@ -1432,7 +1438,7 @@ syncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
     }
     plen = ntohs(packet.length);
     if (plen + HDR_SIZE > len) {
-	syslog(LOG_ERR, "Bogus length field in session packet %d (%d)",
+	LOGGER(LOG_ERR, "Bogus length field in session packet %d (%d)",
 	       (int) plen, (int) len);
 	return;
     }
@@ -1458,14 +1464,14 @@ syncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
         if (conn->hostCredits > RFC_MAX_CREDITS) {
             conn->hostCredits = RFC_MAX_CREDITS;
         }
-       syslog(LOG_INFO, "pppoe(%hu): Recv Inband PADC FCN (host credits) old/new %hu/%hu, BCN (peer credits) old/new %hu/%hu", 
+       LOGGER(LOG_INFO, "pppoe(%hu): Recv Inband PADC FCN (host credits) old/new %hu/%hu, BCN (peer credits) old/new %hu/%hu", 
               htons(conn->session),
               oldHostCredits, conn->hostCredits, 
               oldPeerCredits, conn->peerCredits);
     } else {
       unsigned short delPeerCredits = computePeerCredits(conn, &packet);
 
-      syslog(LOG_INFO, "pppoe(%hu): decrement %hu credits, peer_credits %hu", 
+      LOGGER(LOG_INFO, "pppoe(%hu): decrement %hu credits, peer_credits %hu", 
               htons(conn->session), delPeerCredits, conn->peerCredits);
 
       conn->peerCredits -= delPeerCredits;

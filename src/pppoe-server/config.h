@@ -127,7 +127,7 @@
 #define HAVE_SYS_UIO_H 1
 
 /* Define if you have the <syslog.h> header file.  */
-#define HAVE_SYSLOG_H 1
+#define HAVE_SYSLOG_H 0
 
 /* Define if you have the <unistd.h> header file.  */
 #define HAVE_UNISTD_H 1

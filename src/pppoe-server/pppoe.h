@@ -17,6 +17,8 @@
 
 #include "config.h"
 
+#include "logger.h"
+
 extern int IsSetID;
 
 #if defined(HAVE_NETPACKET_PACKET_H) || defined(HAVE_LINUX_IF_PACKET_H)
@@ -393,7 +395,7 @@ extern int file_exists(const char * filename);
 #define CHECK_ROOM(cursor, start, len) \
 do {\
     if (((cursor)-(start))+(len) > MAX_PPPOE_PAYLOAD) { \
-        syslog(LOG_ERR, "Would create too-long packet"); \
+        LOGGER(LOG_ERR, "Would create too-long packet"); \
         return; \
     } \
 } while(0)

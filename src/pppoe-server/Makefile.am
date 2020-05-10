@@ -3,10 +3,6 @@ pppoe
 
 sbin_PROGRAMS = rfc4938server
 
-rfc4938server_CXXFLAGS =
-
-rfc4938server_LDFLAGS =
-
 rfc4938server_SOURCES =  \
 common.c \
 debug.c \

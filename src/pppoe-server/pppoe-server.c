@@ -90,7 +90,7 @@ static void sendErrorPADS(int sock, unsigned char *source, unsigned char *dest,
 #define CHECK_ROOM(cursor, start, len) \
 do {\
     if (((cursor)-(start))+(len) > MAX_PPPOE_PAYLOAD) { \
-	syslog(LOG_ERR, "Would create too-long packet"); \
+	LOGGER(LOG_ERR, "Would create too-long packet"); \
 	return; \
     } \
 } while(0)
@@ -211,6 +211,10 @@ static PPPoETag requestedFlowControl;
 
 #define HOSTNAMELEN 256
 
+FILE * LoggerFp = NULL;
+
+static const char * log_path = "/tmp";
+
 static int
 count_sessions_from_mac(unsigned char *eth)
 {
@@ -246,7 +250,7 @@ childHandler(pid_t pid, int status, void *s)
     /* We're acting as LAC, so when child exits, become a PPPoE <-> L2TP
        relay */
     if (session->flags & FLAG_ACT_AS_LAC) {
-	syslog(LOG_INFO, "Session %u for client "
+	LOGGER(LOG_INFO, "Session %u for client "
 	       "%02x:%02x:%02x:%02x:%02x:%02x handed off to LNS %s",
 	       (unsigned int) ntohs(session->sess),
 	       session->eth[0], session->eth[1], session->eth[2],
@@ -261,7 +265,7 @@ childHandler(pid_t pid, int status, void *s)
     memset(&conn, 0, sizeof(conn));
     conn.useHostUniq = 0;
 
-    syslog(LOG_INFO,
+    LOGGER(LOG_INFO,
 	   "Session %u closed for client "
 	   "%02x:%02x:%02x:%02x:%02x:%02x (%d.%d.%d.%d) on %s",
 	   (unsigned int) ntohs(session->sess),
@@ -634,7 +638,7 @@ processPADI(Interface *ethif, PPPoEPacket *packet, int len)
 
     /* Ignore PADI's which don't come from a unicast address */
     if (NOT_UNICAST(packet->ethHdr.h_source)) {
-	syslog(LOG_ERR, "PADI packet from non-unicast source address");
+	LOGGER(LOG_ERR, "PADI packet from non-unicast source address");
 	return;
     }
 
@@ -642,7 +646,7 @@ processPADI(Interface *ethif, PPPoEPacket *packet, int len)
        send PADO if already max number of sessions. */
     if (MaxSessionsPerMac) {
 	if (count_sessions_from_mac(packet->ethHdr.h_source) >= MaxSessionsPerMac) {
-	    syslog(LOG_INFO, "PADI: Client %02x:%02x:%02x:%02x:%02x:%02x attempted to create more than %d session(s)",
+	    LOGGER(LOG_INFO, "PADI: Client %02x:%02x:%02x:%02x:%02x:%02x attempted to create more than %d session(s)",
 		   packet->ethHdr.h_source[0],
 		   packet->ethHdr.h_source[1],
 		   packet->ethHdr.h_source[2],
@@ -787,7 +791,7 @@ processPADT(Interface *ethif, PPPoEPacket *packet, int len)
     i = ntohs(packet->session) - 1 - SessOffset;
     if (i >= NumSessionSlots) return;
     if (Sessions[i].sess != packet->session) {
-	syslog(LOG_ERR, "Session index %u doesn't match session number %u",
+	LOGGER(LOG_ERR, "Session index %u doesn't match session number %u",
 	       (unsigned int) i, (unsigned int) ntohs(packet->session));
 	return;
     }
@@ -795,7 +799,7 @@ processPADT(Interface *ethif, PPPoEPacket *packet, int len)
 
     /* If source MAC does not match, do not kill session */
     if (memcmp(packet->ethHdr.h_source, Sessions[i].eth, ETH_ALEN)) {
-	syslog(LOG_WARNING, "PADT for session %u received from "
+	LOGGER(LOG_WARNING, "PADT for session %u received from "
 	       "%02X:%02X:%02X:%02X:%02X:%02X; should be from "
 	       "%02X:%02X:%02X:%02X:%02X:%02X",
 	       (unsigned int) ntohs(packet->session),
@@ -863,7 +867,7 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len)
 
     /* Ignore PADR's from non-unicast addresses */
     if (NOT_UNICAST(packet->ethHdr.h_source)) {
-	syslog(LOG_ERR, "PADR packet from non-unicast source address");
+	LOGGER(LOG_ERR, "PADR packet from non-unicast source address");
 	return;
     }
 
@@ -871,7 +875,7 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len)
        send PADS if already max number of sessions. */
     if (MaxSessionsPerMac) {
 	if (count_sessions_from_mac(packet->ethHdr.h_source) >= MaxSessionsPerMac) {
-	    syslog(LOG_INFO, "PADR: Client %02x:%02x:%02x:%02x:%02x:%02x attempted to create more than %d session(s)",
+	    LOGGER(LOG_INFO, "PADR: Client %02x:%02x:%02x:%02x:%02x:%02x attempted to create more than %d session(s)",
 		   packet->ethHdr.h_source[0],
 		   packet->ethHdr.h_source[1],
 		   packet->ethHdr.h_source[2],
@@ -906,7 +910,7 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len)
 
     /* Check service name */
     if (!requestedService.type) {
-	syslog(LOG_ERR, "Received PADR packet with no SERVICE_NAME tag");
+	LOGGER(LOG_ERR, "Received PADR packet with no SERVICE_NAME tag");
 	sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
 		      TAG_SERVICE_NAME_ERROR, "RP-PPPoE: Server: No service name tag");
 	return;
@@ -925,7 +929,7 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len)
 	}
 
 	if (!serviceName) {
-	    syslog(LOG_ERR, "Received PADR packet asking for unsupported service %.*s", (int) ntohs(requestedService.length), requestedService.payload);
+	    LOGGER(LOG_ERR, "Received PADR packet asking for unsupported service %.*s", (int) ntohs(requestedService.length), requestedService.payload);
 	    sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
 			  TAG_SERVICE_NAME_ERROR, "RP-PPPoE: Server: Invalid service name tag");
 	    return;
@@ -938,7 +942,7 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len)
 #ifdef HAVE_LICENSE
     /* Are we licensed for this many sessions? */
     if (License_NumLicenses("PPPOE-SESSIONS") <= NumActiveSessions) {
-	syslog(LOG_ERR, "Insufficient session licenses (%02x:%02x:%02x:%02x:%02x:%02x)",
+	LOGGER(LOG_ERR, "Insufficient session licenses (%02x:%02x:%02x:%02x:%02x:%02x)",
 	       (unsigned int) packet->ethHdr.h_source[0],
 	       (unsigned int) packet->ethHdr.h_source[1],
 	       (unsigned int) packet->ethHdr.h_source[2],
@@ -954,7 +958,7 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len)
 #ifdef HAVE_LICENSE
     freemem = getFreeMem();
     if (freemem < MIN_FREE_MEMORY) {
-	syslog(LOG_WARNING,
+	LOGGER(LOG_WARNING,
 	       "Insufficient free memory to create session: Want %d, have %d",
 	       MIN_FREE_MEMORY, freemem);
 	sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
@@ -965,7 +969,7 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len)
     /* Looks cool... find a slot for the session */
     cliSession = pppoe_alloc_session();
     if (!cliSession) {
-	syslog(LOG_ERR, "No client slots available (%02x:%02x:%02x:%02x:%02x:%02x)",
+	LOGGER(LOG_ERR, "No client slots available (%02x:%02x:%02x:%02x:%02x:%02x)",
 	       (unsigned int) packet->ethHdr.h_source[0],
 	       (unsigned int) packet->ethHdr.h_source[1],
 	       (unsigned int) packet->ethHdr.h_source[2],
@@ -1012,7 +1016,9 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len)
 	}
     }
 
+#ifdef HAVE_SYSLOG_H
     openlog("pppoe-server", LOG_PID, LOG_DAEMON);
+#endif
     /* pppd has a nasty habit of killing all processes in its process group.
        Start a new session to stop pppd from killing us! */
     setsid();
@@ -1099,7 +1105,7 @@ forwardRfc4938Packet(Interface *ethif, PPPoEPacket *packet, int len)
 
     /* Ignore these if there isn't a socket to forward them through */
     if (rfc4938Socket < 0) {
-        syslog(LOG_ERR, "Unable to forward PADC/G/Q to child (no socket)");
+        LOGGER(LOG_ERR, "Unable to forward PADC/G/Q to child (no socket)");
         return;
     }
 
@@ -1111,7 +1117,7 @@ forwardRfc4938Packet(Interface *ethif, PPPoEPacket *packet, int len)
     if (i >= NumSessionSlots || i < 0) return;
 
     if (Sessions[i].sess != packet->session) {
-        syslog(LOG_ERR, "Session index %u doesn't match session number %u",
+        LOGGER(LOG_ERR, "Session index %u doesn't match session number %u",
                (unsigned int) i, (unsigned int) ntohs(packet->session));
         return;
     }
@@ -1122,7 +1128,7 @@ forwardRfc4938Packet(Interface *ethif, PPPoEPacket *packet, int len)
 
     if (sendto(rfc4938Socket, packet, len, 0, (struct sockaddr *) &address,
                sizeof(struct sockaddr_in)) < 0) {
-        syslog(LOG_ERR, "sendto (forwardRfc4938Packet)");
+        LOGGER(LOG_ERR, "sendto (forwardRfc4938Packet)");
         return;
     }
 }
@@ -1140,7 +1146,7 @@ forwardRfc4938Packet(Interface *ethif, PPPoEPacket *packet, int len)
 static void
 termHandler(int sig)
 {
-    syslog(LOG_INFO,
+    LOGGER(LOG_INFO,
 	   "Terminating on signal %d -- killing all PPPoE sessions",
 	   sig);
     killAllSessions();
@@ -1204,6 +1210,7 @@ usage(char const *argv0)
     fprintf(stderr, "   -1             -- Allow only one session per user.\n");
 #endif
 
+    fprintf(stderr, "   -D logfile     -- logfile\n\n");
     fprintf(stderr, "   -h             -- Print usage information.\n\n");
     fprintf(stderr, "PPPoE-Server Version %s, Copyright (C) 2001-2006 Roaring Penguin Software Inc.\n", VERSION);
 
@@ -1241,7 +1248,7 @@ main(int argc, char **argv)
     int use_clustering = 0;
 #endif
 
-    char *options = "x:hI:C:L:R:T:m:FN:f:O:o:s:q:Q:"
+    char *options = "x:hI:C:L:R:T:m:FN:f:O:o:s:q:Q:D:"
 #ifdef HAVE_LICENSE
         "c:1"
 #endif
@@ -1261,8 +1268,10 @@ main(int argc, char **argv)
 
     memset(interfaces, 0, sizeof(interfaces));
 
-    /* Initialize syslog */
+#ifndef LOGGER
+    /* Initialize LOGGER */
     openlog("pppoe-server", LOG_PID, LOG_DAEMON);
+#endif
 
     /* Default number of session slots */
     NumSessionSlots = DEFAULT_MAX_SESSIONS;
@@ -1472,6 +1481,20 @@ main(int argc, char **argv)
 		     SMALLBUF-strlen(PppoeOptions),
 		     " -%c %s", opt, optarg);
 	    break;
+
+	case 'D':
+          {
+            char lfp[256] = {0};
+            log_path = strdup(optarg);
+            snprintf(lfp, sizeof(lfp), "%s/%s", log_path, "pppoe_server.log");
+           
+            if((LoggerFp = fopen(lfp, "w")) == NULL)
+              {
+ 	       fprintf(stderr, "could not open server log file '%s', %s\n", lfp, strerror(errno));
+ 	       exit(-1);
+              }
+          }
+          break;
 
 	case 'h':
 	    usage(argv[0]);
@@ -1775,7 +1798,7 @@ main(int argc, char **argv)
 
 #ifdef HAVE_LICENSE
 	if (License_Expired(ServerLicense)) {
-	    syslog(LOG_INFO, "Server license has expired -- killing all PPPoE sessions");
+	    LOGGER(LOG_INFO, "Server license has expired -- killing all PPPoE sessions");
 	    killAllSessions();
 	    control_exit();
 	    exit(0);
@@ -1798,7 +1821,7 @@ serverProcessPacket(Interface *i)
 
     /* Check length */
     if (ntohs(packet.length) + HDR_SIZE > len) {
-	syslog(LOG_ERR, "Bogus PPPoE length field (%u)",
+	LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
 	       (unsigned int) ntohs(packet.length));
 	return;
     }
@@ -1916,7 +1939,7 @@ startPPPDUserMode(ClientSession *session)
     char *argv[32];
     FILE *fp;
 
-    char buffer[SMALLBUF];
+    char buffer[SMALLBUF] = {0};
     char line[130];
 
     int c = 0;
@@ -1942,12 +1965,18 @@ startPPPDUserMode(ClientSession *session)
 #endif
 
     /* Let's hope service-name does not have ' in it... */
-    snprintf(buffer, SMALLBUF, "%s -n -I %s -e %u:%02x:%02x:%02x:%02x:%02x:%02x%s -S '%s'",
-	     pppoe_path, session->ethif->name,
-	     (unsigned int) ntohs(session->sess),
+    snprintf(buffer, SMALLBUF, "%s -n -I %s -e %hu:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx%s -S '%s' -D %s/pppoe-%s-%hu.log",
+	     pppoe_path, 
+             session->ethif->name,
+	     ntohs(session->sess),
 	     session->eth[0], session->eth[1], session->eth[2],
 	     session->eth[3], session->eth[4], session->eth[5],
-	     PppoeOptions, session->serviceName);
+	     PppoeOptions, 
+             session->serviceName,
+             log_path,
+             session->ethif->name,
+	     ntohs(session->sess));
+
     argv[c++] = strdup(buffer);
     if (!argv[c-1]) {
 	/* TODO: Send a PADT */
@@ -1985,7 +2014,7 @@ startPPPDUserMode(ClientSession *session)
     }
     argv[c++] = strdup(buffer);
 
-    syslog(LOG_INFO,
+    LOGGER(LOG_INFO,
 	   "Session %u created for client %02x:%02x:%02x:%02x:%02x:%02x on %s using Service-Name '%s'",
 	   (unsigned int) ntohs(session->sess),
 	   session->eth[0], session->eth[1], session->eth[2],
@@ -2125,7 +2154,7 @@ startPPPDLinuxKernelMode(ClientSession *session)
     }
     argv[c++] = strdup(buffer);
 
-    syslog(LOG_INFO,
+    LOGGER(LOG_INFO,
 	   "Session %u created for client %02x:%02x:%02x:%02x:%02x:%02x on %s using Service-Name '%s'",
 	   (unsigned int) ntohs(session->sess),
 	   session->eth[0], session->eth[1], session->eth[2],
@@ -2242,26 +2271,26 @@ CoordinationHandler(EventSelector *es,
 
     /* Check length */
     if (ntohs(packet.length) + HDR_SIZE > len) {
-        syslog(LOG_ERR, "Bogus PPPoE length field (%u)",
+        LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
                (unsigned int) ntohs(packet.length));
         return;
     }
 
     /* Sanity check on packet */
     if (packet.ver != 1 || packet.type != 1) {
-        syslog(LOG_ERR, "PPPoE version/type (%u:%u)", packet.ver, packet.type);
+        LOGGER(LOG_ERR, "PPPoE version/type (%u:%u)", packet.ver, packet.type);
         return;
     }
 
     /* Ensure that the packet has a valid session ID */
     index = ntohs(packet.session) - 1 - SessOffset;
     if (index < 0 || index >= NumSessionSlots) {
-        syslog(LOG_ERR, "Bogus PPPoE session (%u)", ntohs(packet.session));
+        LOGGER(LOG_ERR, "Bogus PPPoE session (%u)", ntohs(packet.session));
         return;
     }
 
     if (Sessions[index].ethif == NULL || Sessions[index].ethif->sock == -1) {
-        syslog(LOG_ERR, "PPPoE session is inactive (%u)",
+        LOGGER(LOG_ERR, "PPPoE session is inactive (%u)",
                ntohs(packet.session));
         return;
     }
@@ -2434,7 +2463,7 @@ pppoe_free_session(ClientSession *ses)
     }
 
     if (!cur) {
-	syslog(LOG_ERR, "pppoe_free_session: Could not find session %p on busy list", (void *) ses);
+	LOGGER(LOG_ERR, "pppoe_free_session: Could not find session %p on busy list", (void *) ses);
 	return -1;
     }
 
@@ -2492,7 +2521,7 @@ sendHURLorMOTM(PPPoEConnection *conn, char const *url, UINT16_t tag)
 
     if (tag == TAG_HURL) {
 	if (strncmp(url, "http://", 7)) {
-	    syslog(LOG_WARNING, "sendHURL(%s): URL must begin with http://", url);
+	    LOGGER(LOG_WARNING, "sendHURL(%s): URL must begin with http://", url);
 	    return;
 	}
     } else {
@@ -2510,7 +2539,7 @@ sendHURLorMOTM(PPPoEConnection *conn, char const *url, UINT16_t tag)
 
     elen = strlen(url);
     if (elen > 256) {
-	syslog(LOG_WARNING, "MOTM or HURL too long: %d", (int) elen);
+	LOGGER(LOG_WARNING, "MOTM or HURL too long: %d", (int) elen);
 	return;
     }
 

@@ -151,7 +151,7 @@ syncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
 	fatalSys("read (syncReadFromPPP)");
     }
     if (r == 0) {
-	syslog(LOG_INFO, "end-of-file in syncReadFromPPP");
+	LOGGER(LOG_INFO, "end-of-file in syncReadFromPPP");
 	sendPADT(conn, "RP-PPPoE: EOF in syncReadFromPPP");
 	exit(0);
     }
@@ -177,7 +177,7 @@ syncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
         }
 
         if ((conn->hostCredits - creditCost) < RFC_MIN_CREDITS) {
-            syslog(LOG_INFO, "Not enough credits: %d < %d", conn->hostCredits,
+            LOGGER(LOG_INFO, "Not enough credits: %d < %d", conn->hostCredits,
                              creditCost);
             packet->length = r + (conn->avoidInBandFlowControl ? 0 : 
                                   TAG_CREDITS_SIZE + TAG_HDR_SIZE) - 2;
@@ -194,7 +194,7 @@ syncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
                                      RFC_PEER_CREDITS - conn->peerCredits : 0);
             SET_BCN(&packet->payload[4], conn->hostCredits);
 
-            syslog(LOG_INFO, "pppoe(%hu): msgLength %d, creditCost %d, sendInbandGrant set FCN (peer credits) %hu, BCN (host credits) %hu",
+            LOGGER(LOG_INFO, "pppoe(%hu): msgLength %d, creditCost %d, sendInbandGrant set FCN (peer credits) %hu, BCN (host credits) %hu",
                    htons(conn->session),
                    msgLength,
                    creditCost,
@@ -262,7 +262,7 @@ asyncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
     }
 
     if (r == 0) {
-	syslog(LOG_INFO, "end-of-file in asyncReadFromPPP");
+	LOGGER(LOG_INFO, "end-of-file in asyncReadFromPPP");
 	sendPADT(conn, "RP-PPPoE: EOF in asyncReadFromPPP");
 	exit(0);
     }
@@ -328,7 +328,7 @@ asyncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
 
 
                     if ((conn->hostCredits - creditCost) < RFC_MIN_CREDITS) {
-                        syslog(LOG_INFO, "Not enough credits: %d < %d",
+                        LOGGER(LOG_INFO, "Not enough credits: %d < %d",
                                          conn->hostCredits, creditCost);
                         packet->length = PPPPacketSize - 2;
                         conn->held = packet;
@@ -351,7 +351,7 @@ asyncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
                                 RFC_PEER_CREDITS - conn->peerCredits : 0);
                         SET_BCN(&packet->payload[4], conn->hostCredits);
 
-                        syslog(LOG_INFO, "pppoe(%hu): msgLength %d, creditCost %d, sendInbandGrant set FCN (peer credits) %hu, BCN (host credits) %hu",
+                        LOGGER(LOG_INFO, "pppoe(%hu): msgLength %d, creditCost %d, sendInbandGrant set FCN (peer credits) %hu, BCN (host credits) %hu",
                                htons(conn->session),
                                msgLength,
                                creditCost,
@@ -373,7 +373,7 @@ asyncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
 		break;
 	    default:
 		if (PPPPacketSize >= ETH_DATA_LEN - 4) {
-		    syslog(LOG_ERR, "Packet too big!  Check MTU on PPP interface");
+		    LOGGER(LOG_ERR, "Packet too big!  Check MTU on PPP interface");
 		    PPPPacketSize = 0;
 		    PPPXorValue = 0;
 		    PPPState = STATE_WAITFOR_FRAME_ADDR;
