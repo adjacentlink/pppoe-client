@@ -44,10 +44,13 @@
 #define LNLEN ( 100 )
 #endif
 
+extern const char * log_path;
+
 /*
  * Neighbor states
  */
-typedef enum {
+typedef enum
+{
     INVALID  = 0x0,
     INACTIVE = 0x1,
     PENDING  = 0x2,
@@ -64,7 +67,8 @@ typedef enum {
 /*
  * neighbor element
  */
-typedef struct _rfc4938_neighbor_element_s {
+typedef struct _rfc4938_neighbor_element_s
+{
 
     rfc4938_neighbor_state_t nbr_session_state;
 
@@ -100,33 +104,33 @@ rfc4938_neighbor_print_all_string (char *dgram, size_t max);
 
 int
 rfc4938_neighbor_release(
-           UINT32_t neighbor_id);
+    UINT32_t neighbor_id);
 
 int
 rfc4938_neighbor_query (
-           UINT32_t neighbor_id,
-           rfc4938_neighbor_element_t *p2neighbor);
+    UINT32_t neighbor_id,
+    rfc4938_neighbor_element_t *p2neighbor);
 
 int
 rfc4938_neighbor_pointer_by_nbr_id (
-           UINT32_t neighbor_id,
-           rfc4938_neighbor_element_t **p2neighbor);
+    UINT32_t neighbor_id,
+    rfc4938_neighbor_element_t **p2neighbor);
 
 int
 rfc4938_neighbor_pointer_by_session_id (
-           UINT16_t session_id,
-           rfc4938_neighbor_element_t **p2neighbor);
+    UINT16_t session_id,
+    rfc4938_neighbor_element_t **p2neighbor);
 
 
 int
 rfc4938_neighbor_pointer_by_pid (
-           pid_t pid,
-           rfc4938_neighbor_element_t **p2neighbor);
+    pid_t pid,
+    rfc4938_neighbor_element_t **p2neighbor);
 
 int
 rfc4938_neighbor_pointer_by_port (
-           UINT16_t port,
-           rfc4938_neighbor_element_t **p2neighbor);
+    UINT16_t port,
+    rfc4938_neighbor_element_t **p2neighbor);
 
 
 
@@ -144,12 +148,12 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id, UINT32_t peer_pid, UINT
 void rfc4938_neighbor_cleanup_children ();
 
 void
-rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr, UINT16_t cmdSRC , UINT16_t not_used);
+rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr, UINT16_t cmdSRC, UINT16_t not_used);
 
-rfc4938_neighbor_state_t 
+rfc4938_neighbor_state_t
 rfc4938_get_neighbor_state (UINT32_t neighbor_id);
 
-const char * 
+const char *
 rfc4938_neighbor_status_to_string (rfc4938_neighbor_state_t state);
 
 #endif

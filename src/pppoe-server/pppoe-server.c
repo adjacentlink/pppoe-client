@@ -15,8 +15,7 @@
 *
 ***********************************************************************/
 
-static char const RCSID[] =
-"$Id: pppoe-server.c 13122 2009-11-20 18:32:14Z exp $";
+//static char const RCSID[] = "$Id: pppoe-server.c 13122 2009-11-20 18:32:14Z exp $";
 
 #include "config.h"
 
@@ -24,7 +23,7 @@ static char const RCSID[] =
 #define _POSIX_SOURCE 1 /* For sigaction defines */
 #endif
 
-#define _BSD_SOURCE 1 /* for gethostname */
+#define _DEFAULT_SOURCE 1 /* for gethostname */
 
 #include "pppoe-server.h"
 #include "md5.h"
@@ -37,6 +36,7 @@ static char const RCSID[] =
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <stdio.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -73,25 +73,25 @@ static struct License const *ClusterLicense;
 #ifdef HAVE_L2TP
 extern PppoeSessionFunctionTable L2TPSessionFunctionTable;
 extern void pppoe_to_l2tp_add_interface(EventSelector *es,
-					Interface *interface);
+                                        Interface *interface);
 #endif
 
 
 #ifdef SUPPORT_RFC4938
 static void CoordinationHandler(EventSelector *es,
-                        int fd, unsigned int flags, void *data);
+                                int fd, unsigned int flags, void *data);
 #endif
 static void InterfaceHandler(EventSelector *es,
-                        int fd, unsigned int flags, void *data);
+                             int fd, unsigned int flags, void *data);
 static void startPPPD(ClientSession *sess);
 static void sendErrorPADS(int sock, unsigned char *source, unsigned char *dest,
-			  int errorTag, char *errorMsg);
+                          int errorTag, char *errorMsg);
 
 #define CHECK_ROOM(cursor, start, len) \
 do {\
     if (((cursor)-(start))+(len) > MAX_PPPOE_PAYLOAD) { \
-	LOGGER(LOG_ERR, "Would create too-long packet"); \
-	return; \
+    LOGGER(LOG_ERR, "Would create too-long packet"); \
+    return; \
     } \
 } while(0)
 
@@ -103,7 +103,8 @@ static int PppoeSessionIsActive(ClientSession *ses);
 static int NumServiceNames = 0;
 static char const *ServiceNames[MAX_SERVICE_NAMES];
 
-PppoeSessionFunctionTable DefaultSessionFunctionTable = {
+PppoeSessionFunctionTable DefaultSessionFunctionTable =
+{
     PppoeStopSession,
     PppoeSessionIsActive,
     NULL
@@ -220,9 +221,13 @@ count_sessions_from_mac(unsigned char *eth)
 {
     int n=0;
     ClientSession *s = BusySessions;
-    while(s) {
-	if (!memcmp(eth, s->eth, ETH_ALEN)) n++;
-	s = s->next;
+    while(s)
+    {
+        if (!memcmp(eth, s->eth, ETH_ALEN))
+        {
+            n++;
+        }
+        s = s->next;
     }
     return n;
 }
@@ -239,7 +244,7 @@ count_sessions_from_mac(unsigned char *eth)
 * Called synchronously when a child dies.  Remove from busy list.
 ***********************************************************************/
 static void
-childHandler(pid_t pid, int status, void *s)
+childHandler(pid_t pid __attribute__((unused)), int status __attribute__((unused)), void *s)
 {
     ClientSession *session = s;
 
@@ -249,16 +254,17 @@ childHandler(pid_t pid, int status, void *s)
 #ifdef HAVE_L2TP
     /* We're acting as LAC, so when child exits, become a PPPoE <-> L2TP
        relay */
-    if (session->flags & FLAG_ACT_AS_LAC) {
-	LOGGER(LOG_INFO, "Session %u for client "
-	       "%02x:%02x:%02x:%02x:%02x:%02x handed off to LNS %s",
-	       (unsigned int) ntohs(session->sess),
-	       session->eth[0], session->eth[1], session->eth[2],
-	       session->eth[3], session->eth[4], session->eth[5],
-	       inet_ntoa(session->tunnel_endpoint.sin_addr));
-	session->pid = 0;
-	session->funcs = &L2TPSessionFunctionTable;
-	return;
+    if (session->flags & FLAG_ACT_AS_LAC)
+    {
+        LOGGER(LOG_INFO, "Session %u for client "
+               "%02x:%02x:%02x:%02x:%02x:%02x handed off to LNS %s",
+               (unsigned int) ntohs(session->sess),
+               session->eth[0], session->eth[1], session->eth[2],
+               session->eth[3], session->eth[4], session->eth[5],
+               inet_ntoa(session->tunnel_endpoint.sin_addr));
+        session->pid = 0;
+        session->funcs = &L2TPSessionFunctionTable;
+        return;
     }
 #endif
 
@@ -266,31 +272,36 @@ childHandler(pid_t pid, int status, void *s)
     conn.useHostUniq = 0;
 
     LOGGER(LOG_INFO,
-	   "Session %u closed for client "
-	   "%02x:%02x:%02x:%02x:%02x:%02x (%d.%d.%d.%d) on %s",
-	   (unsigned int) ntohs(session->sess),
-	   session->eth[0], session->eth[1], session->eth[2],
-	   session->eth[3], session->eth[4], session->eth[5],
-	   (int) session->realpeerip[0], (int) session->realpeerip[1],
-	   (int) session->realpeerip[2], (int) session->realpeerip[3],
-	   session->ethif->name);
+           "Session %u closed for client "
+           "%02x:%02x:%02x:%02x:%02x:%02x (%d.%d.%d.%d) on %s",
+           (unsigned int) ntohs(session->sess),
+           session->eth[0], session->eth[1], session->eth[2],
+           session->eth[3], session->eth[4], session->eth[5],
+           (int) session->realpeerip[0], (int) session->realpeerip[1],
+           (int) session->realpeerip[2], (int) session->realpeerip[3],
+           session->ethif->name);
     memcpy(conn.myEth, session->ethif->mac, ETH_ALEN);
     conn.discoverySocket = session->ethif->sock;
     conn.session = session->sess;
     memcpy(conn.peerEth, session->eth, ETH_ALEN);
-    if (!(session->flags & FLAG_SENT_PADT)) {
-	if (session->flags & FLAG_RECVD_PADT) {
-	    sendPADT(&conn, "RP-PPPoE: Received PADT from peer");
-	} else {
-	    sendPADT(&conn, "RP-PPPoE: Child pppd process terminated");
-	}
-	session->flags |= FLAG_SENT_PADT;
+    if (!(session->flags & FLAG_SENT_PADT))
+    {
+        if (session->flags & FLAG_RECVD_PADT)
+        {
+            sendPADT(&conn, "RP-PPPoE: Received PADT from peer");
+        }
+        else
+        {
+            sendPADT(&conn, "RP-PPPoE: Child pppd process terminated");
+        }
+        session->flags |= FLAG_SENT_PADT;
     }
 
     session->serviceName = "";
     control_session_terminated(session);
-    if (pppoe_free_session(session) < 0) {
-	return;
+    if (pppoe_free_session(session) < 0)
+    {
+        return;
     }
 
 }
@@ -308,14 +319,17 @@ static void
 incrementIPAddress(unsigned char ip[IPV4ALEN])
 {
     ip[3]++;
-    if (!ip[3]) {
-	ip[2]++;
-	if (!ip[2]) {
-	    ip[1]++;
-	    if (!ip[1]) {
-		ip[0]++;
-	    }
-	}
+    if (!ip[3])
+    {
+        ip[2]++;
+        if (!ip[2])
+        {
+            ip[1]++;
+            if (!ip[1])
+            {
+                ip[0]++;
+            }
+        }
     }
 }
 
@@ -332,9 +346,10 @@ void
 killAllSessions(void)
 {
     ClientSession *sess = BusySessions;
-    while(sess) {
-	sess->funcs->stop(sess, "Shutting Down");
-	sess = sess->next;
+    while(sess)
+    {
+        sess->funcs->stop(sess, "Shutting Down");
+        sess = sess->next;
     }
 #ifdef HAVE_L2TP
     pppoe_close_l2tp_tunnels();
@@ -360,81 +375,97 @@ parseAddressPool(char const *fname, int install)
     unsigned int e, f, g, h;
     char line[MAXLINE];
 
-    if (!fp) {
-	sysErr("Cannot open address pool file");
-	exit(1);
+    if (!fp)
+    {
+        sysErr("Cannot open address pool file");
+        exit(1);
     }
 
-    while (!feof(fp)) {
-	if (!fgets(line, MAXLINE, fp)) {
-	    break;
-	}
-	if ((sscanf(line, "%u.%u.%u.%u:%u.%u.%u.%u",
-		    &a, &b, &c, &d, &e, &f, &g, &h) == 8) &&
-	    a < 256 && b < 256 && c < 256 && d < 256 &&
-	    e < 256 && f < 256 && g < 256 && h < 256) {
+    while (!feof(fp))
+    {
+        if (!fgets(line, MAXLINE, fp))
+        {
+            break;
+        }
+        if ((sscanf(line, "%u.%u.%u.%u:%u.%u.%u.%u",
+                    &a, &b, &c, &d, &e, &f, &g, &h) == 8) &&
+                a < 256 && b < 256 && c < 256 && d < 256 &&
+                e < 256 && f < 256 && g < 256 && h < 256)
+        {
 
-	    /* Both specified (local:remote) */
-	    if (install) {
-		Sessions[numAddrs].myip[0] = (unsigned char) a;
-		Sessions[numAddrs].myip[1] = (unsigned char) b;
-		Sessions[numAddrs].myip[2] = (unsigned char) c;
-		Sessions[numAddrs].myip[3] = (unsigned char) d;
-		Sessions[numAddrs].peerip[0] = (unsigned char) e;
-		Sessions[numAddrs].peerip[1] = (unsigned char) f;
-		Sessions[numAddrs].peerip[2] = (unsigned char) g;
-		Sessions[numAddrs].peerip[3] = (unsigned char) h;
+            /* Both specified (local:remote) */
+            if (install)
+            {
+                Sessions[numAddrs].myip[0] = (unsigned char) a;
+                Sessions[numAddrs].myip[1] = (unsigned char) b;
+                Sessions[numAddrs].myip[2] = (unsigned char) c;
+                Sessions[numAddrs].myip[3] = (unsigned char) d;
+                Sessions[numAddrs].peerip[0] = (unsigned char) e;
+                Sessions[numAddrs].peerip[1] = (unsigned char) f;
+                Sessions[numAddrs].peerip[2] = (unsigned char) g;
+                Sessions[numAddrs].peerip[3] = (unsigned char) h;
 #ifdef HAVE_LICENSE
-		memcpy(Sessions[numAddrs].realpeerip,
-		       Sessions[numAddrs].peerip, IPV4ALEN);
+                memcpy(Sessions[numAddrs].realpeerip,
+                       Sessions[numAddrs].peerip, IPV4ALEN);
 #endif
-	    }
-	    numAddrs++;
-	} else if ((sscanf(line, "%u.%u.%u.%u-%u", &a, &b, &c, &d, &e) == 5) &&
-		   a < 256 && b < 256 && c < 256 && d < 256 && e < 256) {
-	    /* Remote specied as a.b.c.d-e.  Example: 1.2.3.4-8 yields:
-	       1.2.3.4, 1.2.3.5, 1.2.3.6, 1.2.3.7, 1.2.3.8 */
-	    /* Swap d and e so that e >= d */
-	    if (e < d) {
-		f = d;
-		d = e;
-		e = f;
-	    }
-	    if (install) {
-		while (d <= e) {
-		    Sessions[numAddrs].peerip[0] = (unsigned char) a;
-		    Sessions[numAddrs].peerip[1] = (unsigned char) b;
-		    Sessions[numAddrs].peerip[2] = (unsigned char) c;
-		    Sessions[numAddrs].peerip[3] = (unsigned char) d;
+            }
+            numAddrs++;
+        }
+        else if ((sscanf(line, "%u.%u.%u.%u-%u", &a, &b, &c, &d, &e) == 5) &&
+                 a < 256 && b < 256 && c < 256 && d < 256 && e < 256)
+        {
+            /* Remote specied as a.b.c.d-e.  Example: 1.2.3.4-8 yields:
+               1.2.3.4, 1.2.3.5, 1.2.3.6, 1.2.3.7, 1.2.3.8 */
+            /* Swap d and e so that e >= d */
+            if (e < d)
+            {
+                f = d;
+                d = e;
+                e = f;
+            }
+            if (install)
+            {
+                while (d <= e)
+                {
+                    Sessions[numAddrs].peerip[0] = (unsigned char) a;
+                    Sessions[numAddrs].peerip[1] = (unsigned char) b;
+                    Sessions[numAddrs].peerip[2] = (unsigned char) c;
+                    Sessions[numAddrs].peerip[3] = (unsigned char) d;
 #ifdef HAVE_LICENSE
-		    memcpy(Sessions[numAddrs].realpeerip,
-			   Sessions[numAddrs].peerip, IPV4ALEN);
+                    memcpy(Sessions[numAddrs].realpeerip,
+                           Sessions[numAddrs].peerip, IPV4ALEN);
 #endif
-		d++;
-		numAddrs++;
-		}
-	    } else {
-		numAddrs += (e-d) + 1;
-	    }
-	} else if ((sscanf(line, "%u.%u.%u.%u", &a, &b, &c, &d) == 4) &&
-		   a < 256 && b < 256 && c < 256 && d < 256) {
-	    /* Only remote specified */
-	    if (install) {
-		Sessions[numAddrs].peerip[0] = (unsigned char) a;
-		Sessions[numAddrs].peerip[1] = (unsigned char) b;
-		Sessions[numAddrs].peerip[2] = (unsigned char) c;
-		Sessions[numAddrs].peerip[3] = (unsigned char) d;
+                    d++;
+                    numAddrs++;
+                }
+            }
+            else
+            {
+                numAddrs += (e-d) + 1;
+            }
+        }
+        else if ((sscanf(line, "%u.%u.%u.%u", &a, &b, &c, &d) == 4) &&
+                 a < 256 && b < 256 && c < 256 && d < 256)
+        {
+            /* Only remote specified */
+            if (install)
+            {
+                Sessions[numAddrs].peerip[0] = (unsigned char) a;
+                Sessions[numAddrs].peerip[1] = (unsigned char) b;
+                Sessions[numAddrs].peerip[2] = (unsigned char) c;
+                Sessions[numAddrs].peerip[3] = (unsigned char) d;
 #ifdef HAVE_LICENSE
-		memcpy(Sessions[numAddrs].realpeerip,
-		       Sessions[numAddrs].peerip, IPV4ALEN);
+                memcpy(Sessions[numAddrs].realpeerip,
+                       Sessions[numAddrs].peerip, IPV4ALEN);
 #endif
-	    }
-	    numAddrs++;
-	}
+            }
+            numAddrs++;
+        }
     }
     fclose(fp);
-    if (!numAddrs) {
-	rp_fatal("No valid ip addresses found in pool file");
+    if (!numAddrs)
+    {
+        rp_fatal("No valid ip addresses found in pool file");
     }
     return numAddrs;
 }
@@ -453,25 +484,26 @@ parseAddressPool(char const *fname, int install)
 ***********************************************************************/
 void
 parsePADITags(UINT16_t type, UINT16_t len, unsigned char *data,
-	      void *extra)
+              void *extra __attribute__((unused)))
 {
-    switch(type) {
+    switch(type)
+    {
     case TAG_SERVICE_NAME:
-	/* Copy requested service name */
-	requestedService.type = htons(type);
-	requestedService.length = htons(len);
-	memcpy(requestedService.payload, data, len);
-	break;
+        /* Copy requested service name */
+        requestedService.type = htons(type);
+        requestedService.length = htons(len);
+        memcpy(requestedService.payload, data, len);
+        break;
     case TAG_RELAY_SESSION_ID:
-	relayId.type = htons(type);
-	relayId.length = htons(len);
-	memcpy(relayId.payload, data, len);
-	break;
+        relayId.type = htons(type);
+        relayId.length = htons(len);
+        memcpy(relayId.payload, data, len);
+        break;
     case TAG_HOST_UNIQ:
-	hostUniq.type = htons(type);
-	hostUniq.length = htons(len);
-	memcpy(hostUniq.payload, data, len);
-	break;
+        hostUniq.type = htons(type);
+        hostUniq.length = htons(len);
+        memcpy(hostUniq.payload, data, len);
+        break;
     }
 }
 
@@ -489,32 +521,34 @@ parsePADITags(UINT16_t type, UINT16_t len, unsigned char *data,
 ***********************************************************************/
 void
 parsePADRTags(UINT16_t type, UINT16_t len, unsigned char *data,
-	      void *extra)
+              void *extra __attribute__((unused)))
 {
-    switch(type) {
+    switch(type)
+    {
     case TAG_RELAY_SESSION_ID:
-	relayId.type = htons(type);
-	relayId.length = htons(len);
-	memcpy(relayId.payload, data, len);
-	break;
+        relayId.type = htons(type);
+        relayId.length = htons(len);
+        memcpy(relayId.payload, data, len);
+        break;
     case TAG_HOST_UNIQ:
-	hostUniq.type = htons(type);
-	hostUniq.length = htons(len);
-	memcpy(hostUniq.payload, data, len);
-	break;
+        hostUniq.type = htons(type);
+        hostUniq.length = htons(len);
+        memcpy(hostUniq.payload, data, len);
+        break;
     case TAG_AC_COOKIE:
-	receivedCookie.type = htons(type);
-	receivedCookie.length = htons(len);
-	memcpy(receivedCookie.payload, data, len);
-	break;
+        receivedCookie.type = htons(type);
+        receivedCookie.length = htons(len);
+        memcpy(receivedCookie.payload, data, len);
+        break;
     case TAG_SERVICE_NAME:
-	requestedService.type = htons(type);
-	requestedService.length = htons(len);
-	memcpy(requestedService.payload, data, len);
-	break;
+        requestedService.type = htons(type);
+        requestedService.length = htons(len);
+        memcpy(requestedService.payload, data, len);
+        break;
 #ifdef SUPPORT_RFC4938
     case TAG_CREDITS:
-        if (EnableRfc4938FlowControl) {
+        if (EnableRfc4938FlowControl)
+        {
             requestedFlowControl.type = htons(type);
             requestedFlowControl.length = htons(len);
             memcpy(requestedFlowControl.payload, data, len);
@@ -594,9 +628,9 @@ rp_fatal(char const *str)
 ***********************************************************************/
 void
 genCookie(unsigned char const *peerEthAddr,
-	  unsigned char const *myEthAddr,
-	  unsigned char const *seed,
-	  unsigned char *cookie)
+          unsigned char const *myEthAddr,
+          unsigned char const *seed,
+          unsigned char *cookie)
 {
     struct MD5Context ctx;
     pid_t pid = getpid();
@@ -621,7 +655,7 @@ genCookie(unsigned char const *peerEthAddr,
 * Sends a PADO packet back to client
 ***********************************************************************/
 void
-processPADI(Interface *ethif, PPPoEPacket *packet, int len)
+processPADI(Interface *ethif, PPPoEPacket *packet, int len __attribute__((unused)))
 {
     PPPoEPacket pado;
     PPPoETag acname;
@@ -632,30 +666,32 @@ processPADI(Interface *ethif, PPPoEPacket *packet, int len)
     UINT16_t plen;
 
     int sock = ethif->sock;
-    int i;
     int ok = 0;
     unsigned char *myAddr = ethif->mac;
 
     /* Ignore PADI's which don't come from a unicast address */
-    if (NOT_UNICAST(packet->ethHdr.h_source)) {
-	LOGGER(LOG_ERR, "PADI packet from non-unicast source address");
-	return;
+    if (NOT_UNICAST(packet->ethHdr.h_source))
+    {
+        LOGGER(LOG_ERR, "PADI packet from non-unicast source address");
+        return;
     }
 
     /* If number of sessions per MAC is limited, check here and don't
        send PADO if already max number of sessions. */
-    if (MaxSessionsPerMac) {
-	if (count_sessions_from_mac(packet->ethHdr.h_source) >= MaxSessionsPerMac) {
-	    LOGGER(LOG_INFO, "PADI: Client %02x:%02x:%02x:%02x:%02x:%02x attempted to create more than %d session(s)",
-		   packet->ethHdr.h_source[0],
-		   packet->ethHdr.h_source[1],
-		   packet->ethHdr.h_source[2],
-		   packet->ethHdr.h_source[3],
-		   packet->ethHdr.h_source[4],
-		   packet->ethHdr.h_source[5],
-		   MaxSessionsPerMac);
-	    return;
-	}
+    if (MaxSessionsPerMac)
+    {
+        if (count_sessions_from_mac(packet->ethHdr.h_source) >= MaxSessionsPerMac)
+        {
+            LOGGER(LOG_INFO, "PADI: Client %02x:%02x:%02x:%02x:%02x:%02x attempted to create more than %d session(s)",
+                   packet->ethHdr.h_source[0],
+                   packet->ethHdr.h_source[1],
+                   packet->ethHdr.h_source[2],
+                   packet->ethHdr.h_source[3],
+                   packet->ethHdr.h_source[4],
+                   packet->ethHdr.h_source[5],
+                   MaxSessionsPerMac);
+            return;
+        }
     }
 
     acname.type = htons(TAG_AC_NAME);
@@ -670,26 +706,34 @@ processPADI(Interface *ethif, PPPoEPacket *packet, int len)
 
     /* If PADI specified non-default service name, and we do not offer
        that service, DO NOT send PADO */
-    if (requestedService.type) {
-	int slen = ntohs(requestedService.length);
-	if (slen) {
-	    for (i=0; i<NumServiceNames; i++) {
-		if (slen == strlen(ServiceNames[i]) &&
-		    !memcmp(ServiceNames[i], &requestedService.payload, slen)) {
-		    ok = 1;
-		    break;
-		}
-	    }
-	} else {
-	    ok = 1;		/* Default service requested */
-	}
-    } else {
-	ok = 1;			/* No Service-Name tag in PADI */
+    if (requestedService.type)
+    {
+        unsigned slen = ntohs(requestedService.length);
+        if (slen)
+        {
+            for (int i =0; i<NumServiceNames; i++)
+            {
+                if (slen == strlen(ServiceNames[i]) && !memcmp(ServiceNames[i], &requestedService.payload, slen))
+                {
+                    ok = 1;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            ok = 1;     /* Default service requested */
+        }
+    }
+    else
+    {
+        ok = 1;         /* No Service-Name tag in PADI */
     }
 
-    if (!ok) {
-	/* PADI asked for unsupported service */
-	return;
+    if (!ok)
+    {
+        /* PADI asked for unsupported service */
+        return;
     }
 
     /* Generate a cookie */
@@ -714,35 +758,42 @@ processPADI(Interface *ethif, PPPoEPacket *packet, int len)
     /* If no service-names specified on command-line, just send default
        zero-length name.  Otherwise, add all service-name tags */
     servname.type = htons(TAG_SERVICE_NAME);
-    if (!NumServiceNames) {
-	servname.length = 0;
-	CHECK_ROOM(cursor, pado.payload, TAG_HDR_SIZE);
-	memcpy(cursor, &servname, TAG_HDR_SIZE);
-	cursor += TAG_HDR_SIZE;
-	plen += TAG_HDR_SIZE;
-    } else {
-	int slen;
-	for (i=0; i<NumServiceNames; i++) {
-		// bcheng 08/20/09 - Temporary HACK - HNRBPU won't send AC-Cookie
-		// 	if too many service names are sent, so our PADO
-		//	will only send the Service name that was requested as 1 TAG
-	    // int slen = strlen(ServiceNames[i]);
-		slen = ntohs(requestedService.length);
-		if (slen) {
-	    	for (i=0; i<NumServiceNames; i++) {
-			if (slen == strlen(ServiceNames[i]) &&
-		    	!memcmp(ServiceNames[i], &requestedService.payload, slen)) {
+    if (!NumServiceNames)
+    {
+        servname.length = 0;
+        CHECK_ROOM(cursor, pado.payload, TAG_HDR_SIZE);
+        memcpy(cursor, &servname, TAG_HDR_SIZE);
+        cursor += TAG_HDR_SIZE;
+        plen += TAG_HDR_SIZE;
+    }
+    else
+    {
+        unsigned slen;
+        for (int i =0; i<NumServiceNames; i++)
+        {
+            // bcheng 08/20/09 - Temporary HACK - HNRBPU won't send AC-Cookie
+            //  if too many service names are sent, so our PADO
+            //  will only send the Service name that was requested as 1 TAG
+            // int slen = strlen(ServiceNames[i]);
+            slen = ntohs(requestedService.length);
+            if (slen)
+            {
+                for (i=0; i<NumServiceNames; i++)
+                {
+                    if (slen == strlen(ServiceNames[i]) &&
+                            !memcmp(ServiceNames[i], &requestedService.payload, slen))
+                    {
 
-	   			servname.length = htons(slen);
-	    		CHECK_ROOM(cursor, pado.payload, TAG_HDR_SIZE+slen);
-	    		memcpy(cursor, &servname, TAG_HDR_SIZE);
-	    		memcpy(cursor+TAG_HDR_SIZE, ServiceNames[i], slen);
-	    		cursor += TAG_HDR_SIZE+slen;
-	    		plen += TAG_HDR_SIZE+slen;
-			}
-			}
-		}
-	}
+                        servname.length = htons(slen);
+                        CHECK_ROOM(cursor, pado.payload, TAG_HDR_SIZE+slen);
+                        memcpy(cursor, &servname, TAG_HDR_SIZE);
+                        memcpy(cursor+TAG_HDR_SIZE, ServiceNames[i], slen);
+                        cursor += TAG_HDR_SIZE+slen;
+                        plen += TAG_HDR_SIZE+slen;
+                    }
+                }
+            }
+        }
     }
 
     CHECK_ROOM(cursor, pado.payload, TAG_HDR_SIZE + COOKIE_LEN);
@@ -750,17 +801,19 @@ processPADI(Interface *ethif, PPPoEPacket *packet, int len)
     cursor += TAG_HDR_SIZE + COOKIE_LEN;
     plen += TAG_HDR_SIZE + COOKIE_LEN;
 
-    if (relayId.type) {
-	CHECK_ROOM(cursor, pado.payload, ntohs(relayId.length) + TAG_HDR_SIZE);
-	memcpy(cursor, &relayId, ntohs(relayId.length) + TAG_HDR_SIZE);
-	cursor += ntohs(relayId.length) + TAG_HDR_SIZE;
-	plen += ntohs(relayId.length) + TAG_HDR_SIZE;
+    if (relayId.type)
+    {
+        CHECK_ROOM(cursor, pado.payload, ntohs(relayId.length) + TAG_HDR_SIZE);
+        memcpy(cursor, &relayId, ntohs(relayId.length) + TAG_HDR_SIZE);
+        cursor += ntohs(relayId.length) + TAG_HDR_SIZE;
+        plen += ntohs(relayId.length) + TAG_HDR_SIZE;
     }
-    if (hostUniq.type) {
-	CHECK_ROOM(cursor, pado.payload, ntohs(hostUniq.length)+TAG_HDR_SIZE);
-	memcpy(cursor, &hostUniq, ntohs(hostUniq.length) + TAG_HDR_SIZE);
-	cursor += ntohs(hostUniq.length) + TAG_HDR_SIZE;
-	plen += ntohs(hostUniq.length) + TAG_HDR_SIZE;
+    if (hostUniq.type)
+    {
+        CHECK_ROOM(cursor, pado.payload, ntohs(hostUniq.length)+TAG_HDR_SIZE);
+        memcpy(cursor, &hostUniq, ntohs(hostUniq.length) + TAG_HDR_SIZE);
+        cursor += ntohs(hostUniq.length) + TAG_HDR_SIZE;
+        plen += ntohs(hostUniq.length) + TAG_HDR_SIZE;
     }
     pado.length = htons(plen);
     sendPacket(NULL, sock, &pado, (int) (plen + HDR_SIZE));
@@ -778,48 +831,56 @@ processPADI(Interface *ethif, PPPoEPacket *packet, int len)
 * Kills session whose session-ID is in PADT packet.
 ***********************************************************************/
 void
-processPADT(Interface *ethif, PPPoEPacket *packet, int len)
+processPADT(Interface *ethif, PPPoEPacket *packet, int len __attribute__((unused)))
 {
-    size_t i;
+    size_t ui;
 
     unsigned char *myAddr = ethif->mac;
 
     /* Ignore PADT's not directed at us */
-    if (memcmp(packet->ethHdr.h_dest, myAddr, ETH_ALEN)) return;
+    if (memcmp(packet->ethHdr.h_dest, myAddr, ETH_ALEN))
+    {
+        return;
+    }
 
     /* Get session's index */
-    i = ntohs(packet->session) - 1 - SessOffset;
-    if (i >= NumSessionSlots) return;
-    if (Sessions[i].sess != packet->session) {
-	LOGGER(LOG_ERR, "Session index %u doesn't match session number %u",
-	       (unsigned int) i, (unsigned int) ntohs(packet->session));
-	return;
+    ui = ntohs(packet->session) - 1 - SessOffset;
+    if (ui >= NumSessionSlots)
+    {
+        return;
+    }
+    if (Sessions[ui].sess != packet->session)
+    {
+        LOGGER(LOG_ERR, "Session index %u doesn't match session number %u",
+               (unsigned int) ui, (unsigned int) ntohs(packet->session));
+        return;
     }
 
 
     /* If source MAC does not match, do not kill session */
-    if (memcmp(packet->ethHdr.h_source, Sessions[i].eth, ETH_ALEN)) {
-	LOGGER(LOG_WARNING, "PADT for session %u received from "
-	       "%02X:%02X:%02X:%02X:%02X:%02X; should be from "
-	       "%02X:%02X:%02X:%02X:%02X:%02X",
-	       (unsigned int) ntohs(packet->session),
-	       packet->ethHdr.h_source[0],
-	       packet->ethHdr.h_source[1],
-	       packet->ethHdr.h_source[2],
-	       packet->ethHdr.h_source[3],
-	       packet->ethHdr.h_source[4],
-	       packet->ethHdr.h_source[5],
-	       Sessions[i].eth[0],
-	       Sessions[i].eth[1],
-	       Sessions[i].eth[2],
-	       Sessions[i].eth[3],
-	       Sessions[i].eth[4],
-	       Sessions[i].eth[5]);
-	return;
+    if (memcmp(packet->ethHdr.h_source, Sessions[ui].eth, ETH_ALEN))
+    {
+        LOGGER(LOG_WARNING, "PADT for session %u received from "
+               "%02X:%02X:%02X:%02X:%02X:%02X; should be from "
+               "%02X:%02X:%02X:%02X:%02X:%02X",
+               (unsigned int) ntohs(packet->session),
+               packet->ethHdr.h_source[0],
+               packet->ethHdr.h_source[1],
+               packet->ethHdr.h_source[2],
+               packet->ethHdr.h_source[3],
+               packet->ethHdr.h_source[4],
+               packet->ethHdr.h_source[5],
+               Sessions[ui].eth[0],
+               Sessions[ui].eth[1],
+               Sessions[ui].eth[2],
+               Sessions[ui].eth[3],
+               Sessions[ui].eth[4],
+               Sessions[ui].eth[5]);
+        return;
     }
-    Sessions[i].flags |= FLAG_RECVD_PADT;
+    Sessions[ui].flags |= FLAG_RECVD_PADT;
     parsePacket(packet, parseLogErrs, NULL);
-    Sessions[i].funcs->stop(&Sessions[i], "Received PADT");
+    Sessions[ui].funcs->stop(&Sessions[ui], "Received PADT");
 }
 
 /**********************************************************************
@@ -835,7 +896,7 @@ processPADT(Interface *ethif, PPPoEPacket *packet, int len)
 * packet is OK.
 ***********************************************************************/
 void
-processPADR(Interface *ethif, PPPoEPacket *packet, int len)
+processPADR(Interface *ethif, PPPoEPacket *packet, int len __attribute__((unused)))
 {
     unsigned char cookieBuffer[COOKIE_LEN];
     ClientSession *cliSession;
@@ -843,10 +904,9 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len)
     PPPoEPacket pads;
     unsigned char *cursor = pads.payload;
     UINT16_t plen;
-    int i;
     int sock = ethif->sock;
     unsigned char *myAddr = ethif->mac;
-    int slen = 0;
+    unsigned slen = 0;
     char const *serviceName = NULL;
 
 #ifdef HAVE_LICENSE
@@ -863,122 +923,141 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len)
 #endif
 
     /* Ignore PADR's not directed at us */
-    if (memcmp(packet->ethHdr.h_dest, myAddr, ETH_ALEN)) return;
+    if (memcmp(packet->ethHdr.h_dest, myAddr, ETH_ALEN))
+    {
+        return;
+    }
 
     /* Ignore PADR's from non-unicast addresses */
-    if (NOT_UNICAST(packet->ethHdr.h_source)) {
-	LOGGER(LOG_ERR, "PADR packet from non-unicast source address");
-	return;
+    if (NOT_UNICAST(packet->ethHdr.h_source))
+    {
+        LOGGER(LOG_ERR, "PADR packet from non-unicast source address");
+        return;
     }
 
     /* If number of sessions per MAC is limited, check here and don't
        send PADS if already max number of sessions. */
-    if (MaxSessionsPerMac) {
-	if (count_sessions_from_mac(packet->ethHdr.h_source) >= MaxSessionsPerMac) {
-	    LOGGER(LOG_INFO, "PADR: Client %02x:%02x:%02x:%02x:%02x:%02x attempted to create more than %d session(s)",
-		   packet->ethHdr.h_source[0],
-		   packet->ethHdr.h_source[1],
-		   packet->ethHdr.h_source[2],
-		   packet->ethHdr.h_source[3],
-		   packet->ethHdr.h_source[4],
-		   packet->ethHdr.h_source[5],
-		   MaxSessionsPerMac);
-	    return;
-	}
+    if (MaxSessionsPerMac)
+    {
+        if (count_sessions_from_mac(packet->ethHdr.h_source) >= MaxSessionsPerMac)
+        {
+            LOGGER(LOG_INFO, "PADR: Client %02x:%02x:%02x:%02x:%02x:%02x attempted to create more than %d session(s)",
+                   packet->ethHdr.h_source[0],
+                   packet->ethHdr.h_source[1],
+                   packet->ethHdr.h_source[2],
+                   packet->ethHdr.h_source[3],
+                   packet->ethHdr.h_source[4],
+                   packet->ethHdr.h_source[5],
+                   MaxSessionsPerMac);
+            return;
+        }
     }
     parsePacket(packet, parsePADRTags, NULL);
 
     /* Check that everything's cool */
-    if (!receivedCookie.type) {
-	/* Drop it -- do not send error PADS */
-	return;
+    if (!receivedCookie.type)
+    {
+        /* Drop it -- do not send error PADS */
+        return;
     }
 
     /* Is cookie kosher? */
-    if (receivedCookie.length != htons(COOKIE_LEN)) {
-	/* Drop it -- do not send error PADS */
-	return;
+    if (receivedCookie.length != htons(COOKIE_LEN))
+    {
+        /* Drop it -- do not send error PADS */
+        return;
     }
 
     genCookie(packet->ethHdr.h_source, myAddr, CookieSeed, cookieBuffer);
 
-    if (memcmp(receivedCookie.payload, cookieBuffer, COOKIE_LEN)) {
-	/* Drop it -- do not send error PADS */
-	return;
+    if (memcmp(receivedCookie.payload, cookieBuffer, COOKIE_LEN))
+    {
+        /* Drop it -- do not send error PADS */
+        return;
     }
 
 
     /* Check service name */
-    if (!requestedService.type) {
-	LOGGER(LOG_ERR, "Received PADR packet with no SERVICE_NAME tag");
-	sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
-		      TAG_SERVICE_NAME_ERROR, "RP-PPPoE: Server: No service name tag");
-	return;
+    if (!requestedService.type)
+    {
+        LOGGER(LOG_ERR, "Received PADR packet with no SERVICE_NAME tag");
+        sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
+                      TAG_SERVICE_NAME_ERROR, "RP-PPPoE: Server: No service name tag");
+        return;
     }
 
 
     slen = ntohs(requestedService.length);
-    if (slen) {
-	/* Check supported services */
-	for(i=0; i<NumServiceNames; i++) {
-	    if (slen == strlen(ServiceNames[i]) &&
-		!memcmp(ServiceNames[i], &requestedService.payload, slen)) {
-		serviceName = ServiceNames[i];
-		break;
-	    }
-	}
+    if (slen)
+    {
+        /* Check supported services */
+        for(int i =0; i<NumServiceNames; i++)
+        {
+            if (slen == strlen(ServiceNames[i]) &&
+                    !memcmp(ServiceNames[i], &requestedService.payload, slen))
+            {
+                serviceName = ServiceNames[i];
+                break;
+            }
+        }
 
-	if (!serviceName) {
-	    LOGGER(LOG_ERR, "Received PADR packet asking for unsupported service %.*s", (int) ntohs(requestedService.length), requestedService.payload);
-	    sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
-			  TAG_SERVICE_NAME_ERROR, "RP-PPPoE: Server: Invalid service name tag");
-	    return;
-	}
-    } else {
-	serviceName = "";
+        if (!serviceName)
+        {
+            LOGGER(LOG_ERR, "Received PADR packet asking for unsupported service %.*s", (int) ntohs(requestedService.length), requestedService.payload);
+            sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
+                          TAG_SERVICE_NAME_ERROR, "RP-PPPoE: Server: Invalid service name tag");
+            return;
+        }
+    }
+    else
+    {
+        serviceName = "";
     }
 
 
 #ifdef HAVE_LICENSE
     /* Are we licensed for this many sessions? */
-    if (License_NumLicenses("PPPOE-SESSIONS") <= NumActiveSessions) {
-	LOGGER(LOG_ERR, "Insufficient session licenses (%02x:%02x:%02x:%02x:%02x:%02x)",
-	       (unsigned int) packet->ethHdr.h_source[0],
-	       (unsigned int) packet->ethHdr.h_source[1],
-	       (unsigned int) packet->ethHdr.h_source[2],
-	       (unsigned int) packet->ethHdr.h_source[3],
-	       (unsigned int) packet->ethHdr.h_source[4],
-	       (unsigned int) packet->ethHdr.h_source[5]);
-	sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
-		      TAG_AC_SYSTEM_ERROR, "RP-PPPoE: Server: No session licenses available");
-	return;
+    if (License_NumLicenses("PPPOE-SESSIONS") <= NumActiveSessions)
+    {
+        LOGGER(LOG_ERR, "Insufficient session licenses (%02x:%02x:%02x:%02x:%02x:%02x)",
+               (unsigned int) packet->ethHdr.h_source[0],
+               (unsigned int) packet->ethHdr.h_source[1],
+               (unsigned int) packet->ethHdr.h_source[2],
+               (unsigned int) packet->ethHdr.h_source[3],
+               (unsigned int) packet->ethHdr.h_source[4],
+               (unsigned int) packet->ethHdr.h_source[5]);
+        sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
+                      TAG_AC_SYSTEM_ERROR, "RP-PPPoE: Server: No session licenses available");
+        return;
     }
 #endif
     /* Enough free memory? */
 #ifdef HAVE_LICENSE
     freemem = getFreeMem();
-    if (freemem < MIN_FREE_MEMORY) {
-	LOGGER(LOG_WARNING,
-	       "Insufficient free memory to create session: Want %d, have %d",
-	       MIN_FREE_MEMORY, freemem);
-	sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
-		      TAG_AC_SYSTEM_ERROR, "RP-PPPoE: Insufficient free RAM");
-	return;
+    if (freemem < MIN_FREE_MEMORY)
+    {
+        LOGGER(LOG_WARNING,
+               "Insufficient free memory to create session: Want %d, have %d",
+               MIN_FREE_MEMORY, freemem);
+        sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
+                      TAG_AC_SYSTEM_ERROR, "RP-PPPoE: Insufficient free RAM");
+        return;
     }
 #endif
     /* Looks cool... find a slot for the session */
     cliSession = pppoe_alloc_session();
-    if (!cliSession) {
-	LOGGER(LOG_ERR, "No client slots available (%02x:%02x:%02x:%02x:%02x:%02x)",
-	       (unsigned int) packet->ethHdr.h_source[0],
-	       (unsigned int) packet->ethHdr.h_source[1],
-	       (unsigned int) packet->ethHdr.h_source[2],
-	       (unsigned int) packet->ethHdr.h_source[3],
-	       (unsigned int) packet->ethHdr.h_source[4],
-	       (unsigned int) packet->ethHdr.h_source[5]);
-	sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
-		      TAG_AC_SYSTEM_ERROR, "RP-PPPoE: Server: No client slots available");
-	return;
+    if (!cliSession)
+    {
+        LOGGER(LOG_ERR, "No client slots available (%02x:%02x:%02x:%02x:%02x:%02x)",
+               (unsigned int) packet->ethHdr.h_source[0],
+               (unsigned int) packet->ethHdr.h_source[1],
+               (unsigned int) packet->ethHdr.h_source[2],
+               (unsigned int) packet->ethHdr.h_source[3],
+               (unsigned int) packet->ethHdr.h_source[4],
+               (unsigned int) packet->ethHdr.h_source[5]);
+        sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
+                      TAG_AC_SYSTEM_ERROR, "RP-PPPoE: Server: No client slots available");
+        return;
     }
 
     /* Set up client session peer Ethernet address */
@@ -991,29 +1070,33 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len)
 
     /* Create child process, send PADS packet back */
     child = fork();
-    if (child < 0) {
-	sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
-		      TAG_AC_SYSTEM_ERROR, "RP-PPPoE: Server: Unable to start session process");
-	pppoe_free_session(cliSession);
-	return;
+    if (child < 0)
+    {
+        sendErrorPADS(sock, myAddr, packet->ethHdr.h_source,
+                      TAG_AC_SYSTEM_ERROR, "RP-PPPoE: Server: Unable to start session process");
+        pppoe_free_session(cliSession);
+        return;
     }
-    if (child != 0) {
-	/* In the parent process.  Mark pid in session slot */
-	cliSession->pid = child;
-	Event_HandleChildExit(event_selector, child,
-			      childHandler, cliSession);
-	control_session_started(cliSession);
-	return;
+    if (child != 0)
+    {
+        /* In the parent process.  Mark pid in session slot */
+        cliSession->pid = child;
+        Event_HandleChildExit(event_selector, child,
+                              childHandler, cliSession);
+        control_session_started(cliSession);
+        return;
     }
 
     /* In the child process.  */
 
     /* Close all file descriptors except for socket */
     closelog();
-    for (i=0; i<CLOSEFD; i++) {
-	if (i != sock) {
-	    close(i);
-	}
+    for (int i =0; i<CLOSEFD; i++)
+    {
+        if (i != sock)
+        {
+            close(i);
+        }
     }
 
 #ifdef HAVE_SYSLOG_H
@@ -1037,28 +1120,32 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len)
     /* Copy requested service name tag back in.  If requested-service name
        length is zero, and we have non-zero services, use first service-name
        as default */
-    if (!slen && NumServiceNames) {
-	slen = strlen(ServiceNames[0]);
-	memcpy(&requestedService.payload, ServiceNames[0], slen);
-	requestedService.length = htons(slen);
+    if (!slen && NumServiceNames)
+    {
+        slen = strlen(ServiceNames[0]);
+        memcpy(&requestedService.payload, ServiceNames[0], slen);
+        requestedService.length = htons(slen);
     }
     memcpy(cursor, &requestedService, TAG_HDR_SIZE+slen);
     cursor += TAG_HDR_SIZE+slen;
     plen += TAG_HDR_SIZE+slen;
 
-    if (relayId.type) {
-	memcpy(cursor, &relayId, ntohs(relayId.length) + TAG_HDR_SIZE);
-	cursor += ntohs(relayId.length) + TAG_HDR_SIZE;
-	plen += ntohs(relayId.length) + TAG_HDR_SIZE;
+    if (relayId.type)
+    {
+        memcpy(cursor, &relayId, ntohs(relayId.length) + TAG_HDR_SIZE);
+        cursor += ntohs(relayId.length) + TAG_HDR_SIZE;
+        plen += ntohs(relayId.length) + TAG_HDR_SIZE;
     }
-    if (hostUniq.type) {
-	memcpy(cursor, &hostUniq, ntohs(hostUniq.length) + TAG_HDR_SIZE);
-	cursor += ntohs(hostUniq.length) + TAG_HDR_SIZE;
-	plen += ntohs(hostUniq.length) + TAG_HDR_SIZE;
+    if (hostUniq.type)
+    {
+        memcpy(cursor, &hostUniq, ntohs(hostUniq.length) + TAG_HDR_SIZE);
+        cursor += ntohs(hostUniq.length) + TAG_HDR_SIZE;
+        plen += ntohs(hostUniq.length) + TAG_HDR_SIZE;
     }
 
 #ifdef SUPPORT_RFC4938
-    if (EnableRfc4938FlowControl && requestedFlowControl.type) {
+    if (EnableRfc4938FlowControl && requestedFlowControl.type)
+    {
         /* remember the amount given to us initially */
         cliSession->initialCredits = GET_FCN(requestedFlowControl.payload);
 
@@ -1068,7 +1155,7 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len)
         /* place the number of credits granted into the FCN field */
         SET_FCN(requestedFlowControl.payload, RFC_PEER_CREDITS);
         memcpy(cursor, &requestedFlowControl,
-          ntohs(requestedFlowControl.length) + TAG_HDR_SIZE);
+               ntohs(requestedFlowControl.length) + TAG_HDR_SIZE);
         cursor += ntohs(requestedFlowControl.length) + TAG_HDR_SIZE;
         plen += ntohs(requestedFlowControl.length) + TAG_HDR_SIZE;
     }
@@ -1098,25 +1185,33 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len)
 void
 forwardRfc4938Packet(Interface *ethif, PPPoEPacket *packet, int len)
 {
-    size_t i;
+    int i;
     struct sockaddr_in address;
 
     unsigned char *myAddr = ethif->mac;
 
     /* Ignore these if there isn't a socket to forward them through */
-    if (rfc4938Socket < 0) {
+    if (rfc4938Socket < 0)
+    {
         LOGGER(LOG_ERR, "Unable to forward PADC/G/Q to child (no socket)");
         return;
     }
 
     /* Ignore PADC/PADG/PADQ's not directed at us */
-    if (memcmp(packet->ethHdr.h_dest, myAddr, ETH_ALEN)) return;
+    if (memcmp(packet->ethHdr.h_dest, myAddr, ETH_ALEN))
+    {
+        return;
+    }
 
     /* Get session's index */
     i = ntohs(packet->session) - 1 - SessOffset;
-    if (i >= NumSessionSlots || i < 0) return;
+    if (i < 0 || (unsigned) i >= NumSessionSlots)
+    {
+        return;
+    }
 
-    if (Sessions[i].sess != packet->session) {
+    if (Sessions[i].sess != packet->session)
+    {
         LOGGER(LOG_ERR, "Session index %u doesn't match session number %u",
                (unsigned int) i, (unsigned int) ntohs(packet->session));
         return;
@@ -1127,7 +1222,8 @@ forwardRfc4938Packet(Interface *ethif, PPPoEPacket *packet, int len)
     address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
     if (sendto(rfc4938Socket, packet, len, 0, (struct sockaddr *) &address,
-               sizeof(struct sockaddr_in)) < 0) {
+               sizeof(struct sockaddr_in)) < 0)
+    {
         LOGGER(LOG_ERR, "sendto (forwardRfc4938Packet)");
         return;
     }
@@ -1147,8 +1243,8 @@ static void
 termHandler(int sig)
 {
     LOGGER(LOG_INFO,
-	   "Terminating on signal %d -- killing all PPPoE sessions",
-	   sig);
+           "Terminating on signal %d -- killing all PPPoE sessions",
+           sig);
     killAllSessions();
     control_exit();
     exit(0);
@@ -1172,7 +1268,7 @@ usage(char const *argv0)
     fprintf(stderr, "   -I if_name     -- Specify interface (REQUIRED)\n");
 #else
     fprintf(stderr, "   -I if_name     -- Specify interface (default %s.)\n",
-	    DEFAULT_IF);
+            DEFAULT_IF);
 #endif
     fprintf(stderr, "   -T timeout     -- Specify inactivity timeout in seconds.\n");
     fprintf(stderr, "   -C name        -- Set access concentrator name.\n");
@@ -1237,12 +1333,11 @@ main(int argc, char **argv)
 {
 
     FILE *fp;
-    int i, j;
     int opt;
     int d[IPV4ALEN];
     int beDaemon = 1;
     int found;
-    unsigned int discoveryType, sessionType;
+    unsigned int discoveryType, sessionType, ui;
     char *addressPoolFname = NULL;
 #ifdef HAVE_LICENSE
     int use_clustering = 0;
@@ -1250,28 +1345,24 @@ main(int argc, char **argv)
 
     char *options = "x:hI:C:L:R:T:m:FN:f:O:o:s:q:Q:D:"
 #ifdef HAVE_LICENSE
-        "c:1"
+                    "c:1"
 #endif
 #ifdef HAVE_LINUX_KERNEL_PPPOE
-        "k"
+                    "k"
 #endif
 #ifdef SUPPORT_RFC4938
-        "XU:ae"
+                    "XU:ae"
 #endif
-        "p:lrudPS:";
+                    "p:lrudPS:";
 
     if (getuid() != geteuid() ||
-	getgid() != getegid()) {
-	fprintf(stderr, "SECURITY WARNING: pppoe-server will NOT run suid or sgid.  Fix your installation.\n");
-	exit(1);
+            getgid() != getegid())
+    {
+        fprintf(stderr, "SECURITY WARNING: pppoe-server will NOT run suid or sgid.  Fix your installation.\n");
+        exit(1);
     }
 
     memset(interfaces, 0, sizeof(interfaces));
-
-#ifndef LOGGER
-    /* Initialize LOGGER */
-    openlog("pppoe-server", LOG_PID, LOG_DAEMON);
-#endif
 
     /* Default number of session slots */
     NumSessionSlots = DEFAULT_MAX_SESSIONS;
@@ -1279,34 +1370,39 @@ main(int argc, char **argv)
     NumActiveSessions = 0;
 
     /* Parse command-line options */
-    while((opt = getopt(argc, argv, options)) != -1) {
-	switch(opt) {
-	case 'x':
-	    if (sscanf(optarg, "%d", &MaxSessionsPerMac) != 1) {
-		usage(argv[0]);
-		exit(EXIT_FAILURE);
-	    }
-	    if (MaxSessionsPerMac < 0) {
-		MaxSessionsPerMac = 0;
-	    }
-	    break;
+    while((opt = getopt(argc, argv, options)) != -1)
+    {
+        switch(opt)
+        {
+        case 'x':
+            if (sscanf(optarg, "%d", &MaxSessionsPerMac) != 1)
+            {
+                usage(argv[0]);
+                exit(EXIT_FAILURE);
+            }
+            if (MaxSessionsPerMac < 0)
+            {
+                MaxSessionsPerMac = 0;
+            }
+            break;
 
 #ifdef HAVE_LINUX_KERNEL_PPPOE
-	case 'k':
-	    UseLinuxKernelModePPPoE = 1;
-	    break;
+        case 'k':
+            UseLinuxKernelModePPPoE = 1;
+            break;
 #endif
 #ifdef SUPPORT_RFC4938
         case 'U':
             if (sscanf(optarg, "%u", &Rfc4938FlowControlPort) != 1 ||
-                (Rfc4938FlowControlPort < 1 || Rfc4938FlowControlPort > 65535)){
+                    (Rfc4938FlowControlPort < 1 || Rfc4938FlowControlPort > 65535))
+            {
                 fprintf(stderr, "Illegal argument to -U: Should be integer "
-                                "in the range of 1-65535\n");
+                        "in the range of 1-65535\n");
                 exit(EXIT_FAILURE);
             }
             /* Fall through, -U implicitly enables flow control */
             break;
-            /* this has a non zero default value, do not fall thru */
+        /* this has a non zero default value, do not fall thru */
         case 'X':
             EnableRfc4938FlowControl = 1;
             break;
@@ -1314,215 +1410,239 @@ main(int argc, char **argv)
             /* don't perform in-band flow control, implies flow control */
             EnableRfc4938FlowControl = AvoidInBandRfc4938FlowControl = 1;
             break;
-    	case 'e':
-    	    EnableCVMI = 1;
-    	    break;
+        case 'e':
+            EnableCVMI = 1;
+            break;
 #endif
-	case 'S':
-	    if (NumServiceNames == MAX_SERVICE_NAMES) {
-		fprintf(stderr, "Too many '-S' options (%d max)",
-			MAX_SERVICE_NAMES);
-		exit(1);
-	    }
-	    ServiceNames[NumServiceNames] = strdup(optarg);
-	    if (!ServiceNames[NumServiceNames]) {
-		fprintf(stderr, "Out of memory");
-		exit(1);
-	    }
-	    NumServiceNames++;
-	    break;
-	case 'q':
-	    pppd_path = strdup(optarg);
-	    if (!pppd_path) {
-		fprintf(stderr, "Out of memory");
-		exit(1);
-	    }
-	    break;
-	case 'Q':
-	    pppoe_path = strdup(optarg);
-	    if (!pppoe_path) {
-		fprintf(stderr, "Out of memory");
-		exit(1);
-	    }
-	    break;
+        case 'S':
+            if (NumServiceNames == MAX_SERVICE_NAMES)
+            {
+                fprintf(stderr, "Too many '-S' options (%d max)",
+                        MAX_SERVICE_NAMES);
+                exit(1);
+            }
+            ServiceNames[NumServiceNames] = strdup(optarg);
+            if (!ServiceNames[NumServiceNames])
+            {
+                fprintf(stderr, "Out of memory");
+                exit(1);
+            }
+            NumServiceNames++;
+            break;
+        case 'q':
+            pppd_path = strdup(optarg);
+            if (!pppd_path)
+            {
+                fprintf(stderr, "Out of memory");
+                exit(1);
+            }
+            break;
+        case 'Q':
+            pppoe_path = strdup(optarg);
+            if (!pppoe_path)
+            {
+                fprintf(stderr, "Out of memory");
+                exit(1);
+            }
+            break;
 
-	case 'c':
+        case 'c':
 #ifndef HAVE_LICENSE
-	    fprintf(stderr, "Clustering capability not available.\n");
-	    exit(1);
+            fprintf(stderr, "Clustering capability not available.\n");
+            exit(1);
 #else
-	    cluster_handle_option(optarg);
-	    use_clustering = 1;
-	    break;
+            cluster_handle_option(optarg);
+            use_clustering = 1;
+            break;
 #endif
 
-	case 'd':
-	    Debug = 1;
-	    break;
-	case 'P':
-	    CheckPoolSyntax = 1;
-	    break;
-	case 'u':
-	    PassUnitOptionToPPPD = 1;
-	    break;
+        case 'd':
+            Debug = 1;
+            break;
+        case 'P':
+            CheckPoolSyntax = 1;
+            break;
+        case 'u':
+            PassUnitOptionToPPPD = 1;
+            break;
 
-	case 'r':
-	    RandomizeSessionNumbers = 1;
-	    break;
+        case 'r':
+            RandomizeSessionNumbers = 1;
+            break;
 
-	case 'l':
-	    IncrLocalIP = 1;
-	    break;
+        case 'l':
+            IncrLocalIP = 1;
+            break;
 
-	case 'p':
-	    SET_STRING(addressPoolFname, optarg);
-	    break;
+        case 'p':
+            SET_STRING(addressPoolFname, optarg);
+            break;
 
-	case 's':
-	    Synchronous = 1;
-	    /* Pass the Synchronous option on to pppoe */
-	    snprintf(PppoeOptions + strlen(PppoeOptions),
-		     SMALLBUF-strlen(PppoeOptions),
-		     " -s");
-	    break;
+        case 's':
+            Synchronous = 1;
+            /* Pass the Synchronous option on to pppoe */
+            snprintf(PppoeOptions + strlen(PppoeOptions),
+                     SMALLBUF-strlen(PppoeOptions),
+                     " -s");
+            break;
 
-	case 'f':
-	    if (sscanf(optarg, "%x:%x", &discoveryType, &sessionType) != 2) {
-		fprintf(stderr, "Illegal argument to -f: Should be disc:sess in hex\n");
-		exit(EXIT_FAILURE);
-	    }
-	    Eth_PPPOE_Discovery = (UINT16_t) discoveryType;
-	    Eth_PPPOE_Session   = (UINT16_t) sessionType;
-	    /* This option gets passed to pppoe */
-	    snprintf(PppoeOptions + strlen(PppoeOptions),
-		     SMALLBUF-strlen(PppoeOptions),
-		     " -%c %s", opt, optarg);
-	    break;
+        case 'f':
+            if (sscanf(optarg, "%x:%x", &discoveryType, &sessionType) != 2)
+            {
+                fprintf(stderr, "Illegal argument to -f: Should be disc:sess in hex\n");
+                exit(EXIT_FAILURE);
+            }
+            Eth_PPPOE_Discovery = (UINT16_t) discoveryType;
+            Eth_PPPOE_Session   = (UINT16_t) sessionType;
+            /* This option gets passed to pppoe */
+            snprintf(PppoeOptions + strlen(PppoeOptions),
+                     SMALLBUF-strlen(PppoeOptions),
+                     " -%c %s", opt, optarg);
+            break;
 
-	case 'F':
-	    beDaemon = 0;
-	    break;
+        case 'F':
+            beDaemon = 0;
+            break;
 
-	case 'N':
-	    if (sscanf(optarg, "%d", &opt) != 1) {
-		usage(argv[0]);
-		exit(EXIT_FAILURE);
-	    }
-	    if (opt <= 0) {
-		fprintf(stderr, "-N: Value must be positive\n");
-		exit(EXIT_FAILURE);
-	    }
-	    NumSessionSlots = opt;
-	    break;
+        case 'N':
+            if (sscanf(optarg, "%d", &opt) != 1)
+            {
+                usage(argv[0]);
+                exit(EXIT_FAILURE);
+            }
+            if (opt <= 0)
+            {
+                fprintf(stderr, "-N: Value must be positive\n");
+                exit(EXIT_FAILURE);
+            }
+            NumSessionSlots = opt;
+            break;
 
-	case 'O':
-	    SET_STRING(pppoptfile, optarg);
-	    break;
+        case 'O':
+            SET_STRING(pppoptfile, optarg);
+            break;
 
-	case 'o':
-	    if (sscanf(optarg, "%d", &opt) != 1) {
-		usage(argv[0]);
-		exit(EXIT_FAILURE);
-	    }
-	    if (opt < 0) {
-		fprintf(stderr, "-o: Value must be non-negative\n");
-		exit(EXIT_FAILURE);
-	    }
-	    SessOffset = (size_t) opt;
-	    break;
+        case 'o':
+            if (sscanf(optarg, "%d", &opt) != 1)
+            {
+                usage(argv[0]);
+                exit(EXIT_FAILURE);
+            }
+            if (opt < 0)
+            {
+                fprintf(stderr, "-o: Value must be non-negative\n");
+                exit(EXIT_FAILURE);
+            }
+            SessOffset = (size_t) opt;
+            break;
 
-	case 'I':
-	    if (NumInterfaces >= MAX_INTERFACES) {
-		fprintf(stderr, "Too many -I options (max %d)\n",
-			MAX_INTERFACES);
-		exit(EXIT_FAILURE);
-	    }
-	    found = 0;
-	    for (i=0; i<NumInterfaces; i++) {
-		if (!strncmp(interfaces[i].name, optarg, IFNAMSIZ)) {
-		    found = 1;
-		    break;
-		}
-	    }
-	    if (!found) {
-		strncpy(interfaces[NumInterfaces].name, optarg, IFNAMSIZ);
-		NumInterfaces++;
-	    }
-	    break;
+        case 'I':
+            if (NumInterfaces >= MAX_INTERFACES)
+            {
+                fprintf(stderr, "Too many -I options (max %d)\n",
+                        MAX_INTERFACES);
+                exit(EXIT_FAILURE);
+            }
+            found = 0;
+            for (int i =0; i<NumInterfaces; i++)
+            {
+                if (!strncmp(interfaces[i].name, optarg, IFNAMSIZ))
+                {
+                    found = 1;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                strncpy(interfaces[NumInterfaces].name, optarg, IFNAMSIZ);
+                NumInterfaces++;
+            }
+            break;
 
-	case 'C':
-	    SET_STRING(ACName, optarg);
-	    break;
+        case 'C':
+            SET_STRING(ACName, optarg);
+            break;
 
-	case 'L':
-	case 'R':
-	    /* Get local/remote IP address */
-	    if (sscanf(optarg, "%d.%d.%d.%d", &d[0], &d[1], &d[2], &d[3]) != 4) {
-		usage(argv[0]);
-		exit(EXIT_FAILURE);
-	    }
-	    for (i=0; i<IPV4ALEN; i++) {
-		if (d[i] < 0 || d[i] > 255) {
-		    usage(argv[0]);
-		    exit(EXIT_FAILURE);
-		}
-		if (opt == 'L') {
-		    LocalIP[i] = (unsigned char) d[i];
-		} else {
-		    RemoteIP[i] = (unsigned char) d[i];
-		}
-	    }
-	    break;
+        case 'L':
+        case 'R':
+            /* Get local/remote IP address */
+            if (sscanf(optarg, "%d.%d.%d.%d", &d[0], &d[1], &d[2], &d[3]) != 4)
+            {
+                usage(argv[0]);
+                exit(EXIT_FAILURE);
+            }
+            for (ui=0; ui<IPV4ALEN; ui++)
+            {
+                if (d[ui] < 0 || d[ui] > 255)
+                {
+                    usage(argv[0]);
+                    exit(EXIT_FAILURE);
+                }
+                if (opt == 'L')
+                {
+                    LocalIP[ui] = (unsigned char) d[ui];
+                }
+                else
+                {
+                    RemoteIP[ui] = (unsigned char) d[ui];
+                }
+            }
+            break;
 
-	case 'T':
-	case 'm':
-	    /* These just get passed to pppoe */
-	    snprintf(PppoeOptions + strlen(PppoeOptions),
-		     SMALLBUF-strlen(PppoeOptions),
-		     " -%c %s", opt, optarg);
-	    break;
+        case 'T':
+        case 'm':
+            /* These just get passed to pppoe */
+            snprintf(PppoeOptions + strlen(PppoeOptions),
+                     SMALLBUF-strlen(PppoeOptions),
+                     " -%c %s", opt, optarg);
+            break;
 
-	case 'D':
-          {
-            char lfp[256] = {0};
+        case 'D':
             log_path = strdup(optarg);
-            snprintf(lfp, sizeof(lfp), "%s/%s", log_path, "pppoe_server.log");
-           
-            if((LoggerFp = fopen(lfp, "w")) == NULL)
-              {
- 	       fprintf(stderr, "could not open server log file '%s', %s\n", lfp, strerror(errno));
- 	       exit(-1);
-              }
-          }
-          break;
+        break;
 
-	case 'h':
-	    usage(argv[0]);
-	    exit(EXIT_SUCCESS);
-	case '1':
+        case 'h':
+            usage(argv[0]);
+            exit(EXIT_SUCCESS);
+        case '1':
 #ifdef HAVE_LICENSE
-	    MaxSessionsPerUser = 1;
+            MaxSessionsPerUser = 1;
 #else
-	    fprintf(stderr, "-1 option not valid.\n");
-	    exit(1);
+            fprintf(stderr, "-1 option not valid.\n");
+            exit(1);
 #endif
-	    break;
-	}
+            break;
+        }
     }
 
-    if (!pppoptfile) {
-	pppoptfile = PPPOE_SERVER_OPTIONS;
+    if (!pppoptfile)
+    {
+        pppoptfile = PPPOE_SERVER_OPTIONS;
     }
+
+#ifndef LOGGER
+    /* Initialize LOGGER */
+    openlog("pppoe-server", LOG_PID, LOG_DAEMON);
+#else
+    char buff[256] = {0};
+    snprintf(buff, sizeof(buff), "%s/%s", log_path, "pppoe_server.log");
+
+    if((LoggerFp = fopen(buff, "w")) == NULL)
+     {
+       fprintf(stderr, "could not open server log file '%s', %s\n", buff, strerror(errno));
+     }
+#endif
 
 #ifdef HAVE_LICENSE
     License_SetVersion(SERVPOET_VERSION);
     License_ReadBundleFile("/etc/rp/bundle.txt");
     License_ReadFile("/etc/rp/license.txt");
     ServerLicense = License_GetFeature("PPPOE-SERVER");
-    if (!ServerLicense) {
-	fprintf(stderr, "License: GetFeature failed: %s\n",
-		License_ErrorMessage());
-	exit(1);
+    if (!ServerLicense)
+    {
+        fprintf(stderr, "License: GetFeature failed: %s\n",
+                License_ErrorMessage());
+        exit(1);
     }
 #endif
 
@@ -1533,143 +1653,171 @@ main(int argc, char **argv)
 #endif
 #endif
 
-    if (!NumInterfaces) {
-	strcpy(interfaces[0].name, DEFAULT_IF);
-	NumInterfaces = 1;
+    if (!NumInterfaces)
+    {
+        strcpy(interfaces[0].name, DEFAULT_IF);
+        NumInterfaces = 1;
     }
 
-    if (!ACName) {
-	ACName = malloc(HOSTNAMELEN);
-	if (gethostname(ACName, HOSTNAMELEN) < 0) {
-	    fatalSys("gethostname");
-	}
+    if (!ACName)
+    {
+        ACName = malloc(HOSTNAMELEN);
+        if (gethostname(ACName, HOSTNAMELEN) < 0)
+        {
+            fatalSys("gethostname");
+        }
     }
 
     /* If address pool filename given, count number of addresses */
-    if (addressPoolFname) {
-	NumSessionSlots = parseAddressPool(addressPoolFname, 0);
-	if (CheckPoolSyntax) {
-	    printf("%lu\n", (unsigned long) NumSessionSlots);
-	    exit(0);
-	}
+    if (addressPoolFname)
+    {
+        NumSessionSlots = parseAddressPool(addressPoolFname, 0);
+        if (CheckPoolSyntax)
+        {
+            printf("%lu\n", (unsigned long) NumSessionSlots);
+            exit(0);
+        }
     }
 
     /* Max 65534 - SessOffset sessions */
-    if (NumSessionSlots + SessOffset > 65534) {
-	fprintf(stderr, "-N and -o options must add up to at most 65534\n");
-	exit(EXIT_FAILURE);
+    if (NumSessionSlots + SessOffset > 65534)
+    {
+        fprintf(stderr, "-N and -o options must add up to at most 65534\n");
+        exit(EXIT_FAILURE);
     }
 
     /* Allocate memory for sessions */
     Sessions = calloc(NumSessionSlots, sizeof(ClientSession));
-    if (!Sessions) {
-	rp_fatal("Cannot allocate memory for session slots");
+    if (!Sessions)
+    {
+        rp_fatal("Cannot allocate memory for session slots");
     }
 
     /* Fill in local addresses first (let pool file override later */
-    for (i=0; i<NumSessionSlots; i++) {
-	memcpy(Sessions[i].myip, LocalIP, sizeof(LocalIP));
-	if (IncrLocalIP) {
-	    incrementIPAddress(LocalIP);
-	}
+    for (ui=0; ui<NumSessionSlots; ui++)
+    {
+        memcpy(Sessions[ui].myip, LocalIP, sizeof(LocalIP));
+        if (IncrLocalIP)
+        {
+            incrementIPAddress(LocalIP);
+        }
     }
 
     /* Fill in remote IP addresses from pool (may also overwrite local ips) */
-    if (addressPoolFname) {
-	(void) parseAddressPool(addressPoolFname, 1);
+    if (addressPoolFname)
+    {
+        (void) parseAddressPool(addressPoolFname, 1);
     }
 
     /* For testing -- generate sequential remote IP addresses */
-    for (i=0; i<NumSessionSlots; i++) {
-	Sessions[i].pid = 0;
-	Sessions[i].funcs = &DefaultSessionFunctionTable;
-	Sessions[i].sess = htons(i+1+SessOffset);
+    for (ui=0; ui<NumSessionSlots; ui++)
+    {
+        Sessions[ui].pid = 0;
+        Sessions[ui].funcs = &DefaultSessionFunctionTable;
+        Sessions[ui].sess = htons(ui+1+SessOffset);
 #ifdef SUPPORT_RFC4938
-        Sessions[i].port = (UINT16_t) ((Rfc4938FlowControlPort+i+1) & 0xFFFF);
+        Sessions[ui].port = (UINT16_t) ((Rfc4938FlowControlPort+ui+1) & 0xFFFF);
 #endif
 
-	if (!addressPoolFname) {
-	    memcpy(Sessions[i].peerip, RemoteIP, sizeof(RemoteIP));
+        if (!addressPoolFname)
+        {
+            memcpy(Sessions[ui].peerip, RemoteIP, sizeof(RemoteIP));
 #ifdef HAVE_LICENSE
-	    memcpy(Sessions[i].realpeerip, RemoteIP, sizeof(RemoteIP));
+            memcpy(Sessions[ui].realpeerip, RemoteIP, sizeof(RemoteIP));
 #endif
-	    incrementIPAddress(RemoteIP);
-	}
+            incrementIPAddress(RemoteIP);
+        }
     }
 
     /* Initialize our random cookie.  Try /dev/urandom; if that fails,
        use PID and rand() */
     fp = fopen("/dev/urandom", "r");
-    if (fp) {
-	unsigned int x;
-	fread(&x, 1, sizeof(x), fp);
-	srand(x);
-	fread(&CookieSeed, 1, SEED_LEN, fp);
-	fclose(fp);
-    } else {
-	srand((unsigned int) getpid() * (unsigned int) time(NULL));
-	CookieSeed[0] = getpid() & 0xFF;
-	CookieSeed[1] = (getpid() >> 8) & 0xFF;
-	for (i=2; i<SEED_LEN; i++) {
-	    CookieSeed[i] = (rand() >> (i % 9)) & 0xFF;
-	}
+    if (fp)
+    {
+        unsigned int x;
+        fread(&x, 1, sizeof(x), fp);
+        srand(x);
+        fread(&CookieSeed, 1, SEED_LEN, fp);
+        fclose(fp);
+    }
+    else
+    {
+        srand((unsigned int) getpid() * (unsigned int) time(NULL));
+        CookieSeed[0] = getpid() & 0xFF;
+        CookieSeed[1] = (getpid() >> 8) & 0xFF;
+        for (ui=2; ui<SEED_LEN; ui++)
+        {
+            CookieSeed[ui] = (rand() >> (ui % 9)) & 0xFF;
+        }
     }
 
-    if (RandomizeSessionNumbers) {
-	int *permutation;
-	int tmp;
-	permutation = malloc(sizeof(int) * NumSessionSlots);
-	if (!permutation) {
-	    fprintf(stderr, "Could not allocate memory to randomize session numbers\n");
-	    exit(EXIT_FAILURE);
-	}
-	for (i=0; i<NumSessionSlots; i++) {
-	    permutation[i] = i;
-	}
-	for (i=0; i<NumSessionSlots-1; i++) {
-	    j = i + rand() % (NumSessionSlots - i);
-	    if (j != i) {
-		tmp = permutation[j];
-		permutation[j] = permutation[i];
-		permutation[i] = tmp;
-	    }
-	}
-	/* Link sessions together */
-	FreeSessions = &Sessions[permutation[0]];
-	LastFreeSession = &Sessions[permutation[NumSessionSlots-1]];
-	for (i=0; i<NumSessionSlots-1; i++) {
-	    Sessions[permutation[i]].next = &Sessions[permutation[i+1]];
-	}
-	Sessions[permutation[NumSessionSlots-1]].next = NULL;
-	free(permutation);
-    } else {
-	/* Link sessions together */
-	FreeSessions = &Sessions[0];
-	LastFreeSession = &Sessions[NumSessionSlots - 1];
-	for (i=0; i<NumSessionSlots-1; i++) {
-	    Sessions[i].next = &Sessions[i+1];
-	}
-	Sessions[NumSessionSlots-1].next = NULL;
+    if (RandomizeSessionNumbers)
+    {
+        int *permutation;
+        int tmp;
+        permutation = malloc(sizeof(int) * NumSessionSlots);
+        if (!permutation)
+        {
+            fprintf(stderr, "Could not allocate memory to randomize session numbers\n");
+            exit(EXIT_FAILURE);
+        }
+        for (ui =0; ui<NumSessionSlots; ui++)
+        {
+            permutation[ui] = ui;
+        }
+        for (ui=0; ui<NumSessionSlots-1; ui++)
+        {
+            unsigned uj = ui + rand() % (NumSessionSlots - ui);
+            if (uj != ui)
+            {
+                tmp = permutation[uj];
+                permutation[uj] = permutation[ui];
+                permutation[ui] = tmp;
+            }
+        }
+        /* Link sessions together */
+        FreeSessions = &Sessions[permutation[0]];
+        LastFreeSession = &Sessions[permutation[NumSessionSlots-1]];
+        for (ui =0; ui<NumSessionSlots-1; ui++)
+        {
+            Sessions[permutation[ui]].next = &Sessions[permutation[ui+1]];
+        }
+        Sessions[permutation[NumSessionSlots-1]].next = NULL;
+        free(permutation);
+    }
+    else
+    {
+        /* Link sessions together */
+        FreeSessions = &Sessions[0];
+        LastFreeSession = &Sessions[NumSessionSlots - 1];
+        for (ui =0; ui<NumSessionSlots-1; ui++)
+        {
+            Sessions[ui].next = &Sessions[ui+1];
+        }
+        Sessions[NumSessionSlots-1].next = NULL;
     }
 
-    if (Debug) {
-	/* Dump session array and exit */
-	ClientSession *ses = FreeSessions;
-	while(ses) {
-	    printf("Session %u local %d.%d.%d.%d remote %d.%d.%d.%d\n",
-		   (unsigned int) (ntohs(ses->sess)),
-		   ses->myip[0], ses->myip[1],
-		   ses->myip[2], ses->myip[3],
-		   ses->peerip[0], ses->peerip[1],
-		   ses->peerip[2], ses->peerip[3]);
-	    ses = ses->next;
-	}
-	exit(0);
+    if (Debug)
+    {
+        /* Dump session array and exit */
+        ClientSession *ses = FreeSessions;
+        while(ses)
+        {
+            printf("Session %u local %d.%d.%d.%d remote %d.%d.%d.%d\n",
+                   (unsigned int) (ntohs(ses->sess)),
+                   ses->myip[0], ses->myip[1],
+                   ses->myip[2], ses->myip[3],
+                   ses->peerip[0], ses->peerip[1],
+                   ses->peerip[2], ses->peerip[3]);
+            ses = ses->next;
+        }
+        exit(0);
     }
 
     /* Open all the interfaces */
-    for (i=0; i<NumInterfaces; i++) {
-	interfaces[i].sock = openInterface(interfaces[i].name, Eth_PPPOE_Discovery, interfaces[i].mac);
+    for (int i =0; i<NumInterfaces; i++)
+    {
+        interfaces[i].sock = openInterface(interfaces[i].name, Eth_PPPOE_Discovery, interfaces[i].mac);
     }
 
     /* Ignore SIGPIPE */
@@ -1677,17 +1825,20 @@ main(int argc, char **argv)
 
     /* Create event selector */
     event_selector = Event_CreateSelector();
-    if (!event_selector) {
-	rp_fatal("Could not create EventSelector -- probably out of memory");
+    if (!event_selector)
+    {
+        rp_fatal("Could not create EventSelector -- probably out of memory");
     }
 
 
 #ifdef SUPPORT_RFC4938
     rfc4938Socket = socket(PF_INET, SOCK_DGRAM, 0);
-    if (rfc4938Socket < 0) {
+    if (rfc4938Socket < 0)
+    {
         rp_fatal("Could not open flow control coordination port");
     }
-    else {
+    else
+    {
         struct sockaddr_in address;
 
         address.sin_family      = AF_INET;
@@ -1695,7 +1846,8 @@ main(int argc, char **argv)
         address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
         if (bind(rfc4938Socket, (struct sockaddr *) &address,
-                                   sizeof(struct sockaddr_in)) == -1) {
+                 sizeof(struct sockaddr_in)) == -1)
+        {
             rp_fatal("Could not bind flow control coordination port to specified port");
         }
 
@@ -1709,100 +1861,123 @@ main(int argc, char **argv)
 
     /* Set signal handlers for SIGTERM and SIGINT */
     if (Event_HandleSignal(event_selector, SIGTERM, termHandler) < 0 ||
-	Event_HandleSignal(event_selector, SIGINT, termHandler) < 0) {
-	fatalSys("Event_HandleSignal");
+            Event_HandleSignal(event_selector, SIGINT, termHandler) < 0)
+    {
+        fatalSys("Event_HandleSignal");
     }
     /* Control channel */
 #ifdef HAVE_LICENSE
-    if (control_init(argc, argv, event_selector)) {
-	rp_fatal("control_init failed");
+    if (control_init(argc, argv, event_selector))
+    {
+        rp_fatal("control_init failed");
     }
 #endif
 
     /* Create event handler for each interface */
-    for (i = 0; i<NumInterfaces; i++) {
-	interfaces[i].eh = Event_AddHandler(event_selector,
-					    interfaces[i].sock,
-					    EVENT_FLAG_READABLE,
-					    InterfaceHandler,
-					    &interfaces[i]);
+    for (int i = 0; i<NumInterfaces; i++)
+    {
+        interfaces[i].eh = Event_AddHandler(event_selector,
+                                            interfaces[i].sock,
+                                            EVENT_FLAG_READABLE,
+                                            InterfaceHandler,
+                                            &interfaces[i]);
 #ifdef HAVE_L2TP
-	interfaces[i].session_sock = -1;
+        interfaces[i].session_sock = -1;
 #endif
-	if (!interfaces[i].eh) {
-	    rp_fatal("Event_AddHandler failed");
-	}
+        if (!interfaces[i].eh)
+        {
+            rp_fatal("Event_AddHandler failed");
+        }
     }
 
 #ifdef HAVE_LICENSE
-    if (use_clustering) {
-	ClusterLicense = License_GetFeature("PPPOE-CLUSTER");
-	if (!ClusterLicense) {
-	    fprintf(stderr, "License: GetFeature failed: %s\n",
-		    License_ErrorMessage());
-	    exit(1);
-	}
-	if (!License_Expired(ClusterLicense)) {
-	    if (cluster_init(event_selector) < 0) {
-		rp_fatal("cluster_init failed");
-	    }
-	}
+    if (use_clustering)
+    {
+        ClusterLicense = License_GetFeature("PPPOE-CLUSTER");
+        if (!ClusterLicense)
+        {
+            fprintf(stderr, "License: GetFeature failed: %s\n",
+                    License_ErrorMessage());
+            exit(1);
+        }
+        if (!License_Expired(ClusterLicense))
+        {
+            if (cluster_init(event_selector) < 0)
+            {
+                rp_fatal("cluster_init failed");
+            }
+        }
     }
 #endif
 
 #ifdef HAVE_L2TP
-    for (i=0; i<NumInterfaces; i++) {
-	pppoe_to_l2tp_add_interface(event_selector,
-				    &interfaces[i]);
+    for (int i =0; i<NumInterfaces; i++)
+    {
+        pppoe_to_l2tp_add_interface(event_selector, &interfaces[i]);
     }
 #endif
 
     /* Daemonize -- UNIX Network Programming, Vol. 1, Stevens */
-    if (beDaemon) {
-	i = fork();
-	if (i < 0) {
-	    fatalSys("fork");
-	} else if (i != 0) {
-	    /* parent */
-	    exit(EXIT_SUCCESS);
-	}
-	setsid();
-	signal(SIGHUP, SIG_IGN);
-	i = fork();
-	if (i < 0) {
-	    fatalSys("fork");
-	} else if (i != 0) {
-	    exit(EXIT_SUCCESS);
-	}
+    if (beDaemon)
+    {
+        int i = fork();
+        if (i < 0)
+        {
+            fatalSys("fork");
+        }
+        else if (i != 0)
+        {
+            /* parent */
+            exit(EXIT_SUCCESS);
+        }
+        setsid();
+        signal(SIGHUP, SIG_IGN);
+        i = fork();
+        if (i < 0)
+        {
+            fatalSys("fork");
+        }
+        else if (i != 0)
+        {
+            exit(EXIT_SUCCESS);
+        }
 
-	chdir("/");
+        chdir("/");
 
-	/* Point stdin/stdout/stderr to /dev/null */
-	for (i=0; i<3; i++) {
-	    close(i);
-	}
-	i = open("/dev/null", O_RDWR);
-	if (i >= 0) {
-	    dup2(i, 0);
-	    dup2(i, 1);
-	    dup2(i, 2);
-	    if (i > 2) close(i);
-	}
+        /* Point stdin/stdout/stderr to /dev/null */
+        for (i=0; i<3; i++)
+        {
+            close(i);
+        }
+        i = open("/dev/null", O_RDWR);
+        if (i >= 0)
+        {
+            dup2(i, 0);
+            dup2(i, 1);
+            dup2(i, 2);
+            if (i > 2)
+            {
+                close(i);
+            }
+        }
     }
 
-    for(;;) {
-	i = Event_HandleEvent(event_selector);
-	if (i < 0) {
-	    fatalSys("Event_HandleEvent");
-	}
+    for(;;)
+    {
+        int i = Event_HandleEvent(event_selector);
+        if (i < 0)
+        {
+            fatalSys("Event_HandleEvent");
+        }
 
 #ifdef HAVE_LICENSE
-	if (License_Expired(ServerLicense)) {
-	    LOGGER(LOG_INFO, "Server license has expired -- killing all PPPoE sessions");
-	    killAllSessions();
-	    control_exit();
-	    exit(0);
-	}
+        if (License_Expired(ServerLicense))
+        {
+            LOGGER(LOG_INFO, "Server license has expired -- killing all PPPoE sessions");
+            killAllSessions();
+            control_exit();
+            exit(0);
+        }
 #endif
     }
     return 0;
@@ -1815,41 +1990,45 @@ serverProcessPacket(Interface *i)
     PPPoEPacket packet;
     int sock = i->sock;
 
-    if (receivePacket(sock, &packet, &len) < 0) {
-	return;
+    if (receivePacket(sock, &packet, &len) < 0)
+    {
+        return;
     }
 
     /* Check length */
-    if (ntohs(packet.length) + HDR_SIZE > len) {
-	LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
-	       (unsigned int) ntohs(packet.length));
-	return;
+    if (ntohs(packet.length) + HDR_SIZE > (unsigned) len)
+    {
+        LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
+               (unsigned int) ntohs(packet.length));
+        return;
     }
 
     /* Sanity check on packet */
-    if (packet.ver != 1 || packet.type != 1) {
-	/* Syslog an error */
-	return;
+    if (packet.ver != 1 || packet.type != 1)
+    {
+        /* Syslog an error */
+        return;
     }
 
-    switch(packet.code) {
+    switch(packet.code)
+    {
     case CODE_PADI:
-	processPADI(i, &packet, len);
-	break;
+        processPADI(i, &packet, len);
+        break;
     case CODE_PADR:
-	processPADR(i, &packet, len);
-	break;
+        processPADR(i, &packet, len);
+        break;
     case CODE_PADT:
-	/* Kill the child */
-	processPADT(i, &packet, len);
-	break;
+        /* Kill the child */
+        processPADT(i, &packet, len);
+        break;
     case CODE_SESS:
-	/* Ignore SESS -- children will handle them */
-	break;
+        /* Ignore SESS -- children will handle them */
+        break;
     case CODE_PADO:
     case CODE_PADS:
-	/* Ignore PADO and PADS totally */
-	break;
+        /* Ignore PADO and PADS totally */
+        break;
 #ifdef SUPPORT_RFC4938
     case CODE_PADC:
     case CODE_PADG:
@@ -1859,8 +2038,8 @@ serverProcessPacket(Interface *i)
         break;
 #endif
     default:
-	/* Syslog an error */
-	break;
+        /* Syslog an error */
+        break;
     }
 }
 
@@ -1879,10 +2058,10 @@ serverProcessPacket(Interface *i)
 ***********************************************************************/
 void
 sendErrorPADS(int sock,
-	      unsigned char *source,
-	      unsigned char *dest,
-	      int errorTag,
-	      char *errorMsg)
+              unsigned char *source,
+              unsigned char *dest,
+              int errorTag,
+              char *errorMsg)
 {
     PPPoEPacket pads;
     unsigned char *cursor = pads.payload;
@@ -1908,15 +2087,17 @@ sendErrorPADS(int sock,
     cursor += TAG_HDR_SIZE + elen;
     plen += TAG_HDR_SIZE + elen;
 
-    if (relayId.type) {
-	memcpy(cursor, &relayId, ntohs(relayId.length) + TAG_HDR_SIZE);
-	cursor += ntohs(relayId.length) + TAG_HDR_SIZE;
-	plen += ntohs(relayId.length) + TAG_HDR_SIZE;
+    if (relayId.type)
+    {
+        memcpy(cursor, &relayId, ntohs(relayId.length) + TAG_HDR_SIZE);
+        cursor += ntohs(relayId.length) + TAG_HDR_SIZE;
+        plen += ntohs(relayId.length) + TAG_HDR_SIZE;
     }
-    if (hostUniq.type) {
-	memcpy(cursor, &hostUniq, ntohs(hostUniq.length) + TAG_HDR_SIZE);
-	cursor += ntohs(hostUniq.length) + TAG_HDR_SIZE;
-	plen += ntohs(hostUniq.length) + TAG_HDR_SIZE;
+    if (hostUniq.type)
+    {
+        memcpy(cursor, &hostUniq, ntohs(hostUniq.length) + TAG_HDR_SIZE);
+        cursor += ntohs(hostUniq.length) + TAG_HDR_SIZE;
+        plen += ntohs(hostUniq.length) + TAG_HDR_SIZE;
     }
     pads.length = htons(plen);
     sendPacket(NULL, sock, &pads, (int) (plen + HDR_SIZE));
@@ -1939,7 +2120,7 @@ startPPPDUserMode(ClientSession *session)
     char *argv[32];
     FILE *fp;
 
-    char buffer[SMALLBUF] = {0};
+    char buffer[512] = {0};
     char line[130];
 
     int c = 0;
@@ -1951,118 +2132,131 @@ startPPPDUserMode(ClientSession *session)
     argv[c++] = "pty";
 
 #ifdef SUPPORT_RFC4938
-    if (session->initialCredits != -1) {
-      /* Pass the flow control option and current credit budget on to pppoe */
-      snprintf(PppoeOptions + strlen(PppoeOptions),
-         SMALLBUF - strlen(PppoeOptions), " -x %d:%d,%d", session->initialCredits,
-         Rfc4938FlowControlPort, session->port);
-
-      if (AvoidInBandRfc4938FlowControl == 1) {
+    if (session->initialCredits != -1)
+    {
+        /* Pass the flow control option and current credit budget on to pppoe */
         snprintf(PppoeOptions + strlen(PppoeOptions),
-           SMALLBUF - strlen(PppoeOptions), " -a");
-      }
+                 SMALLBUF - strlen(PppoeOptions), " -x %d:%d,%d", session->initialCredits,
+                 Rfc4938FlowControlPort, session->port);
+
+        if (AvoidInBandRfc4938FlowControl == 1)
+        {
+            snprintf(PppoeOptions + strlen(PppoeOptions),
+                     SMALLBUF - strlen(PppoeOptions), " -a");
+        }
     }
 #endif
 
     /* Let's hope service-name does not have ' in it... */
-    snprintf(buffer, SMALLBUF, "%s -n -I %s -e %hu:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx%s -S '%s' -D %s/pppoe-%s-%hu.log",
-	     pppoe_path, 
+    snprintf(buffer, sizeof(buffer), "%s -n -I %s -e %hu:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx%s -S '%s' -D %s/pppoe_%s_%hu.log",
+             pppoe_path,
              session->ethif->name,
-	     ntohs(session->sess),
-	     session->eth[0], session->eth[1], session->eth[2],
-	     session->eth[3], session->eth[4], session->eth[5],
-	     PppoeOptions, 
+             ntohs(session->sess),
+             session->eth[0], session->eth[1], session->eth[2], session->eth[3], session->eth[4], session->eth[5],
+             PppoeOptions,
              session->serviceName,
              log_path,
              session->ethif->name,
-	     ntohs(session->sess));
+             ntohs(session->sess));
 
     argv[c++] = strdup(buffer);
-    if (!argv[c-1]) {
-	/* TODO: Send a PADT */
-	exit(EXIT_FAILURE);
+    if (!argv[c-1])
+    {
+        /* TODO: Send a PADT */
+        exit(EXIT_FAILURE);
     }
 
     argv[c++] = "file";
     argv[c++] = pppoptfile;
 
-    if (EnableCVMI && file_exists(CVMICTL_BIN)) {
-		snprintf(buffer, SMALLBUF, "%s getip4 %s", CVMICTL_BIN, session->serviceName);
-		fp = popen(buffer, "r");
-		while (fgets(line, sizeof(line), fp)) {
-			chomp(line);
-		}
+    if (EnableCVMI && file_exists(CVMICTL_BIN))
+    {
+        snprintf(buffer, sizeof(buffer), "%s getip4 %s", CVMICTL_BIN, session->serviceName);
+        fp = popen(buffer, "r");
+        while (fgets(line, sizeof(line), fp))
+        {
+            chomp(line);
+        }
 
-		/* check to see if its a valid IP address */
-		if(inet_aton(line, &cvmiIp)) {
-			flag = 1;
-		}
-		pclose(fp);
+        /* check to see if its a valid IP address */
+        if(inet_aton(line, &cvmiIp))
+        {
+            flag = 1;
+        }
+        pclose(fp);
     }
 
-    if(flag) {
-    	/* CVMI has an IPv4 address so add it */
-    	snprintf(buffer, SMALLBUF, "%s:", line);
-	}
-    else {
-    	/* we're not doing IPv4 CVMI adding */
-        snprintf(buffer, SMALLBUF, "%d.%d.%d.%d:%d.%d.%d.%d",
-    	    (int) session->myip[0], (int) session->myip[1],
-    	    (int) session->myip[2], (int) session->myip[3],
-    	    (int) session->peerip[0], (int) session->peerip[1],
-    	    (int) session->peerip[2], (int) session->peerip[3]);
+    if(flag)
+    {
+        /* CVMI has an IPv4 address so add it */
+        snprintf(buffer, sizeof(buffer), "%s:", line);
+    }
+    else
+    {
+        /* we're not doing IPv4 CVMI adding */
+        snprintf(buffer, sizeof(buffer), "%d.%d.%d.%d:%d.%d.%d.%d",
+                 (int) session->myip[0], (int) session->myip[1],
+                 (int) session->myip[2], (int) session->myip[3],
+                 (int) session->peerip[0], (int) session->peerip[1],
+                 (int) session->peerip[2], (int) session->peerip[3]);
     }
     argv[c++] = strdup(buffer);
 
     LOGGER(LOG_INFO,
-	   "Session %u created for client %02x:%02x:%02x:%02x:%02x:%02x on %s using Service-Name '%s'",
-	   (unsigned int) ntohs(session->sess),
-	   session->eth[0], session->eth[1], session->eth[2],
-	   session->eth[3], session->eth[4], session->eth[5],
-	   session->ethif->name,
-	   session->serviceName);
+           "Session %u created for client %02x:%02x:%02x:%02x:%02x:%02x on %s using Service-Name '%s'",
+           (unsigned int) ntohs(session->sess),
+           session->eth[0], session->eth[1], session->eth[2],
+           session->eth[3], session->eth[4], session->eth[5],
+           session->ethif->name,
+           session->serviceName);
 
-    if (!argv[c-1]) {
-	/* TODO: Send a PADT */
-	exit(EXIT_FAILURE);
+    if (!argv[c-1])
+    {
+        /* TODO: Send a PADT */
+        exit(EXIT_FAILURE);
     }
 
-    if (EnableCVMI && file_exists(CVMICTL_BIN)) {
-    	/* cvmi enabled - get the CVMI LL IPv6 address associated with this service name */
-		snprintf(buffer, SMALLBUF, "%s getlli %s", CVMICTL_BIN, session->serviceName);
-		fp = popen(buffer, "r");
-		while (fgets(line, sizeof(line), fp)) {
-			chomp(line);
-			if(inet_pton(AF_INET6, line, &cvmiIp6)) {
-				argv[c++] = "ipv6";
-				snprintf(buffer, SMALLBUF, "%s", line);
-				argv[c++] = strdup(buffer);
-			}
-   		}
-		pclose(fp);
-		/* pass in the sessionId so the scripts in /etc/ppp/ip-up.d and ipv6-up.d can use them */
-       argv[c++] = "ipparam";
-       sprintf(buffer, "%u", (unsigned int) (ntohs(session->sess)));
-       argv[c++] = strdup(buffer);
+    if (EnableCVMI && file_exists(CVMICTL_BIN))
+    {
+        /* cvmi enabled - get the CVMI LL IPv6 address associated with this service name */
+        snprintf(buffer, sizeof(buffer), "%s getlli %s", CVMICTL_BIN, session->serviceName);
+        fp = popen(buffer, "r");
+        while (fgets(line, sizeof(line), fp))
+        {
+            chomp(line);
+            if(inet_pton(AF_INET6, line, &cvmiIp6))
+            {
+                argv[c++] = "ipv6";
+                snprintf(buffer, sizeof(buffer), "%s", line);
+                argv[c++] = strdup(buffer);
+            }
+        }
+        pclose(fp);
+        /* pass in the sessionId so the scripts in /etc/ppp/ip-up.d and ipv6-up.d can use them */
+        argv[c++] = "ipparam";
+        sprintf(buffer, "%u", (unsigned int) (ntohs(session->sess)));
+        argv[c++] = strdup(buffer);
 
     }
 
     argv[c++] = "nodetach";
     argv[c++] = "noaccomp";
-	// Temporarily enable these options:
+    // Temporarily enable these options:
     // argv[c++] = "nobsdcomp";
     // argv[c++] = "nodeflate";
     // argv[c++] = "nopcomp";
     argv[c++] = "novj";
     argv[c++] = "novjccomp";
     argv[c++] = "default-asyncmap";
-    if (Synchronous) {
-	argv[c++] = "sync";
+    if (Synchronous)
+    {
+        argv[c++] = "sync";
     }
-    if (PassUnitOptionToPPPD) {
-	argv[c++] = "unit";
-	sprintf(buffer, "%u", (unsigned int) (ntohs(session->sess) - 1 - SessOffset));
-	argv[c++] = buffer;
+    if (PassUnitOptionToPPPD)
+    {
+        argv[c++] = "unit";
+        sprintf(buffer, "%u", (unsigned int) (ntohs(session->sess) - 1 - SessOffset));
+        argv[c++] = buffer;
     }
     argv[c++] = NULL;
     execv(pppd_path, argv);
@@ -2100,22 +2294,25 @@ startPPPDLinuxKernelMode(ClientSession *session)
     /* Add "nic-" to interface name */
     snprintf(buffer, SMALLBUF, "nic-%s", session->ethif->name);
     argv[c++] = strdup(buffer);
-    if (!argv[c-1]) {
-	exit(EXIT_FAILURE);
+    if (!argv[c-1])
+    {
+        exit(EXIT_FAILURE);
     }
 
     snprintf(buffer, SMALLBUF, "%u:%02x:%02x:%02x:%02x:%02x:%02x",
-	     (unsigned int) ntohs(session->sess),
-	     session->eth[0], session->eth[1], session->eth[2],
-	     session->eth[3], session->eth[4], session->eth[5]);
+             (unsigned int) ntohs(session->sess),
+             session->eth[0], session->eth[1], session->eth[2],
+             session->eth[3], session->eth[4], session->eth[5]);
     argv[c++] = "rp_pppoe_sess";
     argv[c++] = strdup(buffer);
-    if (!argv[c-1]) {
-	/* TODO: Send a PADT */
-	exit(EXIT_FAILURE);
+    if (!argv[c-1])
+    {
+        /* TODO: Send a PADT */
+        exit(EXIT_FAILURE);
     }
 #ifdef SUPPORT_RFC4938
-    if (session->initialCredits != -1) {
+    if (session->initialCredits != -1)
+    {
         snprintf(buffer, SMALLBUF, "%d", session->initialCredits);
         argv[c++] = "rp_pppoe_credits";
         argv[c++] = strdup(buffer);
@@ -2127,64 +2324,73 @@ startPPPDLinuxKernelMode(ClientSession *session)
     argv[c++] = "file";
     argv[c++] = pppoptfile;
 
-    if (EnableCVMI && file_exists(CVMICTL_BIN)) {
-		snprintf(buffer, SMALLBUF, "%s getip4 %s", CVMICTL_BIN, session->serviceName);
-		fp = popen(buffer, "r");
-		while (fgets(line, sizeof(line), fp)) {
-			chomp(line);
-		}
-		/* check to see if its a valid IP address */
-		if(inet_aton(line, &cvmiIp)) {
-			flag = 1;
-		}
-		pclose(fp);
+    if (EnableCVMI && file_exists(CVMICTL_BIN))
+    {
+        snprintf(buffer, SMALLBUF, "%s getip4 %s", CVMICTL_BIN, session->serviceName);
+        fp = popen(buffer, "r");
+        while (fgets(line, sizeof(line), fp))
+        {
+            chomp(line);
+        }
+        /* check to see if its a valid IP address */
+        if(inet_aton(line, &cvmiIp))
+        {
+            flag = 1;
+        }
+        pclose(fp);
     }
 
-    if(flag) {
-    	/* CVMI has an IPv4 address so add it */
-    	snprintf(buffer, SMALLBUF, "%s:", line);
-	}
-    else {
-    	/* we're not doing IPv4 CVMI adding */
+    if(flag)
+    {
+        /* CVMI has an IPv4 address so add it */
+        snprintf(buffer, SMALLBUF, "%s:", line);
+    }
+    else
+    {
+        /* we're not doing IPv4 CVMI adding */
         snprintf(buffer, SMALLBUF, "%d.%d.%d.%d:%d.%d.%d.%d",
-    	    (int) session->myip[0], (int) session->myip[1],
-    	    (int) session->myip[2], (int) session->myip[3],
-    	    (int) session->peerip[0], (int) session->peerip[1],
-    	    (int) session->peerip[2], (int) session->peerip[3]);
+                 (int) session->myip[0], (int) session->myip[1],
+                 (int) session->myip[2], (int) session->myip[3],
+                 (int) session->peerip[0], (int) session->peerip[1],
+                 (int) session->peerip[2], (int) session->peerip[3]);
     }
     argv[c++] = strdup(buffer);
 
     LOGGER(LOG_INFO,
-	   "Session %u created for client %02x:%02x:%02x:%02x:%02x:%02x on %s using Service-Name '%s'",
-	   (unsigned int) ntohs(session->sess),
-	   session->eth[0], session->eth[1], session->eth[2],
-	   session->eth[3], session->eth[4], session->eth[5],
-	   session->ethif->name,
-	   session->serviceName);
+           "Session %u created for client %02x:%02x:%02x:%02x:%02x:%02x on %s using Service-Name '%s'",
+           (unsigned int) ntohs(session->sess),
+           session->eth[0], session->eth[1], session->eth[2],
+           session->eth[3], session->eth[4], session->eth[5],
+           session->ethif->name,
+           session->serviceName);
 
-    if (!argv[c-1]) {
-	/* TODO: Send a PADT */
-	exit(EXIT_FAILURE);
+    if (!argv[c-1])
+    {
+        /* TODO: Send a PADT */
+        exit(EXIT_FAILURE);
     }
 
-    if (EnableCVMI && file_exists(CVMICTL_BIN)) {
-    	/* cvmi enabled - get the CVMI LL IPv6 address associated with this service name */
-		snprintf(buffer, SMALLBUF, "%s getlli %s", CVMICTL_BIN, session->serviceName);
-		fp = popen(buffer, "r");
-		while (fgets(line, sizeof(line), fp)) {
-			chomp(line);
-			/* check to make sure we have IPv6 link local address */
-			if(inet_pton(AF_INET6, line, &cvmiIp6)) {
-				argv[c++] = "ipv6";
-				snprintf(buffer, SMALLBUF, "%s", line);
-				argv[c++] = strdup(buffer);
-			}
-    	}
-		/* pass in the sessionId so the scripts in /etc/ppp/ip-up.d and ipv6-up.d can use them */
-		pclose(fp);
-       argv[c++] = "ipparam";
-       sprintf(buffer, "%u", (unsigned int) (ntohs(session->sess)));
-       argv[c++] = strdup(buffer);
+    if (EnableCVMI && file_exists(CVMICTL_BIN))
+    {
+        /* cvmi enabled - get the CVMI LL IPv6 address associated with this service name */
+        snprintf(buffer, SMALLBUF, "%s getlli %s", CVMICTL_BIN, session->serviceName);
+        fp = popen(buffer, "r");
+        while (fgets(line, sizeof(line), fp))
+        {
+            chomp(line);
+            /* check to make sure we have IPv6 link local address */
+            if(inet_pton(AF_INET6, line, &cvmiIp6))
+            {
+                argv[c++] = "ipv6";
+                snprintf(buffer, SMALLBUF, "%s", line);
+                argv[c++] = strdup(buffer);
+            }
+        }
+        /* pass in the sessionId so the scripts in /etc/ppp/ip-up.d and ipv6-up.d can use them */
+        pclose(fp);
+        argv[c++] = "ipparam";
+        sprintf(buffer, "%u", (unsigned int) (ntohs(session->sess)));
+        argv[c++] = strdup(buffer);
     }
 
     argv[c++] = "nodetach";
@@ -2195,10 +2401,11 @@ startPPPDLinuxKernelMode(ClientSession *session)
     argv[c++] = "novj";
     argv[c++] = "novjccomp";
     argv[c++] = "default-asyncmap";
-    if (PassUnitOptionToPPPD) {
-	argv[c++] = "unit";
-	sprintf(buffer, "%u", (unsigned int) (ntohs(session->sess) - 1 - SessOffset));
-	argv[c++] = buffer;
+    if (PassUnitOptionToPPPD)
+    {
+        argv[c++] = "unit";
+        sprintf(buffer, "%u", (unsigned int) (ntohs(session->sess) - 1 - SessOffset));
+        argv[c++] = buffer;
     }
     argv[c++] = NULL;
     execv(pppd_path, argv);
@@ -2217,8 +2424,14 @@ startPPPDLinuxKernelMode(ClientSession *session)
 void
 startPPPD(ClientSession *session)
 {
-    if (UseLinuxKernelModePPPoE) startPPPDLinuxKernelMode(session);
-    else startPPPDUserMode(session);
+    if (UseLinuxKernelModePPPoE)
+    {
+        startPPPDLinuxKernelMode(session);
+    }
+    else
+    {
+        startPPPDUserMode(session);
+    }
 }
 
 /**********************************************************************
@@ -2234,10 +2447,10 @@ startPPPD(ClientSession *session)
 *  Handles a packet ready at an interface
 ***********************************************************************/
 void
-InterfaceHandler(EventSelector *es,
-		 int fd,
-		 unsigned int flags,
-		 void *data)
+InterfaceHandler(EventSelector *es __attribute__((unused)),
+                 int fd __attribute__((unused)),
+                 unsigned int flags __attribute__((unused)),
+                 void *data)
 {
     serverProcessPacket((Interface *) data);
 }
@@ -2256,40 +2469,45 @@ InterfaceHandler(EventSelector *es,
 *  Handles an RFC 4938 packet processed by a child
 ***********************************************************************/
 void
-CoordinationHandler(EventSelector *es,
+CoordinationHandler(EventSelector *es __attribute__((unused)),
                     int fd,
-                    unsigned int flags,
-                    void *data)
+                    unsigned int flags __attribute__((unused)),
+                    void *data __attribute__((unused)))
 {
     int index, len;
     PPPoEPacket packet;
 
     /* Recieve a packet and do some basic error checking */
-    if (receivePacket(fd, &packet, &len) < 0) {
+    if (receivePacket(fd, &packet, &len) < 0)
+    {
         return;
     }
 
     /* Check length */
-    if (ntohs(packet.length) + HDR_SIZE > len) {
+    if (ntohs(packet.length) + HDR_SIZE > (unsigned) len)
+    {
         LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
                (unsigned int) ntohs(packet.length));
         return;
     }
 
     /* Sanity check on packet */
-    if (packet.ver != 1 || packet.type != 1) {
+    if (packet.ver != 1 || packet.type != 1)
+    {
         LOGGER(LOG_ERR, "PPPoE version/type (%u:%u)", packet.ver, packet.type);
         return;
     }
 
     /* Ensure that the packet has a valid session ID */
     index = ntohs(packet.session) - 1 - SessOffset;
-    if (index < 0 || index >= NumSessionSlots) {
+    if (index < 0 || (unsigned)index >= NumSessionSlots)
+    {
         LOGGER(LOG_ERR, "Bogus PPPoE session (%u)", ntohs(packet.session));
         return;
     }
 
-    if (Sessions[index].ethif == NULL || Sessions[index].ethif->sock == -1) {
+    if (Sessions[index].ethif == NULL || Sessions[index].ethif->sock == -1)
+    {
         LOGGER(LOG_ERR, "PPPoE session is inactive (%u)",
                ntohs(packet.session));
         return;
@@ -2297,7 +2515,7 @@ CoordinationHandler(EventSelector *es,
 
     /* Now forward this to the intended recipient */
     sendPacket(NULL, Sessions[index].ethif->sock, &packet,
-                   (int) (ntohs(packet.length) + HDR_SIZE));
+               (int) (ntohs(packet.length) + HDR_SIZE));
 
 }
 #endif
@@ -2314,7 +2532,7 @@ CoordinationHandler(EventSelector *es,
 ***********************************************************************/
 static void
 PppoeStopSession(ClientSession *ses,
-		 char const *reason)
+                 char const *reason)
 {
     /* Temporary structure for sending PADT's. */
     PPPoEConnection conn;
@@ -2329,8 +2547,9 @@ PppoeStopSession(ClientSession *ses,
     sendPADT(&conn, reason);
     ses->flags |= FLAG_SENT_PADT;
 
-    if (ses->pid) {
-	kill(ses->pid, SIGTERM);
+    if (ses->pid)
+    {
+        kill(ses->pid, SIGTERM);
     }
     ses->funcs = &DefaultSessionFunctionTable;
 }
@@ -2365,25 +2584,37 @@ getFreeMem(void)
     char buf[512];
     int memfree=0, buffers=0, cached=0;
     FILE *fp = fopen("/proc/meminfo", "r");
-    if (!fp) return -1;
+    if (!fp)
+    {
+        return -1;
+    }
 
-    while (fgets(buf, sizeof(buf), fp)) {
-	if (!strncmp(buf, "MemFree:", 8)) {
-	    if (sscanf(buf, "MemFree: %d", &memfree) != 1) {
-		fclose(fp);
-		return -1;
-	    }
-	} else if (!strncmp(buf, "Buffers:", 8)) {
-	    if (sscanf(buf, "Buffers: %d", &buffers) != 1) {
-		fclose(fp);
-		return -1;
-	    }
-	} else if (!strncmp(buf, "Cached:", 7)) {
-	    if (sscanf(buf, "Cached: %d", &cached) != 1) {
-		fclose(fp);
-		return -1;
-	    }
-	}
+    while (fgets(buf, sizeof(buf), fp))
+    {
+        if (!strncmp(buf, "MemFree:", 8))
+        {
+            if (sscanf(buf, "MemFree: %d", &memfree) != 1)
+            {
+                fclose(fp);
+                return -1;
+            }
+        }
+        else if (!strncmp(buf, "Buffers:", 8))
+        {
+            if (sscanf(buf, "Buffers: %d", &buffers) != 1)
+            {
+                fclose(fp);
+                return -1;
+            }
+        }
+        else if (!strncmp(buf, "Cached:", 7))
+        {
+            if (sscanf(buf, "Cached: %d", &cached) != 1)
+            {
+                fclose(fp);
+                return -1;
+            }
+        }
     }
     fclose(fp);
     /* return memfree + buffers + cached; */
@@ -2405,11 +2636,15 @@ ClientSession *
 pppoe_alloc_session(void)
 {
     ClientSession *ses = FreeSessions;
-    if (!ses) return NULL;
+    if (!ses)
+    {
+        return NULL;
+    }
 
     /* Remove from free sessions list */
-    if (ses == LastFreeSession) {
-	LastFreeSession = NULL;
+    if (ses == LastFreeSession)
+    {
+        LastFreeSession = NULL;
     }
     FreeSessions = ses->next;
 
@@ -2456,32 +2691,43 @@ pppoe_free_session(ClientSession *ses)
 
     cur = BusySessions;
     prev = NULL;
-    while (cur) {
-	if (ses == cur) break;
-	prev = cur;
-	cur = cur->next;
+    while (cur)
+    {
+        if (ses == cur)
+        {
+            break;
+        }
+        prev = cur;
+        cur = cur->next;
     }
 
-    if (!cur) {
-	LOGGER(LOG_ERR, "pppoe_free_session: Could not find session %p on busy list", (void *) ses);
-	return -1;
+    if (!cur)
+    {
+        LOGGER(LOG_ERR, "pppoe_free_session: Could not find session %p on busy list", (void *) ses);
+        return -1;
     }
 
     /* Remove from busy sessions list */
-    if (prev) {
-	prev->next = ses->next;
-    } else {
-	BusySessions = ses->next;
+    if (prev)
+    {
+        prev->next = ses->next;
+    }
+    else
+    {
+        BusySessions = ses->next;
     }
 
     /* Add to end of free sessions */
     ses->next = NULL;
-    if (LastFreeSession) {
-	LastFreeSession->next = ses;
-	LastFreeSession = ses;
-    } else {
-	FreeSessions = ses;
-	LastFreeSession = ses;
+    if (LastFreeSession)
+    {
+        LastFreeSession->next = ses;
+        LastFreeSession = ses;
+    }
+    else
+    {
+        FreeSessions = ses;
+        LastFreeSession = ses;
     }
 
     /* Initialize fields to sane values */
@@ -2516,16 +2762,26 @@ sendHURLorMOTM(PPPoEConnection *conn, char const *url, UINT16_t tag)
     unsigned char *cursor = packet.payload;
     UINT16_t plen = 0;
 
-    if (!conn->session) return;
-    if (conn->discoverySocket < 0) return;
+    if (!conn->session)
+    {
+        return;
+    }
+    if (conn->discoverySocket < 0)
+    {
+        return;
+    }
 
-    if (tag == TAG_HURL) {
-	if (strncmp(url, "http://", 7)) {
-	    LOGGER(LOG_WARNING, "sendHURL(%s): URL must begin with http://", url);
-	    return;
-	}
-    } else {
-	tag = TAG_MOTM;
+    if (tag == TAG_HURL)
+    {
+        if (strncmp(url, "http://", 7))
+        {
+            LOGGER(LOG_WARNING, "sendHURL(%s): URL must begin with http://", url);
+            return;
+        }
+    }
+    else
+    {
+        tag = TAG_MOTM;
     }
 
     memcpy(packet.ethHdr.h_dest, conn->peerEth, ETH_ALEN);
@@ -2538,9 +2794,10 @@ sendHURLorMOTM(PPPoEConnection *conn, char const *url, UINT16_t tag)
     packet.session = conn->session;
 
     elen = strlen(url);
-    if (elen > 256) {
-	LOGGER(LOG_WARNING, "MOTM or HURL too long: %d", (int) elen);
-	return;
+    if (elen > 256)
+    {
+        LOGGER(LOG_WARNING, "MOTM or HURL too long: %d", (int) elen);
+        return;
     }
 
     hurl.type = htons(tag);
@@ -2554,25 +2811,29 @@ sendHURLorMOTM(PPPoEConnection *conn, char const *url, UINT16_t tag)
 
     sendPacket(conn, conn->discoverySocket, &packet, (int) (plen + HDR_SIZE));
 #ifdef DEBUGGING_ENABLED
-    if (conn->debugFile) {
-	dumpPacket(conn->debugFile, &packet, "SENT");
-	fprintf(conn->debugFile, "\n");
-	fflush(conn->debugFile);
+    if (conn->debugFile)
+    {
+        dumpPacket(conn->debugFile, &packet, "SENT");
+        fprintf(conn->debugFile, "\n");
+        fflush(conn->debugFile);
     }
 #endif
 }
 
-void chomp (char* s) {
-	int end = strlen(s) - 1;
-	if (end >= 0 && s[end] == '\n')
-		s[end] = '\0';
+void chomp (char* s)
+{
+    int end = strlen(s) - 1;
+    if (end >= 0 && s[end] == '\n')
+    {
+        s[end] = '\0';
+    }
 }
 
 /* check whether a file exists or not before opening it */
 int
 file_exists(const char * filename)
 {
-	FILE * file;
+    FILE * file;
     if ((file = fopen(filename, "r")))
     {
         fclose(file);

@@ -40,7 +40,7 @@
 #include <sys/stat.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include <unistd.h>     
+#include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -97,7 +97,7 @@
 #define MDR_SCLR_MAX ( 3 )
 #define CDR_SCLR_MAX ( 3 )
 #define RSRCS_MAX ( 100 )
-#define RLQ_MAX ( 100 ) 
+#define RLQ_MAX ( 100 )
 
 
 void rfc4938client_handle_signal_event ();

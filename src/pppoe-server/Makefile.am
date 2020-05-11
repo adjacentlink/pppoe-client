@@ -4,6 +4,7 @@ pppoe
 sbin_PROGRAMS = rfc4938server
 
 rfc4938server_SOURCES =  \
+../common/logger.c \
 common.c \
 debug.c \
 if.c \

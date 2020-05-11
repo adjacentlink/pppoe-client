@@ -4,12 +4,13 @@ rfc4938pppoes_CXXFLAGS =
 
 rfc4938pppoes_LDFLAGS =
 
-rfc4938pppoes_SOURCES =  \
-../if.c \
-../debug.c \
-../common.c \
-pppoe.c \
-ppp.c \
+rfc4938pppoes_SOURCES = \
+../../common/logger.c   \
+../if.c                 \
+../debug.c              \
+../common.c             \
+pppoe.c                 \
+ppp.c                   \
 discovery.c
 
 

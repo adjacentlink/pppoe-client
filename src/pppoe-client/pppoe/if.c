@@ -16,7 +16,7 @@
 *
 ***********************************************************************/
 
-static char const RCSID[] = "$Id: if.c,v 1.18 2006/01/03 03:05:06 dfs Exp $";
+//static char const RCSID[] = "$Id: if.c,v 1.18 2006/01/03 03:05:06 dfs Exp $";
 
 #include "pppoe.h"
 #include "../rfc4938.h"
@@ -51,14 +51,14 @@ UINT16_t Eth_PPPOE_Session   = ETH_PPPOE_SESSION;
 UINT16_t
 getEtherType (PPPoEPacket * packet)
 {
-  UINT16_t type = (UINT16_t) ntohs (packet->eth_hdr.proto);
+    UINT16_t type = (UINT16_t) ntohs (packet->eth_hdr.proto);
 
-  if (type != Eth_PPPOE_Discovery && type != Eth_PPPOE_Session)
+    if (type != Eth_PPPOE_Discovery && type != Eth_PPPOE_Session)
     {
-      PPPOE_DEBUG_ERROR ("%s: Invalid pppoe ether type 0x%x", __func__, type);
+        LOGGER(LOG_ERR, "Invalid pppoe ether type 0x%x", type);
     }
 
-  return type;
+    return type;
 }
 
 
@@ -68,13 +68,13 @@ getEtherType (PPPoEPacket * packet)
 int
 send_session_packet_to_ac (PPPoEConnection * conn, PPPoEPacket * packet)
 {
-  return (send_packet_to_ac(conn, packet, Eth_PPPOE_Session));
+    return (send_packet_to_ac(conn, packet, Eth_PPPOE_Session));
 }
 
 
 int
 send_discovery_packet_to_ac (PPPoEConnection * conn, PPPoEPacket * packet)
 {
-  return (send_packet_to_ac(conn, packet, Eth_PPPOE_Discovery));
+    return (send_packet_to_ac(conn, packet, Eth_PPPOE_Discovery));
 }
 

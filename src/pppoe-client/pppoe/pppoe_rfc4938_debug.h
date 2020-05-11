@@ -10,7 +10,7 @@
  * ===========================
  *
  * Debug definitions
- * 
+ *
  * ===========================
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -35,7 +35,9 @@
 #include "../pppoe_types.h"
 #include "stdio.h"
 
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
 
 // #define PPPOE_PRINTF_ENABLED
 #define PPPOE_DEBUG_ENABLED      //enables debugs
@@ -50,13 +52,11 @@
 #define  PPPOE_G_EVENT_DEBUG                 ( 0x08 )
 #define  PPPOE_G_ERROR_DEBUG                 ( 0x10 )
 
+#if 0
 #ifdef  PPPOE_PRINTF_ENABLED
-#define PPPOE_DEBUG_PRINT(myargs...) \
-    printf(myargs); \
-    syslog(LOG_INFO, myargs);
+#define PPPOE_DEBUG_PRINT(myargs...)  LOGGER(myargs);
 #else
- #define PPPOE_DEBUG_PRINT(myargs...) \
-    syslog(LOG_INFO, myargs);
+#define PPPOE_DEBUG_PRINT(myargs...)
 #endif
 /*
  *  macro packet debug
@@ -91,7 +91,7 @@
 #else
 #define PPPOE_DEBUG_ERROR(args...)  ((void)0)
 #endif
-
+#endif
 
 extern void pppoe_set_debug_mask (UINT32_t mask);
 extern void pppoe_clear_debug_mask (UINT32_t mask);

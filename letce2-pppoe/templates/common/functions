@@ -401,9 +401,10 @@ start_pppoe_client()
 {
   local clientpath=$1
   local config=$2
-  local logfile=$3
+  local logpath=$3
+  local logout=$3/pppoe_client.out
 
-  "$clientpath" -f "$config" &> "$logfile"
+  "$clientpath" -f "$config" -D "$logpath" &> "$logout"
 }
 
 

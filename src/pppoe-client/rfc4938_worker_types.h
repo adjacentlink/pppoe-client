@@ -40,37 +40,37 @@ const unsigned long WORK_ITEM_TYPE_METRIC_MSG   = 8;   // nbr, queue and self me
 
 
 inline const char * workIdToString(unsigned long id)
- {
-   switch(id)
+{
+    switch(id)
     {
-      case WORK_ITEM_TYPE_NONE:
+    case WORK_ITEM_TYPE_NONE:
         return "no_data";
 
-      case WORK_ITEM_TYPE_PADG_MSG:
+    case WORK_ITEM_TYPE_PADG_MSG:
         return "padg_msg";
 
-      case WORK_ITEM_TYPE_PADI_MSG:
+    case WORK_ITEM_TYPE_PADI_MSG:
         return "padi_msg";
 
-      case WORK_ITEM_TYPE_FLOWCTRL_MSG:
+    case WORK_ITEM_TYPE_FLOWCTRL_MSG:
         return "token_update";
 
-      case WORK_ITEM_TYPE_METRIC_MSG:
+    case WORK_ITEM_TYPE_METRIC_MSG:
         return "metric";
 
-      case WORK_ITEM_TYPE_UPSTREAM_PKT:
+    case WORK_ITEM_TYPE_UPSTREAM_PKT:
         return "upstream_pkt";
 
-      case WORK_ITEM_TYPE_DNSTREAM_PKT:
+    case WORK_ITEM_TYPE_DNSTREAM_PKT:
         return "downstream_pkt";
 
-      case WORK_ITEM_TYPE_DEL_NBR:
+    case WORK_ITEM_TYPE_DEL_NBR:
         return "delete_nbr";
 
-      case WORK_ITEM_TYPE_FD_READY:
+    case WORK_ITEM_TYPE_FD_READY:
         return "fd_ready";
     }
 
-   return "unknown";
- }
+    return "unknown";
+}
 #endif

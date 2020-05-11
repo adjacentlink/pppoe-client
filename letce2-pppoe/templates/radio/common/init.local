@@ -64,7 +64,7 @@ then
 	start_pppoe_client \
 	${pppoe_path}/rfc4938client \
 	pppoe_client.conf \
-	$top_dir/persist/$node_name/var/log/pppoe_client.log
+	$top_dir/persist/$node_name/var/log
 fi
 
 

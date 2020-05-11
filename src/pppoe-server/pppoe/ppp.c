@@ -15,8 +15,7 @@
 *
 ***********************************************************************/
 
-static char const RCSID[] =
-"$Id: ppp.c,v 1.4 2008/09/12 13:37:16 powellj Exp $";
+//static char const RCSID[] = "$Id: ppp.c,v 1.4 2008/09/12 13:37:16 powellj Exp $";
 
 #include "../pppoe.h"
 
@@ -50,7 +49,8 @@ static int PPPState;
 static int PPPPacketSize;
 static unsigned char PPPXorValue;
 
-static UINT16_t const fcstab[256] = {
+static UINT16_t const fcstab[256] =
+{
     0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf,
     0x8c48, 0x9dc1, 0xaf5a, 0xbed3, 0xca6c, 0xdbe5, 0xe97e, 0xf8f7,
     0x1081, 0x0108, 0x3393, 0x221a, 0x56a5, 0x472c, 0x75b7, 0x643e,
@@ -110,13 +110,13 @@ syncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
     vec[1].iov_len = ETH_DATA_LEN - PPPOE_OVERHEAD;
 #  else
     vec[1].iov_base = (void *) (packet->payload +
-                      (conn->enableRfc4938FlowControl &&
-                      !conn->avoidInBandFlowControl ?
-                      TAG_CREDITS_SIZE + TAG_HDR_SIZE : 0));
+                                (conn->enableRfc4938FlowControl &&
+                                 !conn->avoidInBandFlowControl ?
+                                 TAG_CREDITS_SIZE + TAG_HDR_SIZE : 0));
     vec[1].iov_len = ETH_DATA_LEN - PPPOE_OVERHEAD -
-        (conn->enableRfc4938FlowControl &&
-        !conn->avoidInBandFlowControl ?
-        TAG_CREDITS_SIZE + TAG_HDR_SIZE : 0);
+                     (conn->enableRfc4938FlowControl &&
+                      !conn->avoidInBandFlowControl ?
+                      TAG_CREDITS_SIZE + TAG_HDR_SIZE : 0);
 #  endif
 
     /* Use scatter-read to throw away the PPP frame address bytes */
@@ -125,61 +125,70 @@ syncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
     /* Bloody hell... readv doesn't work with N_HDLC line discipline... GRR! */
     unsigned char buf[ETH_DATA_LEN - PPPOE_OVERHEAD + 2];
 #  ifndef SUPPORT_RFC4938
-    r = read(0, buf, ETH_DATA_LEN - PPPOE_OVERHEAD + 2); 
+    r = read(0, buf, ETH_DATA_LEN - PPPOE_OVERHEAD + 2);
 #  else
     r = read(0, buf, ETH_DATA_LEN - PPPOE_OVERHEAD + 2 -
-        (conn->enableRfc4938FlowControl &&
-        !conn->avoidInBandFlowControl ?
-        TAG_CREDITS_SIZE + TAG_HDR_SIZE : 0));
+             (conn->enableRfc4938FlowControl &&
+              !conn->avoidInBandFlowControl ?
+              TAG_CREDITS_SIZE + TAG_HDR_SIZE : 0));
 #  endif
 
-    if (r >= 2) {
+    if (r >= 2)
+    {
 #  ifndef SUPPORT_RFC4938
-	memcpy(packet->payload, buf + 2, r - 2);
+        memcpy(packet->payload, buf + 2, r - 2);
 #  else
         memcpy(packet->payload, buf + 2 + (conn->enableRfc4938FlowControl &&
-                                          !conn->avoidInBandFlowControl ?
-               TAG_CREDITS_SIZE + TAG_HDR_SIZE : 0), r - 2);
+                                           !conn->avoidInBandFlowControl ?
+                                           TAG_CREDITS_SIZE + TAG_HDR_SIZE : 0), r - 2);
 #  endif
     }
 #endif
-    if (r < 0) {
-	/* Catch the Linux "select" bug */
-	if (errno == EAGAIN) {
-	    rp_fatal("Linux select bug hit!  This message is harmless, but please ask the Linux kernel developers to fix it.");
-	}
-	fatalSys("read (syncReadFromPPP)");
+    if (r < 0)
+    {
+        /* Catch the Linux "select" bug */
+        if (errno == EAGAIN)
+        {
+            rp_fatal("Linux select bug hit!  This message is harmless, but please ask the Linux kernel developers to fix it.");
+        }
+        fatalSys("read (syncReadFromPPP)");
     }
-    if (r == 0) {
-	LOGGER(LOG_INFO, "end-of-file in syncReadFromPPP");
-	sendPADT(conn, "RP-PPPoE: EOF in syncReadFromPPP");
-	exit(0);
+    if (r == 0)
+    {
+        LOGGER(LOG_INFO, "end-of-file in syncReadFromPPP");
+        sendPADT(conn, "RP-PPPoE: EOF in syncReadFromPPP");
+        exit(0);
     }
 
-    if (r < 2) {
-	rp_fatal("too few characters read from PPP (syncReadFromPPP)");
+    if (r < 2)
+    {
+        rp_fatal("too few characters read from PPP (syncReadFromPPP)");
     }
 
 #ifdef SUPPORT_RFC4938
-    if (conn->enableRfc4938FlowControl) {
+    if (conn->enableRfc4938FlowControl)
+    {
         int msgLength = (r + 6); /* r is length + 2 */
 
         int creditCost = msgLength / CREDIT_SCALAR;
 
-        if(msgLength % CREDIT_SCALAR) {
-          ++creditCost;
+        if(msgLength % CREDIT_SCALAR)
+        {
+            ++creditCost;
         }
 
-        if (!conn->avoidInBandFlowControl) {
+        if (!conn->avoidInBandFlowControl)
+        {
             /* fill in the header of the tag */
             SET_SHORT(&packet->payload[0], TAG_CREDITS);
             SET_SHORT(&packet->payload[2], TAG_CREDITS_SIZE);
         }
 
-        if ((conn->hostCredits - creditCost) < RFC_MIN_CREDITS) {
+        if ((conn->hostCredits - creditCost) < RFC_MIN_CREDITS)
+        {
             LOGGER(LOG_INFO, "Not enough credits: %d < %d", conn->hostCredits,
-                             creditCost);
-            packet->length = r + (conn->avoidInBandFlowControl ? 0 : 
+                   creditCost);
+            packet->length = r + (conn->avoidInBandFlowControl ? 0 :
                                   TAG_CREDITS_SIZE + TAG_HDR_SIZE) - 2;
             conn->held = packet;
             return; /* abort the send */
@@ -188,17 +197,18 @@ syncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
         /* reduce the available credits */
         conn->hostCredits -= creditCost;
 
-        if (!conn->avoidInBandFlowControl) {
+        if (!conn->avoidInBandFlowControl)
+        {
             /* update the FCN and BCN in the packet*/
             SET_FCN(&packet->payload[4], conn->peerCredits < RFC_PEER_CREDITS ?
-                                     RFC_PEER_CREDITS - conn->peerCredits : 0);
+                    RFC_PEER_CREDITS - conn->peerCredits : 0);
             SET_BCN(&packet->payload[4], conn->hostCredits);
 
             LOGGER(LOG_INFO, "pppoe(%hu): msgLength %d, creditCost %d, sendInbandGrant set FCN (peer credits) %hu, BCN (host credits) %hu",
                    htons(conn->session),
                    msgLength,
                    creditCost,
-                   conn->peerCredits < RFC_PEER_CREDITS ?  RFC_PEER_CREDITS - conn->peerCredits : 0, 
+                   conn->peerCredits < RFC_PEER_CREDITS ?  RFC_PEER_CREDITS - conn->peerCredits : 0,
                    conn->hostCredits);
 
             /* update the size of the payload to include the tag */
@@ -257,84 +267,106 @@ asyncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
     int r;
 
     r = read(0, buf, READ_CHUNK);
-    if (r < 0) {
-	fatalSys("read (asyncReadFromPPP)");
+    if (r < 0)
+    {
+        fatalSys("read (asyncReadFromPPP)");
     }
 
-    if (r == 0) {
-	LOGGER(LOG_INFO, "end-of-file in asyncReadFromPPP");
-	sendPADT(conn, "RP-PPPoE: EOF in asyncReadFromPPP");
-	exit(0);
+    if (r == 0)
+    {
+        LOGGER(LOG_INFO, "end-of-file in asyncReadFromPPP");
+        sendPADT(conn, "RP-PPPoE: EOF in asyncReadFromPPP");
+        exit(0);
     }
 
-    while(r) {
-	if (PPPState == STATE_WAITFOR_FRAME_ADDR) {
-	    while(r) {
-		--r;
-		if (*ptr++ == FRAME_ADDR) {
-		    PPPState = STATE_DROP_PROTO;
-		    break;
-		}
-	    }
-	}
+    while(r)
+    {
+        if (PPPState == STATE_WAITFOR_FRAME_ADDR)
+        {
+            while(r)
+            {
+                --r;
+                if (*ptr++ == FRAME_ADDR)
+                {
+                    PPPState = STATE_DROP_PROTO;
+                    break;
+                }
+            }
+        }
 
-	/* Still waiting... */
-	if (PPPState == STATE_WAITFOR_FRAME_ADDR) return;
+        /* Still waiting... */
+        if (PPPState == STATE_WAITFOR_FRAME_ADDR)
+        {
+            return;
+        }
 
-	while(r && PPPState == STATE_DROP_PROTO) {
-	    --r;
-	    if (*ptr++ == (FRAME_CTRL ^ FRAME_ENC)) {
-		PPPState = STATE_BUILDING_PACKET;
-	    }
-	}
+        while(r && PPPState == STATE_DROP_PROTO)
+        {
+            --r;
+            if (*ptr++ == (FRAME_CTRL ^ FRAME_ENC))
+            {
+                PPPState = STATE_BUILDING_PACKET;
+            }
+        }
 
-	if (PPPState == STATE_DROP_PROTO) return;
+        if (PPPState == STATE_DROP_PROTO)
+        {
+            return;
+        }
 
-	/* Start building frame */
-	while(r && PPPState == STATE_BUILDING_PACKET) {
-	    --r;
-	    c = *ptr++;
-	    switch(c) {
-	    case FRAME_ESC:
-		PPPXorValue = FRAME_ENC;
-		break;
-	    case FRAME_FLAG:
+        /* Start building frame */
+        while(r && PPPState == STATE_BUILDING_PACKET)
+        {
+            --r;
+            c = *ptr++;
+            switch(c)
+            {
+            case FRAME_ESC:
+                PPPXorValue = FRAME_ENC;
+                break;
+            case FRAME_FLAG:
 #ifndef SUPPORT_RFC4938
-		if (PPPPacketSize < 2) {
+                if (PPPPacketSize < 2)
+                {
 #else
                 if (PPPPacketSize < (conn->avoidInBandFlowControl ? 2 :
-                                     TAG_CREDITS_SIZE + TAG_HDR_SIZE + 2)) {
+                                     TAG_CREDITS_SIZE + TAG_HDR_SIZE + 2))
+                {
 #endif
-		    rp_fatal("Packet too short from PPP (asyncReadFromPPP)");
-		}
+                    rp_fatal("Packet too short from PPP (asyncReadFromPPP)");
+                }
 
 #ifdef SUPPORT_RFC4938
-                if (conn->enableRfc4938FlowControl) {
-                    int msgLength = (PPPPacketSize + 6 - 
-                                      (conn->avoidInBandFlowControl ? 0 :
-                                       TAG_CREDITS_SIZE - TAG_HDR_SIZE));
+                if (conn->enableRfc4938FlowControl)
+                {
+                    int msgLength = (PPPPacketSize + 6 -
+                                     (conn->avoidInBandFlowControl ? 0 :
+                                      TAG_CREDITS_SIZE - TAG_HDR_SIZE));
 
                     int creditCost = msgLength / CREDIT_SCALAR;
 
-                    if(msgLength % CREDIT_SCALAR) {
-                      ++creditCost;
-                     }
+                    if(msgLength % CREDIT_SCALAR)
+                    {
+                        ++creditCost;
+                    }
 
-                    if (!conn->avoidInBandFlowControl) {
+                    if (!conn->avoidInBandFlowControl)
+                    {
                         /* fill in the header of the tag */
                         SET_SHORT(&packet->payload[0], TAG_CREDITS);
                         SET_SHORT(&packet->payload[2], TAG_CREDITS_SIZE);
                     }
 
 
-                    if ((conn->hostCredits - creditCost) < RFC_MIN_CREDITS) {
+                    if ((conn->hostCredits - creditCost) < RFC_MIN_CREDITS)
+                    {
                         LOGGER(LOG_INFO, "Not enough credits: %d < %d",
-                                         conn->hostCredits, creditCost);
+                               conn->hostCredits, creditCost);
                         packet->length = PPPPacketSize - 2;
                         conn->held = packet;
                         /* reset the PPP finite state machine */
-                        PPPPacketSize = conn->avoidInBandFlowControl ? 0 : 
-                                              TAG_CREDITS_SIZE + TAG_HDR_SIZE;
+                        PPPPacketSize = conn->avoidInBandFlowControl ? 0 :
+                                        TAG_CREDITS_SIZE + TAG_HDR_SIZE;
                         PPPXorValue = 0;
                         PPPState = STATE_WAITFOR_FRAME_ADDR;
                         /* this might be a good place to send a PADG */
@@ -344,7 +376,8 @@ asyncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
                     /* reduce the available credits */
                     conn->hostCredits -= creditCost;
 
-                    if (!conn->avoidInBandFlowControl) {
+                    if (!conn->avoidInBandFlowControl)
+                    {
                         /* update the FCN and BCN in the packet*/
                         SET_FCN(&packet->payload[4],
                                 conn->peerCredits < RFC_PEER_CREDITS ?
@@ -355,12 +388,12 @@ asyncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
                                htons(conn->session),
                                msgLength,
                                creditCost,
-                               conn->peerCredits < RFC_PEER_CREDITS ?  RFC_PEER_CREDITS - conn->peerCredits : 0, 
+                               conn->peerCredits < RFC_PEER_CREDITS ?  RFC_PEER_CREDITS - conn->peerCredits : 0,
                                conn->hostCredits);
                     }
                 }
 #endif
-		sendSessionPacket(conn, packet, PPPPacketSize-2);
+                sendSessionPacket(conn, packet, PPPPacketSize-2);
 #ifndef SUPPORT_RFC4938
                 PPPPacketSize = 0;
 #else
@@ -368,21 +401,24 @@ asyncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
                                 !conn->avoidInBandFlowControl ?
                                 TAG_CREDITS_SIZE + TAG_HDR_SIZE : 0;
 #endif
-		PPPXorValue = 0;
-		PPPState = STATE_WAITFOR_FRAME_ADDR;
-		break;
-	    default:
-		if (PPPPacketSize >= ETH_DATA_LEN - 4) {
-		    LOGGER(LOG_ERR, "Packet too big!  Check MTU on PPP interface");
-		    PPPPacketSize = 0;
-		    PPPXorValue = 0;
-		    PPPState = STATE_WAITFOR_FRAME_ADDR;
-		} else {
-		    packet->payload[PPPPacketSize++] = c ^ PPPXorValue;
-		    PPPXorValue = 0;
-		}
-	    }
-	}
+                PPPXorValue = 0;
+                PPPState = STATE_WAITFOR_FRAME_ADDR;
+                break;
+            default:
+                if (PPPPacketSize >= ETH_DATA_LEN - 4)
+                {
+                    LOGGER(LOG_ERR, "Packet too big!  Check MTU on PPP interface");
+                    PPPPacketSize = 0;
+                    PPPXorValue = 0;
+                    PPPState = STATE_WAITFOR_FRAME_ADDR;
+                }
+                else
+                {
+                    packet->payload[PPPPacketSize++] = c ^ PPPXorValue;
+                    PPPXorValue = 0;
+                }
+            }
+        }
     }
 }
 
@@ -399,11 +435,13 @@ asyncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
 ***********************************************************************/
 UINT16_t
 pppFCS16(UINT16_t fcs,
-	 unsigned char * cp,
-	 int len)
+         unsigned char * cp,
+         int len)
 {
     while (len--)
-	fcs = (fcs >> 8) ^ fcstab[(fcs ^ *cp++) & 0xff];
+    {
+        fcs = (fcs >> 8) ^ fcstab[(fcs ^ *cp++) & 0xff];
+    }
 
     return (fcs);
 }

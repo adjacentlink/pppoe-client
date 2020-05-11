@@ -1,8 +1,8 @@
 client side
-# rfc4938client -f CONFIG_FILE
+# rfc4938client -f CONFIG_FILE -D logdirpath
 
 server side
-# pppoe-server -I lan0 -S rfc4938 -Q /tmp/pppoe/sbin/rfc4938pppoe -L 11.0.0.X
+# pppoe-server -I lan0 -S rfc4938 -Q /tmp/pppoe/sbin/rfc4938pppoe -L 11.0.0.X -D logdirpath
 
 
 /etc/ppp/pppoe-server-options

@@ -10,7 +10,7 @@
  * ===========================
  *
  * Debug definitions
- * 
+ *
  * ===========================
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -56,15 +56,15 @@ static UINT32_t pppoe_debugs = PPPOE_DEFAULT_DEBUG;
 void
 pppoe_set_debug_mask (UINT32_t mask)
 {
-  if (mask == 0)
+    if (mask == 0)
     {
-      pppoe_debugs = 0;
+        pppoe_debugs = 0;
     }
-  else
+    else
     {
-      pppoe_debugs |= mask;
+        pppoe_debugs |= mask;
     }
-  return;
+    return;
 }
 
 
@@ -83,22 +83,22 @@ pppoe_set_debug_mask (UINT32_t mask)
  *     none
  *
  * Notes
- *     To clear all flags    
- *     Set all flags to 0    
+ *     To clear all flags
+ *     Set all flags to 0
  *
  */
 void
 pppoe_clear_debug_mask (UINT32_t mask)
 {
-  if (mask == 0)
+    if (mask == 0)
     {
-      pppoe_debugs = 0;
+        pppoe_debugs = 0;
     }
-  else
+    else
     {
-      pppoe_debugs &= ~mask;
+        pppoe_debugs &= ~mask;
     }
-  return;
+    return;
 }
 
 
@@ -121,7 +121,7 @@ pppoe_clear_debug_mask (UINT32_t mask)
 int
 is_pppoe_debug_flag_set (UINT32_t flag)
 {
-  return (((pppoe_debugs & flag) ? TRUE : FALSE));
+    return (((pppoe_debugs & flag) ? TRUE : FALSE));
 }
 
 
@@ -144,12 +144,12 @@ is_pppoe_debug_flag_set (UINT32_t flag)
 void
 pppoe_debug_all (int flag)
 {
-  if (flag)
+    if (flag)
     {
-      pppoe_debugs = PPPOE_ALL_DEBUG;
+        pppoe_debugs = PPPOE_ALL_DEBUG;
     }
-  else
+    else
     {
-      pppoe_debugs = PPPOE_DEFAULT_DEBUG;
+        pppoe_debugs = PPPOE_DEFAULT_DEBUG;
     }
 }

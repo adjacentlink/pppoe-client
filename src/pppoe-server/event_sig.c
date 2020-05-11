@@ -14,11 +14,10 @@
 *
 ***********************************************************************/
 
-static char const RCSID[] =
-"$Id$";
+//static char const RCSID[] = "$Id$";
 
-#define _POSIX_SOURCE 1 /* For sigaction defines */
-#define _BSD_SOURCE   1 /* For SA_RESTART */
+// #define _POSIX_SOURCE 1 /* For sigaction defines */
+// #define _BSD_SOURCE   1 /* For SA_RESTART */
 
 #include <signal.h>
 #include <sys/types.h>
@@ -39,13 +38,15 @@ static char const RCSID[] =
 #endif
 
 /* A structure for a "synchronous" signal handler */
-struct SynchronousSignalHandler {
-    int fired;			/* Have we received this signal? */
-    void (*handler)(int sig);	/* Handler function              */
+struct SynchronousSignalHandler
+{
+    int fired;          /* Have we received this signal? */
+    void (*handler)(int sig);   /* Handler function              */
 };
 
 /* A structure for calling back when a child dies */
-struct ChildEntry {
+struct ChildEntry
+{
     hash_bucket hash;
     void (*handler)(pid_t pid, int status, void *data);
     pid_t pid;
@@ -82,10 +83,10 @@ static int child_compare(void *d1, void *d2)
 *  fires all "synchronous" signal handlers.
 ***********************************************************************/
 static void
-DoPipe(EventSelector *es,
-       int fd,
-       unsigned int flags,
-       void *data)
+DoPipe(EventSelector *es __attribute__((unused)), 
+       int fd, 
+       unsigned int flags __attribute__((unused)), 
+       void *data __attribute__((unused)))
 {
     char buf[64];
     int i;
@@ -95,12 +96,14 @@ DoPipe(EventSelector *es,
     PipeFull = 0;
 
     /* Fire handlers */
-    for (i=0; i<MAX_SIGNALS; i++) {
-	if (SignalHandlers[i].fired &&
-	    SignalHandlers[i].handler) {
-	    SignalHandlers[i].handler(i);
-	}
-	SignalHandlers[i].fired = 0;
+    for (i=0; i<MAX_SIGNALS; i++)
+    {
+        if (SignalHandlers[i].fired &&
+                SignalHandlers[i].handler)
+        {
+            SignalHandlers[i].handler(i);
+        }
+        SignalHandlers[i].fired = 0;
     }
 }
 
@@ -116,14 +119,16 @@ DoPipe(EventSelector *es,
 static void
 sig_handler(int sig)
 {
-    if (sig <0 || sig > MAX_SIGNALS) {
-	/* Ooops... */
-	return;
+    if (sig <0 || sig > MAX_SIGNALS)
+    {
+        /* Ooops... */
+        return;
     }
     SignalHandlers[sig].fired = 1;
-    if (!PipeFull) {
-	write(Pipe[1], &sig, 1);
-	PipeFull = 1;
+    if (!PipeFull)
+    {
+        write(Pipe[1], &sig, 1);
+        PipeFull = 1;
     }
 }
 
@@ -137,23 +142,26 @@ sig_handler(int sig)
 *  Called *SYNCHRONOUSLY* to reap dead children.
 ***********************************************************************/
 static void
-child_handler(int sig)
+child_handler(int sig __attribute__((unused)))
 {
     int status;
     int pid;
     struct ChildEntry *ce;
     struct ChildEntry candidate;
 
-    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-	candidate.pid = (pid_t) pid;
-	ce = hash_find(&child_process_table, &candidate);
-	if (ce) {
-	    if (ce->handler) {
-		ce->handler(pid, status, ce->data);
-	    }
-	    hash_remove(&child_process_table, ce);
-	    free(ce);
-	}
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
+    {
+        candidate.pid = (pid_t) pid;
+        ce = hash_find(&child_process_table, &candidate);
+        if (ce)
+        {
+            if (ce->handler)
+            {
+                ce->handler(pid, status, ce->data);
+            }
+            hash_remove(&child_process_table, ce);
+            free(ce);
+        }
     }
 }
 
@@ -170,27 +178,32 @@ static int
 SetupPipes(EventSelector *es)
 {
     /* If already done, do nothing */
-    if (PipeHandler) return 0;
+    if (PipeHandler)
+    {
+        return 0;
+    }
 
     /* Initialize the child-process hash table */
     hash_init(&child_process_table,
-	      offsetof(struct ChildEntry, hash),
-	      child_hash,
-	      child_compare);
+              offsetof(struct ChildEntry, hash),
+              child_hash,
+              child_compare);
 
     /* Open pipe to self */
-    if (pipe(Pipe) < 0) {
-	return -1;
+    if (pipe(Pipe) < 0)
+    {
+        return -1;
     }
 
     PipeHandler = Event_AddHandler(es, Pipe[0],
-				   EVENT_FLAG_READABLE, DoPipe, NULL);
-    if (!PipeHandler) {
-	int old_errno = errno;
-	close(Pipe[0]);
-	close(Pipe[1]);
-	errno = old_errno;
-	return -1;
+                                   EVENT_FLAG_READABLE, DoPipe, NULL);
+    if (!PipeHandler)
+    {
+        int old_errno = errno;
+        close(Pipe[0]);
+        close(Pipe[1]);
+        errno = old_errno;
+        return -1;
     }
     return 0;
 }
@@ -209,12 +222,15 @@ SetupPipes(EventSelector *es)
 ***********************************************************************/
 int
 Event_HandleSignal(EventSelector *es,
-		   int sig,
-		   void (*handler)(int sig))
+                   int sig,
+                   void (*handler)(int sig))
 {
     struct sigaction act;
 
-    if (SetupPipes(es) < 0) return -1;
+    if (SetupPipes(es) < 0)
+    {
+        return -1;
+    }
 
     act.sa_handler = sig_handler;
     sigemptyset(&act.sa_mask);
@@ -222,10 +238,14 @@ Event_HandleSignal(EventSelector *es,
 #ifdef SA_RESTART
     act.sa_flags |= SA_RESTART;
 #endif
-    if (sig == SIGCHLD) {
-	act.sa_flags |= SA_NOCLDSTOP;
+    if (sig == SIGCHLD)
+    {
+        act.sa_flags |= SA_NOCLDSTOP;
     }
-    if (sigaction(sig, &act, NULL) < 0) return -1;
+    if (sigaction(sig, &act, NULL) < 0)
+    {
+        return -1;
+    }
 
     SignalHandlers[sig].handler = handler;
 
@@ -248,15 +268,21 @@ Event_HandleSignal(EventSelector *es,
 ***********************************************************************/
 int
 Event_HandleChildExit(EventSelector *es,
-		      pid_t pid,
-		      void (*handler)(pid_t, int, void *),
-		      void *data)
+                      pid_t pid,
+                      void (*handler)(pid_t, int, void *),
+                      void *data)
 {
     struct ChildEntry *ce;
 
-    if (Event_HandleSignal(es, SIGCHLD, child_handler) < 0) return -1;
+    if (Event_HandleSignal(es, SIGCHLD, child_handler) < 0)
+    {
+        return -1;
+    }
     ce = malloc(sizeof(struct ChildEntry));
-    if (!ce) return -1;
+    if (!ce)
+    {
+        return -1;
+    }
     ce->pid = pid;
     ce->data = data;
     ce->handler = handler;

@@ -10,7 +10,7 @@
  * ===========================
  *
  * Debug definitions
- * 
+ *
  * ===========================
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -56,15 +56,15 @@ static UINT32_t rfc4938_debugs = RFC4938_DEFAULT_DEBUG;
 void
 rfc4938_debug_set_mask (UINT32_t mask)
 {
-  if (mask == 0)
+    if (mask == 0)
     {
-      rfc4938_debugs = 0;
+        rfc4938_debugs = 0;
     }
-  else
+    else
     {
-      rfc4938_debugs |= mask;
+        rfc4938_debugs |= mask;
     }
-  return;
+    return;
 }
 
 
@@ -91,15 +91,15 @@ rfc4938_debug_set_mask (UINT32_t mask)
 void
 rfc4938_debug_clear_mask (UINT32_t mask)
 {
-  if (mask == 0)
+    if (mask == 0)
     {
-      rfc4938_debugs = 0;
+        rfc4938_debugs = 0;
     }
-  else
+    else
     {
-      rfc4938_debugs &= ~mask;
+        rfc4938_debugs &= ~mask;
     }
-  return;
+    return;
 }
 
 
@@ -122,7 +122,7 @@ rfc4938_debug_clear_mask (UINT32_t mask)
 int
 rfc4938_debug_is_flag_set (UINT32_t flag)
 {
-  return (((rfc4938_debugs & flag) ? 1 : 0));
+    return (((rfc4938_debugs & flag) ? 1 : 0));
 }
 
 
@@ -144,30 +144,40 @@ rfc4938_debug_is_flag_set (UINT32_t flag)
 void
 rfc4938_debug_all (int flag)
 {
-  if (flag)
+    if (flag)
     {
-      rfc4938_debugs = RFC4938_ALL_DEBUG;
+        rfc4938_debugs = RFC4938_ALL_DEBUG;
     }
-  else
+    else
     {
-      rfc4938_debugs = RFC4938_DEFAULT_DEBUG;
+        rfc4938_debugs = RFC4938_DEFAULT_DEBUG;
     }
 }
 
 
 const char * rfc4938_debug_code_to_string(UINT8_t code)
 {
-  switch(code)
-   {
-     case CODE_PADI: return "PADI";
-     case CODE_PADO: return "PADO";
-     case CODE_PADR: return "PADR";
-     case CODE_PADS: return "PADS";
-     case CODE_PADT: return "PADT";
-     case CODE_PADG: return "PADG";
-     case CODE_PADC: return "PADC";
-     case CODE_PADQ: return "PADQ";
-     case CODE_SESS: return "SESS";
-     default: return "?";
-   }
+    switch(code)
+    {
+    case CODE_PADI:
+        return "PADI";
+    case CODE_PADO:
+        return "PADO";
+    case CODE_PADR:
+        return "PADR";
+    case CODE_PADS:
+        return "PADS";
+    case CODE_PADT:
+        return "PADT";
+    case CODE_PADG:
+        return "PADG";
+    case CODE_PADC:
+        return "PADC";
+    case CODE_PADQ:
+        return "PADQ";
+    case CODE_SESS:
+        return "SESS";
+    default:
+        return "?";
+    }
 }

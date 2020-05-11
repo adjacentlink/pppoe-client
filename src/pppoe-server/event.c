@@ -14,8 +14,7 @@
 *
 ***********************************************************************/
 
-static char const RCSID[] =
-"$Id$";
+//static char const RCSID[] = "$Id$";
 
 #include "event.h"
 #include <stdlib.h>
@@ -38,7 +37,10 @@ EventSelector *
 Event_CreateSelector(void)
 {
     EventSelector *es = malloc(sizeof(EventSelector));
-    if (!es) return NULL;
+    if (!es)
+    {
+        return NULL;
+    }
     es->handlers = NULL;
     es->nestLevel = 0;
     es->destroyPending = 0;
@@ -60,10 +62,11 @@ Event_CreateSelector(void)
 void
 Event_DestroySelector(EventSelector *es)
 {
-    if (es->nestLevel) {
-	es->destroyPending = 1;
-	es->opsPending = 1;
-	return;
+    if (es->nestLevel)
+    {
+        es->destroyPending = 1;
+        es->opsPending = 1;
+        return;
     }
     DestroySelector(es);
 }
@@ -109,117 +112,166 @@ Event_HandleEvent(EventSelector *es)
     FD_ZERO(&writefds);
 
     eh = es->handlers;
-    for (eh=es->handlers; eh; eh=eh->next) {
-	if (eh->flags & EVENT_FLAG_DELETED) continue;
-	if (eh->flags & EVENT_FLAG_READABLE) {
-	    foundReadEvent = 1;
-	    FD_SET(eh->fd, &readfds);
-	    if (eh->fd > maxfd) maxfd = eh->fd;
-	}
-	if (eh->flags & EVENT_FLAG_WRITEABLE) {
-	    foundWriteEvent = 1;
-	    FD_SET(eh->fd, &writefds);
-	    if (eh->fd > maxfd) maxfd = eh->fd;
-	}
-	if (eh->flags & EVENT_TIMER_BITS) {
-	    if (!foundTimeoutEvent) {
-		abs_timeout = eh->tmout;
-		foundTimeoutEvent = 1;
-	    } else {
-		if (eh->tmout.tv_sec < abs_timeout.tv_sec ||
-		    (eh->tmout.tv_sec == abs_timeout.tv_sec &&
-		     eh->tmout.tv_usec < abs_timeout.tv_usec)) {
-		    abs_timeout = eh->tmout;
-		}
-	    }
-	}
+    for (eh=es->handlers; eh; eh=eh->next)
+    {
+        if (eh->flags & EVENT_FLAG_DELETED)
+        {
+            continue;
+        }
+        if (eh->flags & EVENT_FLAG_READABLE)
+        {
+            foundReadEvent = 1;
+            FD_SET(eh->fd, &readfds);
+            if (eh->fd > maxfd)
+            {
+                maxfd = eh->fd;
+            }
+        }
+        if (eh->flags & EVENT_FLAG_WRITEABLE)
+        {
+            foundWriteEvent = 1;
+            FD_SET(eh->fd, &writefds);
+            if (eh->fd > maxfd)
+            {
+                maxfd = eh->fd;
+            }
+        }
+        if (eh->flags & EVENT_TIMER_BITS)
+        {
+            if (!foundTimeoutEvent)
+            {
+                abs_timeout = eh->tmout;
+                foundTimeoutEvent = 1;
+            }
+            else
+            {
+                if (eh->tmout.tv_sec < abs_timeout.tv_sec ||
+                        (eh->tmout.tv_sec == abs_timeout.tv_sec &&
+                         eh->tmout.tv_usec < abs_timeout.tv_usec))
+                {
+                    abs_timeout = eh->tmout;
+                }
+            }
+        }
     }
-    if (foundReadEvent) {
-	rd = &readfds;
-    } else {
-	rd = NULL;
+    if (foundReadEvent)
+    {
+        rd = &readfds;
     }
-    if (foundWriteEvent) {
-	wr = &writefds;
-    } else {
-	wr = NULL;
+    else
+    {
+        rd = NULL;
     }
-
-    if (foundTimeoutEvent) {
-	gettimeofday(&now, NULL);
-	/* Convert absolute timeout to relative timeout for select */
-	timeout.tv_usec = abs_timeout.tv_usec - now.tv_usec;
-	timeout.tv_sec = abs_timeout.tv_sec - now.tv_sec;
-	if (timeout.tv_usec < 0) {
-	    timeout.tv_usec += 1000000;
-	    timeout.tv_sec--;
-	}
-	if (timeout.tv_sec < 0 ||
-	    (timeout.tv_sec == 0 && timeout.tv_usec < 0)) {
-	    timeout.tv_sec = 0;
-	    timeout.tv_usec = 0;
-	}
-	tm = &timeout;
-    } else {
-	tm = NULL;
+    if (foundWriteEvent)
+    {
+        wr = &writefds;
     }
-
-    if (foundReadEvent || foundWriteEvent || foundTimeoutEvent) {
-	for(;;) {
-	    r = select(maxfd+1, rd, wr, NULL, tm);
-	    if (r < 0) {
-		if (errno == EINTR) continue;
-	    }
-	    break;
-	}
+    else
+    {
+        wr = NULL;
     }
 
-    if (foundTimeoutEvent) gettimeofday(&now, NULL);
+    if (foundTimeoutEvent)
+    {
+        gettimeofday(&now, NULL);
+        /* Convert absolute timeout to relative timeout for select */
+        timeout.tv_usec = abs_timeout.tv_usec - now.tv_usec;
+        timeout.tv_sec = abs_timeout.tv_sec - now.tv_sec;
+        if (timeout.tv_usec < 0)
+        {
+            timeout.tv_usec += 1000000;
+            timeout.tv_sec--;
+        }
+        if (timeout.tv_sec < 0 ||
+                (timeout.tv_sec == 0 && timeout.tv_usec < 0))
+        {
+            timeout.tv_sec = 0;
+            timeout.tv_usec = 0;
+        }
+        tm = &timeout;
+    }
+    else
+    {
+        tm = NULL;
+    }
+
+    if (foundReadEvent || foundWriteEvent || foundTimeoutEvent)
+    {
+        for(;;)
+        {
+            r = select(maxfd+1, rd, wr, NULL, tm);
+            if (r < 0)
+            {
+                if (errno == EINTR)
+                {
+                    continue;
+                }
+            }
+            break;
+        }
+    }
+
+    if (foundTimeoutEvent)
+    {
+        gettimeofday(&now, NULL);
+    }
     errno_save = errno;
     es->nestLevel++;
 
-    if (r >= 0) {
-	/* Call handlers */
-	for (eh=es->handlers; eh; eh=eh->next) {
+    if (r >= 0)
+    {
+        /* Call handlers */
+        for (eh=es->handlers; eh; eh=eh->next)
+        {
 
-	    /* Pending delete for this handler?  Ignore it */
-	    if (eh->flags & EVENT_FLAG_DELETED) continue;
+            /* Pending delete for this handler?  Ignore it */
+            if (eh->flags & EVENT_FLAG_DELETED)
+            {
+                continue;
+            }
 
-	    flags = 0;
-	    if ((eh->flags & EVENT_FLAG_READABLE) &&
-		FD_ISSET(eh->fd, &readfds)) {
-		flags |= EVENT_FLAG_READABLE;
-	    }
-	    if ((eh->flags & EVENT_FLAG_WRITEABLE) &&
-		FD_ISSET(eh->fd, &writefds)) {
-		flags |= EVENT_FLAG_WRITEABLE;
-	    }
-	    if (eh->flags & EVENT_TIMER_BITS) {
-		pastDue = (eh->tmout.tv_sec < now.tv_sec ||
-			   (eh->tmout.tv_sec == now.tv_sec &&
-			    eh->tmout.tv_usec <= now.tv_usec));
-		if (pastDue) {
-		    flags |= EVENT_TIMER_BITS;
-		    if (eh->flags & EVENT_FLAG_TIMER) {
-			/* Timer events are only called once */
-			es->opsPending = 1;
-			eh->flags |= EVENT_FLAG_DELETED;
-		    }
-		}
-	    }
-	    /* Do callback */
-	    if (flags) {
-		EVENT_DEBUG(("Enter callback: eh=%p flags=%u\n", eh, flags));
-		eh->fn(es, eh->fd, flags, eh->data);
-		EVENT_DEBUG(("Leave callback: eh=%p flags=%u\n", eh, flags));
-	    }
-	}
+            flags = 0;
+            if ((eh->flags & EVENT_FLAG_READABLE) &&
+                    FD_ISSET(eh->fd, &readfds))
+            {
+                flags |= EVENT_FLAG_READABLE;
+            }
+            if ((eh->flags & EVENT_FLAG_WRITEABLE) &&
+                    FD_ISSET(eh->fd, &writefds))
+            {
+                flags |= EVENT_FLAG_WRITEABLE;
+            }
+            if (eh->flags & EVENT_TIMER_BITS)
+            {
+                pastDue = (eh->tmout.tv_sec < now.tv_sec ||
+                           (eh->tmout.tv_sec == now.tv_sec &&
+                            eh->tmout.tv_usec <= now.tv_usec));
+                if (pastDue)
+                {
+                    flags |= EVENT_TIMER_BITS;
+                    if (eh->flags & EVENT_FLAG_TIMER)
+                    {
+                        /* Timer events are only called once */
+                        es->opsPending = 1;
+                        eh->flags |= EVENT_FLAG_DELETED;
+                    }
+                }
+            }
+            /* Do callback */
+            if (flags)
+            {
+                EVENT_DEBUG(("Enter callback: eh=%p flags=%u\n", eh, flags));
+                eh->fn(es, eh->fd, flags, eh->data);
+                EVENT_DEBUG(("Leave callback: eh=%p flags=%u\n", eh, flags));
+            }
+        }
     }
 
     es->nestLevel--;
 
-    if (!es->nestLevel && es->opsPending) {
-	DoPendingChanges(es);
+    if (!es->nestLevel && es->opsPending)
+    {
+        DoPendingChanges(es);
     }
     errno = errno_save;
     return r;
@@ -238,10 +290,10 @@ Event_HandleEvent(EventSelector *es)
 ***********************************************************************/
 EventHandler *
 Event_AddHandler(EventSelector *es,
-		 int fd,
-		 unsigned int flags,
-		 EventCallbackFunc fn,
-		 void *data)
+                 int fd,
+                 unsigned int flags,
+                 EventCallbackFunc fn,
+                 void *data)
 {
     EventHandler *eh;
 
@@ -249,13 +301,17 @@ Event_AddHandler(EventSelector *es,
     flags &= (~(EVENT_TIMER_BITS | EVENT_FLAG_DELETED));
 
     /* Bad file descriptor */
-    if (fd < 0) {
-	errno = EBADF;
-	return NULL;
+    if (fd < 0)
+    {
+        errno = EBADF;
+        return NULL;
     }
 
     eh = malloc(sizeof(EventHandler));
-    if (!eh) return NULL;
+    if (!eh)
+    {
+        return NULL;
+    }
     eh->fd = fd;
     eh->flags = flags;
     eh->tmout.tv_usec = 0;
@@ -286,18 +342,19 @@ Event_AddHandler(EventSelector *es,
 ***********************************************************************/
 EventHandler *
 Event_AddHandlerWithTimeout(EventSelector *es,
-			    int fd,
-			    unsigned int flags,
-			    struct timeval t,
-			    EventCallbackFunc fn,
-			    void *data)
+                            int fd,
+                            unsigned int flags,
+                            struct timeval t,
+                            EventCallbackFunc fn,
+                            void *data)
 {
     EventHandler *eh;
     struct timeval now;
 
     /* If timeout is negative, just do normal non-timing-out event */
-    if (t.tv_sec < 0 || t.tv_usec < 0) {
-	return Event_AddHandler(es, fd, flags, fn, data);
+    if (t.tv_sec < 0 || t.tv_usec < 0)
+    {
+        return Event_AddHandler(es, fd, flags, fn, data);
     }
 
     /* Specifically disable timer and deleted flags */
@@ -305,28 +362,34 @@ Event_AddHandlerWithTimeout(EventSelector *es,
     flags |= EVENT_FLAG_TIMEOUT;
 
     /* Bad file descriptor? */
-    if (fd < 0) {
-	errno = EBADF;
-	return NULL;
+    if (fd < 0)
+    {
+        errno = EBADF;
+        return NULL;
     }
 
     /* Bad timeout? */
-    if (t.tv_usec >= 1000000) {
-	errno = EINVAL;
-	return NULL;
+    if (t.tv_usec >= 1000000)
+    {
+        errno = EINVAL;
+        return NULL;
     }
 
     eh = malloc(sizeof(EventHandler));
-    if (!eh) return NULL;
+    if (!eh)
+    {
+        return NULL;
+    }
 
     /* Convert time interval to absolute time */
     gettimeofday(&now, NULL);
 
     t.tv_sec += now.tv_sec;
     t.tv_usec += now.tv_usec;
-    if (t.tv_usec >= 1000000) {
-	t.tv_usec -= 1000000;
-	t.tv_sec++;
+    if (t.tv_usec >= 1000000)
+    {
+        t.tv_usec -= 1000000;
+        t.tv_sec++;
     }
 
     eh->fd = fd;
@@ -356,30 +419,35 @@ Event_AddHandlerWithTimeout(EventSelector *es,
 ***********************************************************************/
 EventHandler *
 Event_AddTimerHandler(EventSelector *es,
-		      struct timeval t,
-		      EventCallbackFunc fn,
-		      void *data)
+                      struct timeval t,
+                      EventCallbackFunc fn,
+                      void *data)
 {
     EventHandler *eh;
     struct timeval now;
 
     /* Check time interval for validity */
-    if (t.tv_sec < 0 || t.tv_usec < 0 || t.tv_usec >= 1000000) {
-	errno = EINVAL;
-	return NULL;
+    if (t.tv_sec < 0 || t.tv_usec < 0 || t.tv_usec >= 1000000)
+    {
+        errno = EINVAL;
+        return NULL;
     }
 
     eh = malloc(sizeof(EventHandler));
-    if (!eh) return NULL;
+    if (!eh)
+    {
+        return NULL;
+    }
 
     /* Convert time interval to absolute time */
     gettimeofday(&now, NULL);
 
     t.tv_sec += now.tv_sec;
     t.tv_usec += now.tv_usec;
-    if (t.tv_usec >= 1000000) {
-	t.tv_usec -= 1000000;
-	t.tv_sec++;
+    if (t.tv_usec >= 1000000)
+    {
+        t.tv_usec -= 1000000;
+        t.tv_sec++;
     }
 
     eh->fd = -1;
@@ -408,25 +476,36 @@ Event_AddTimerHandler(EventSelector *es,
 ***********************************************************************/
 int
 Event_DelHandler(EventSelector *es,
-		 EventHandler *eh)
+                 EventHandler *eh)
 {
     /* Scan the handlers list */
     EventHandler *cur, *prev;
     EVENT_DEBUG(("Event_DelHandler(es=%p, eh=%p)\n", es, eh));
-    for (cur=es->handlers, prev=NULL; cur; prev=cur, cur=cur->next) {
-	if (cur == eh) {
-	    if (es->nestLevel) {
-		eh->flags |= EVENT_FLAG_DELETED;
-		es->opsPending = 1;
-		return 0;
-	    } else {
-		if (prev) prev->next = cur->next;
-		else      es->handlers = cur->next;
+    for (cur=es->handlers, prev=NULL; cur; prev=cur, cur=cur->next)
+    {
+        if (cur == eh)
+        {
+            if (es->nestLevel)
+            {
+                eh->flags |= EVENT_FLAG_DELETED;
+                es->opsPending = 1;
+                return 0;
+            }
+            else
+            {
+                if (prev)
+                {
+                    prev->next = cur->next;
+                }
+                else
+                {
+                    es->handlers = cur->next;
+                }
 
-		DestroyHandler(cur);
-		return 0;
-	    }
-	}
+                DestroyHandler(cur);
+                return 0;
+            }
+        }
     }
 
     /* Handler not found */
@@ -446,9 +525,10 @@ void
 DestroySelector(EventSelector *es)
 {
     EventHandler *cur, *next;
-    for (cur=es->handlers; cur; cur=next) {
-	next = cur->next;
-	DestroyHandler(cur);
+    for (cur=es->handlers; cur; cur=next)
+    {
+        next = cur->next;
+        DestroyHandler(cur);
     }
 
     free(es);
@@ -487,30 +567,36 @@ DoPendingChanges(EventSelector *es)
     es->opsPending = 0;
 
     /* If selector is to be deleted, do it and skip everything else */
-    if (es->destroyPending) {
-	DestroySelector(es);
-	return;
+    if (es->destroyPending)
+    {
+        DestroySelector(es);
+        return;
     }
 
     /* Do deletions */
     cur = es->handlers;
     prev = NULL;
-    while(cur) {
-	if (!(cur->flags & EVENT_FLAG_DELETED)) {
-	    prev = cur;
-	    cur = cur->next;
-	    continue;
-	}
+    while(cur)
+    {
+        if (!(cur->flags & EVENT_FLAG_DELETED))
+        {
+            prev = cur;
+            cur = cur->next;
+            continue;
+        }
 
-	/* Unlink from list */
-	if (prev) {
-	    prev->next = cur->next;
-	} else {
-	    es->handlers = cur->next;
-	}
-	next = cur->next;
-	DestroyHandler(cur);
-	cur = next;
+        /* Unlink from list */
+        if (prev)
+        {
+            prev->next = cur->next;
+        }
+        else
+        {
+            es->handlers = cur->next;
+        }
+        next = cur->next;
+        DestroyHandler(cur);
+        cur = next;
     }
 }
 
@@ -553,8 +639,8 @@ Event_GetData(EventHandler *eh)
 ***********************************************************************/
 void
 Event_SetCallbackAndData(EventHandler *eh,
-			 EventCallbackFunc fn,
-			 void *data)
+                         EventCallbackFunc fn,
+                         void *data)
 {
     eh->fn = fn;
     eh->data = data;
@@ -579,12 +665,15 @@ Event_DebugMsg(char const *fmt, ...)
     va_list ap;
     struct timeval now;
 
-    if (!Event_DebugFP) return;
+    if (!Event_DebugFP)
+    {
+        return;
+    }
 
     gettimeofday(&now, NULL);
 
     fprintf(Event_DebugFP, "%03d.%03d ", (int) now.tv_sec % 1000,
-	    (int) now.tv_usec / 1000);
+            (int) now.tv_usec / 1000);
 
     va_start(ap, fmt);
     vfprintf(Event_DebugFP, fmt, ap);
@@ -628,17 +717,19 @@ Event_ChangeTimeout(EventHandler *h, struct timeval t)
     struct timeval now;
 
     /* Check time interval for validity */
-    if (t.tv_sec < 0 || t.tv_usec < 0 || t.tv_usec >= 1000000) {
-	return;
+    if (t.tv_sec < 0 || t.tv_usec < 0 || t.tv_usec >= 1000000)
+    {
+        return;
     }
     /* Convert time interval to absolute time */
     gettimeofday(&now, NULL);
 
     t.tv_sec += now.tv_sec;
     t.tv_usec += now.tv_usec;
-    if (t.tv_usec >= 1000000) {
-	t.tv_usec -= 1000000;
-	t.tv_sec++;
+    if (t.tv_usec >= 1000000)
+    {
+        t.tv_usec -= 1000000;
+        t.tv_sec++;
     }
 
     h->tmout = t;

@@ -18,14 +18,16 @@
 #define HASHTAB_SIZE 67
 
 /* A hash bucket */
-typedef struct hash_bucket_t {
+typedef struct hash_bucket_t
+{
     struct hash_bucket_t *next;
     struct hash_bucket_t *prev;
     unsigned int hashval;
 } hash_bucket;
 
 /* A hash table */
-typedef struct hash_table_t {
+typedef struct hash_table_t
+{
     hash_bucket *buckets[HASHTAB_SIZE];
     size_t hash_offset;
     unsigned int (*compute_hash)(void *data);
@@ -35,9 +37,9 @@ typedef struct hash_table_t {
 
 /* Functions */
 void hash_init(hash_table *tab,
-	       size_t hash_offset,
-	       unsigned int (*compute)(void *data),
-	       int (*compare)(void *item1, void *item2));
+               size_t hash_offset,
+               unsigned int (*compute)(void *data),
+               int (*compare)(void *item1, void *item2));
 void hash_insert(hash_table *tab, void *item);
 void hash_remove(hash_table *tab, void *item);
 void *hash_find(hash_table *tab, void *item);

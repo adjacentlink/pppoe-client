@@ -17,7 +17,7 @@
 
 #include "config.h"
 
-#include "logger.h"
+#include "../common/logger.h"
 
 extern int IsSetID;
 
@@ -25,8 +25,8 @@ extern int IsSetID;
 #define _POSIX_SOURCE 1 /* For sigaction defines */
 #endif
 
-#include <stdio.h>		/* For FILE */
-#include <sys/types.h>		/* For pid_t */
+#include <stdio.h>      /* For FILE */
+#include <sys/types.h>      /* For pid_t */
 
 /* How do we access raw Ethernet devices? */
 #undef USE_LINUX_PACKET
@@ -88,8 +88,8 @@ void sessionDiscoveryPacket(struct PPPoEPacketStruct *packet);
 #define h_dest ether_dhost
 #define h_source ether_shost
 #define h_proto ether_type
-#define	ETH_DATA_LEN ETHERMTU
-#define	ETH_ALEN ETHER_ADDR_LEN
+#define ETH_DATA_LEN ETHERMTU
+#define ETH_ALEN ETHER_ADDR_LEN
 #else
 #undef USE_BPF
 #define BPF_BUFFER_IS_EMPTY 1
@@ -99,8 +99,8 @@ void sessionDiscoveryPacket(struct PPPoEPacketStruct *packet);
 #ifdef USE_DLPI
 #include <sys/ethernet.h>
 #define ethhdr ether_header
-#define	ETH_DATA_LEN ETHERMTU
-#define	ETH_ALEN ETHERADDRL
+#define ETH_DATA_LEN ETHERMTU
+#define ETH_ALEN ETHERADDRL
 #define h_dest ether_dhost.ether_addr_octet
 #define h_source ether_shost.ether_addr_octet
 #define h_proto ether_type
@@ -252,18 +252,19 @@ extern void dropPrivs(void);
 #endif
 
 /* A PPPoE Packet, including Ethernet headers */
-typedef struct PPPoEPacketStruct {
-    struct ethhdr ethHdr;	/* Ethernet header */
+typedef struct PPPoEPacketStruct
+{
+    struct ethhdr ethHdr;   /* Ethernet header */
 #ifdef PACK_BITFIELDS_REVERSED
-    unsigned int type:4;	/* PPPoE Type (must be 1) */
-    unsigned int ver:4;		/* PPPoE Version (must be 1) */
+    unsigned int type:4;    /* PPPoE Type (must be 1) */
+    unsigned int ver:4;     /* PPPoE Version (must be 1) */
 #else
-    unsigned int ver:4;		/* PPPoE Version (must be 1) */
-    unsigned int type:4;	/* PPPoE Type (must be 1) */
+    unsigned int ver:4;     /* PPPoE Version (must be 1) */
+    unsigned int type:4;    /* PPPoE Type (must be 1) */
 #endif
-    unsigned int code:8;	/* PPPoE code */
-    unsigned int session:16;	/* PPPoE session */
-    unsigned int length:16;	/* Payload length */
+    unsigned int code:8;    /* PPPoE code */
+    unsigned int session:16;    /* PPPoE session */
+    unsigned int length:16; /* Payload length */
     unsigned char payload[ETH_DATA_LEN]; /* A bit of room to spare */
 } PPPoEPacket;
 
@@ -275,9 +276,10 @@ typedef struct PPPoEPacketStruct {
 
 /* PPPoE Tag */
 
-typedef struct PPPoETagStruct {
-    unsigned int type:16;	/* tag type */
-    unsigned int length:16;	/* Length of payload */
+typedef struct PPPoETagStruct
+{
+    unsigned int type:16;   /* tag type */
+    unsigned int length:16; /* Length of payload */
     unsigned char payload[ETH_DATA_LEN]; /* A LOT of room to spare */
 } PPPoETag;
 /* Header size of a PPPoE tag */
@@ -288,9 +290,9 @@ typedef struct PPPoETagStruct {
 
 /* Function passed to parsePacket */
 typedef void ParseFunc(UINT16_t type,
-		       UINT16_t len,
-		       unsigned char *data,
-		       void *extra);
+                       UINT16_t len,
+                       unsigned char *data,
+                       void *extra);
 
 #define PPPINITFCS16    0xffff  /* Initial FCS value */
 
@@ -302,26 +304,27 @@ typedef void ParseFunc(UINT16_t type,
 /* Keep track of the state of a connection -- collect everything in
    one spot */
 
-typedef struct PPPoEConnectionStruct {
-    int discoveryState;		/* Where we are in discovery */
-    int discoverySocket;	/* Raw socket for discovery frames */
-    int sessionSocket;		/* Raw socket for session frames */
+typedef struct PPPoEConnectionStruct
+{
+    int discoveryState;     /* Where we are in discovery */
+    int discoverySocket;    /* Raw socket for discovery frames */
+    int sessionSocket;      /* Raw socket for session frames */
     unsigned char myEth[ETH_ALEN]; /* My MAC address */
     unsigned char peerEth[ETH_ALEN]; /* Peer's MAC address */
-    UINT16_t session;		/* Session ID */
-    char *ifName;		/* Interface name */
-    char *serviceName;		/* Desired service name, if any */
-    char *acName;		/* Desired AC name, if any */
-    int synchronous;		/* Use synchronous PPP */
-    int useHostUniq;		/* Use Host-Uniq tag */
-    int printACNames;		/* Just print AC names */
-    int skipDiscovery;		/* Skip discovery */
-    int noDiscoverySocket;	/* Don't even open discovery socket */
-    int killSession;		/* Kill session and exit */
-    FILE *debugFile;		/* Debug file for dumping packets */
-    int numPADOs;		/* Number of PADO packets received */
-    PPPoETag cookie;		/* We have to send this if we get it */
-    PPPoETag relayId;		/* Ditto */
+    UINT16_t session;       /* Session ID */
+    char *ifName;       /* Interface name */
+    char *serviceName;      /* Desired service name, if any */
+    char *acName;       /* Desired AC name, if any */
+    int synchronous;        /* Use synchronous PPP */
+    int useHostUniq;        /* Use Host-Uniq tag */
+    int printACNames;       /* Just print AC names */
+    int skipDiscovery;      /* Skip discovery */
+    int noDiscoverySocket;  /* Don't even open discovery socket */
+    int killSession;        /* Kill session and exit */
+    FILE *debugFile;        /* Debug file for dumping packets */
+    int numPADOs;       /* Number of PADO packets received */
+    PPPoETag cookie;        /* We have to send this if we get it */
+    PPPoETag relayId;       /* Ditto */
 #ifdef SUPPORT_RFC4938
     unsigned char *creditPtr; /* We have to manipulate this in the packet */
     int sequence;         /* We only need to pay attention if we sent this */
@@ -343,7 +346,8 @@ typedef struct PPPoEConnectionStruct {
 } PPPoEConnection;
 
 /* Structure used to determine acceptable PADO or PADS packet */
-struct PacketCriteria {
+struct PacketCriteria
+{
     PPPoEConnection *conn;
     int acNameOK;
     int serviceNameOK;
@@ -376,7 +380,7 @@ void sendPADT(PPPoEConnection *conn, char const *msg);
 void sendPADTf(PPPoEConnection *conn, char const *fmt, ...);
 
 void sendSessionPacket(PPPoEConnection *conn,
-		       PPPoEPacket *packet, int len);
+                       PPPoEPacket *packet, int len);
 #ifndef SUPPORT_RFC4938
 void initPPP(void);
 #else
@@ -387,7 +391,7 @@ UINT16_t computeTCPChecksum(unsigned char *ipHdr, unsigned char *tcpHdr);
 UINT16_t pppFCS16(UINT16_t fcs, unsigned char *cp, int len);
 void discovery(PPPoEConnection *conn);
 unsigned char *findTag(PPPoEPacket *packet, UINT16_t tagType,
-		       PPPoETag *tag);
+                       PPPoETag *tag);
 extern int file_exists(const char * filename);
 
 #define SET_STRING(var, val) do { if (var) free(var); var = strDup(val); } while(0);

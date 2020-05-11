@@ -40,7 +40,8 @@
 /*
  * Message command codes
  */
-typedef enum {
+typedef enum
+{
 
     /* control, box-box messages */
     CTL_SESSION_START = 0,
@@ -76,7 +77,8 @@ typedef enum {
  * Defines the header used for all messages sent to
  * and received from the rfc4938ctl process.
  */
-typedef struct {
+typedef struct
+{
     UINT16_t   u16hdrchk;  // mbf
     UINT8_t    u8cmd_code;
     UINT8_t    u8pad;
@@ -87,7 +89,8 @@ typedef struct {
 /*
  * session start payload.
  */
-typedef struct {
+typedef struct
+{
     UINT32_t   u32neighbor_id;
     UINT32_t   u32pid;
     UINT16_t   u16credit_scalar;
@@ -100,7 +103,8 @@ typedef struct {
 /*
  * session start ready payload.
  */
-typedef struct {
+typedef struct
+{
     UINT32_t   u32neighbor_id;
     UINT32_t   u32pid;
 } __attribute__((packed)) rfc4938_ctl_start_ready_payload_t;
@@ -112,7 +116,8 @@ typedef struct {
 /*
  * session child ready payload.
  */
-typedef struct {
+typedef struct
+{
     UINT32_t         u32neighbor_id;
     UINT16_t         u16port_number;
     UINT32_t         u32pid;
@@ -125,7 +130,8 @@ typedef struct {
 /*
  * session child id payload.
  */
-typedef struct {
+typedef struct
+{
     UINT32_t         u32neighbor_id;
     UINT16_t         u16session_id;
     UINT32_t         u32pid;
@@ -138,7 +144,8 @@ typedef struct {
 /*
  * child session terminated payload.
  */
-typedef struct {
+typedef struct
+{
     UINT16_t         u16session_id;
     UINT32_t         u32neighbor_id;
 } __attribute__((packed)) rfc4938_ctl_child_session_terminated_payload_t;
@@ -151,7 +158,8 @@ typedef struct {
 /*
  * peer session terminated payload.
  */
-typedef struct {
+typedef struct
+{
     UINT32_t         u32neighbor_id;
 } __attribute__((packed)) rfc4938_ctl_peer_session_terminated_payload_t;
 
@@ -163,7 +171,8 @@ typedef struct {
 /*
  * session stop payload.
  */
-typedef struct {
+typedef struct
+{
 } __attribute__((packed)) rfc4938_ctl_stop_payload_t;
 
 #define SIZEOF_CTL_SESSION_STOP  \
@@ -174,7 +183,8 @@ typedef struct {
  * inject padq values.
  */
 
-typedef struct {
+typedef struct
+{
     UINT32_t   u32neighbor_id;
     UINT8_t    u8receive_only;    /* not used */
     UINT8_t    u8rlq;             /* 0 - 100 */
@@ -196,7 +206,8 @@ typedef struct {
 /*
  * inject padg credits.
  */
-typedef struct {
+typedef struct
+{
     UINT32_t   u32neighbor_id;
     UINT16_t   u16credits;
 } __attribute__((packed)) rfc4938_ctl_padg_payload_t;
@@ -208,7 +219,8 @@ typedef struct {
 /*
  * session data
  */
-typedef struct {
+typedef struct
+{
     UINT32_t   u32neighbor_id;
     UINT16_t   u16data_len;
     UINT16_t   u16credits;
@@ -221,7 +233,8 @@ typedef struct {
 /*
  * raw data
  */
-typedef struct {
+typedef struct
+{
     UINT16_t   u16session_id;
     UINT16_t   u16data_len;
     UINT16_t   u16proto;
@@ -236,7 +249,8 @@ typedef struct {
 /*
  * cli initiate session.
  */
-typedef struct {
+typedef struct
+{
     UINT32_t   u32neighbor_id;
     UINT16_t   u16credit_scalar;
 } __attribute__((packed)) rfc4938_cli_initiate_payload_t;
@@ -248,7 +262,8 @@ typedef struct {
 /*
  * cli terminate session.
  */
-typedef struct {
+typedef struct
+{
     UINT32_t   u32neighbor_id;
 } __attribute__((packed)) rfc4938_cli_terminate_payload_t;
 
@@ -259,7 +274,8 @@ typedef struct {
 /*
  * cli inject padq request.
  */
-typedef struct {
+typedef struct
+{
     UINT32_t   u32neighbor_id;
 
     UINT8_t    u8receive_only;     /* not used */
@@ -280,7 +296,8 @@ typedef struct {
 /*
  * cli inject padg credits.
  */
-typedef struct {
+typedef struct
+{
     UINT32_t   u32neighbor_id;
 
     UINT16_t   u16credits;
@@ -293,7 +310,8 @@ typedef struct {
 /*
  * cli show session request.
  */
-typedef struct {
+typedef struct
+{
 } __attribute__((packed)) rfc4938_cli_show_payload_t;
 
 #define SIZEOF_CLI_SHOW_REQUEST  \
@@ -303,7 +321,8 @@ typedef struct {
 /*
  * cli show session response.
  */
-typedef struct {
+typedef struct
+{
     UINT32_t     u32neighbor_id;
 #define SHOW_TEXT_OUTPUT (1000)
     char       show_text[SHOW_TEXT_OUTPUT];
@@ -316,10 +335,12 @@ typedef struct {
 /*
  * The message definition.
  */
-typedef struct {
+typedef struct
+{
     rfc4938_ctl_message_header_t header;
 
-    union {
+    union
+    {
         /* box-box */
         rfc4938_ctl_start_payload_t                     ctl_start_payload;
 
@@ -368,38 +389,38 @@ typedef struct {
 
 int
 rfc4938_ctl_format_session_start(UINT32_t seq,
-                        UINT32_t neighbor_id,
-                        UINT32_t pid,
-                        UINT16_t credit_scalar,
-                        void *p2buffer);
+                                 UINT32_t neighbor_id,
+                                 UINT32_t pid,
+                                 UINT16_t credit_scalar,
+                                 void *p2buffer);
 
 int
 rfc4938_ctl_format_session_start_ready(UINT32_t seq,
-                UINT32_t neighbor_id,
-                UINT32_t pid,
-                void *p2buffer);
+                                       UINT32_t neighbor_id,
+                                       UINT32_t pid,
+                                       void *p2buffer);
 
 int
 rfc4938_ctl_format_child_ready(UINT32_t seq,
-                UINT32_t neighbor_id,
-                UINT16_t port_number,
-                UINT32_t pid,
-                void *p2buffer);
+                               UINT32_t neighbor_id,
+                               UINT16_t port_number,
+                               UINT32_t pid,
+                               void *p2buffer);
 
 int
 rfc4938_ctl_format_child_session_up(UINT32_t seq,
-                UINT32_t neighbor_id,
-                UINT16_t session_id,
-                UINT32_t pid,
-                void *p2buffer);
+                                    UINT32_t neighbor_id,
+                                    UINT16_t session_id,
+                                    UINT32_t pid,
+                                    void *p2buffer);
 
 int
 rfc4938_ctl_format_child_session_data (UINT32_t seq,
-                UINT32_t neighbor_id,
-                UINT16_t datalen,
-                UINT16_t credits,
-                void * p2data,
-                void *p2buffer);
+                                       UINT32_t neighbor_id,
+                                       UINT16_t datalen,
+                                       UINT16_t credits,
+                                       void * p2data,
+                                       void *p2buffer);
 
 
 int
@@ -407,86 +428,86 @@ rfc4938_ctl_format_peer_session_data (UINT32_t seq, void *p2buffer, UINT32_t nei
 
 int
 rfc4938_ctl_format_frame_data (UINT32_t seq,
-                UINT16_t session_id,
-                UINT16_t datalen,
-                UINT16_t proto,
-                void * p2data,
-                void *p2buffer);
+                               UINT16_t session_id,
+                               UINT16_t datalen,
+                               UINT16_t proto,
+                               void * p2data,
+                               void *p2buffer);
 
 
 int
 rfc4938_ctl_format_child_session_terminated(UINT32_t seq,
-                           UINT32_t neighbor_id,
-                           UINT16_t session_id,
-                           void *p2buffer);
+        UINT32_t neighbor_id,
+        UINT16_t session_id,
+        void *p2buffer);
 
 
 int
 rfc4938_ctl_format_peer_session_terminated(UINT32_t seq,
-                           UINT32_t neighbor_id,
-                           void *p2buffer);
+        UINT32_t neighbor_id,
+        void *p2buffer);
 
 
 int
 rfc4938_ctl_format_session_stop(UINT32_t seq,
-                           void *p2buffer);
+                                void *p2buffer);
 
 
 int
 rfc4938_ctl_format_session_padq(UINT32_t seq,
-                UINT8_t receive_only,
-                UINT8_t rlq,
-                UINT8_t resources,
-                UINT16_t latency,
-                UINT16_t cdr_scale,
-                UINT16_t current_data_rate,
-                UINT16_t mdr_scale,
-                UINT16_t max_data_rate,
-                void *p2buffer);
+                                UINT8_t receive_only,
+                                UINT8_t rlq,
+                                UINT8_t resources,
+                                UINT16_t latency,
+                                UINT16_t cdr_scale,
+                                UINT16_t current_data_rate,
+                                UINT16_t mdr_scale,
+                                UINT16_t max_data_rate,
+                                void *p2buffer);
 
 int
 rfc4938_ctl_format_session_padg (UINT32_t seq,
-                UINT16_t credits,
-                void *p2buffer);
+                                 UINT16_t credits,
+                                 void *p2buffer);
 
 
 int
 rfc4938_cli_format_session_initiate(UINT32_t seq,
-                UINT32_t neighbor_id,
-                UINT16_t credit_scalar,
-                void *p2buffer);
+                                    UINT32_t neighbor_id,
+                                    UINT16_t credit_scalar,
+                                    void *p2buffer);
 
 int
 rfc4938_cli_format_session_terminate(UINT32_t seq,
-                UINT32_t neighbor_id,
-                void *p2buffer);
+                                     UINT32_t neighbor_id,
+                                     void *p2buffer);
 
 int
 rfc4938_cli_format_padq(UINT32_t seq,
-                UINT32_t neighbor_id,
-                UINT8_t receive_only,
-                UINT8_t rlq,
-                UINT8_t resources,
-                UINT16_t latency,
-                UINT16_t cdr_scale,
-                UINT16_t current_data_rate,
-                UINT16_t mdr_scale,
-                UINT16_t max_data_rate,
-                void *p2buffer);
+                        UINT32_t neighbor_id,
+                        UINT8_t receive_only,
+                        UINT8_t rlq,
+                        UINT8_t resources,
+                        UINT16_t latency,
+                        UINT16_t cdr_scale,
+                        UINT16_t current_data_rate,
+                        UINT16_t mdr_scale,
+                        UINT16_t max_data_rate,
+                        void *p2buffer);
 
 int
 rfc4938_cli_format_session_padg(UINT32_t seq,
-                  UINT32_t neighbor_id,
-                  UINT16_t credits,
-                  void *p2buffer);
+                                UINT32_t neighbor_id,
+                                UINT16_t credits,
+                                void *p2buffer);
 
 int
 rfc4938_cli_format_session_show(UINT32_t seq,
-                  void *p2buffer);
+                                void *p2buffer);
 
 int
 rfc4938_cli_format_session_show_response(UINT32_t seq,
-                  UINT32_t neighbor_id,
-                  void *p2buffer);
+        UINT32_t neighbor_id,
+        void *p2buffer);
 
 #endif

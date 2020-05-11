@@ -92,7 +92,8 @@ UINT32_t rfc4938_config_get_id(UINT32_t id);
 
 UINT8_t * rfc4938_config_get_hwaddr (void);
 
-struct rfc4938config_vars {
+struct rfc4938config_vars
+{
     char     interface_name[64];
     char     service_name[256];
     char     pppoe_binary_path[512];

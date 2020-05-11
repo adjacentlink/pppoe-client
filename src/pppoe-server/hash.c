@@ -14,8 +14,7 @@
 *
 ***********************************************************************/
 
-static char const RCSID[] =
-"$Id$";
+// static char const RCSID[] = "$Id$";
 
 #include "hash.h"
 
@@ -46,17 +45,18 @@ static void *hash_next_cursor(hash_table *tab, hash_bucket *b);
 ***********************************************************************/
 void
 hash_init(hash_table *tab,
-	  size_t hash_offset,
-	  unsigned int (*compute)(void *data),
-	  int (*compare)(void *item1, void *item2))
+          size_t hash_offset,
+          unsigned int (*compute)(void *data),
+          int (*compare)(void *item1, void *item2))
 {
     size_t i;
 
     tab->hash_offset = hash_offset;
     tab->compute_hash = compute;
     tab->compare = compare;
-    for (i=0; i<HASHTAB_SIZE; i++) {
-	tab->buckets[i] = NULL;
+    for (i=0; i<HASHTAB_SIZE; i++)
+    {
+        tab->buckets[i] = NULL;
     }
     tab->num_entries = 0;
 }
@@ -74,7 +74,7 @@ hash_init(hash_table *tab,
 ***********************************************************************/
 void
 hash_insert(hash_table *tab,
-	    void *item)
+            void *item)
 {
     hash_bucket *b = GET_BUCKET(tab, item);
     unsigned int val = tab->compute_hash(item);
@@ -82,8 +82,9 @@ hash_insert(hash_table *tab,
     val %= HASHTAB_SIZE;
     b->prev = NULL;
     b->next = tab->buckets[val];
-    if (b->next) {
-	b->next->prev = b;
+    if (b->next)
+    {
+        b->next->prev = b;
     }
     tab->buckets[val] = b;
     tab->num_entries++;
@@ -101,18 +102,22 @@ hash_insert(hash_table *tab,
 ***********************************************************************/
 void
 hash_remove(hash_table *tab,
-	    void *item)
+            void *item)
 {
     hash_bucket *b = GET_BUCKET(tab, item);
     unsigned int val = b->hashval % HASHTAB_SIZE;
 
-    if (b->prev) {
-	b->prev->next = b->next;
-    } else {
-	tab->buckets[val] = b->next;
+    if (b->prev)
+    {
+        b->prev->next = b->next;
     }
-    if (b->next) {
-	b->next->prev = b->prev;
+    else
+    {
+        tab->buckets[val] = b->next;
+    }
+    if (b->next)
+    {
+        b->next->prev = b->prev;
     }
     tab->num_entries--;
 }
@@ -129,13 +134,17 @@ hash_remove(hash_table *tab,
 ***********************************************************************/
 void *
 hash_find(hash_table *tab,
-	  void *item)
+          void *item)
 {
     unsigned int val = tab->compute_hash(item) % HASHTAB_SIZE;
     hash_bucket *b;
-    for (b = tab->buckets[val]; b; b = b->next) {
-	void *item2 = GET_ITEM(tab, b);
-	if (!tab->compare(item, item2)) return item2;
+    for (b = tab->buckets[val]; b; b = b->next)
+    {
+        void *item2 = GET_ITEM(tab, b);
+        if (!tab->compare(item, item2))
+        {
+            return item2;
+        }
     }
     return NULL;
 }
@@ -153,12 +162,16 @@ hash_find(hash_table *tab,
 ***********************************************************************/
 void *
 hash_find_next(hash_table *tab,
-	       void *item)
+               void *item)
 {
     hash_bucket *b = GET_BUCKET(tab, item);
-    for (b = b->next; b; b = b->next) {
-	void *item2 = GET_ITEM(tab, b);
-	if (!tab->compare(item, item2)) return item2;
+    for (b = b->next; b; b = b->next)
+    {
+        void *item2 = GET_ITEM(tab, b);
+        if (!tab->compare(item, item2))
+        {
+            return item2;
+        }
     }
     return NULL;
 }
@@ -176,13 +189,15 @@ void *
 hash_start(hash_table *tab, void **cursor)
 {
     int i;
-    for (i=0; i<HASHTAB_SIZE; i++) {
-	if (tab->buckets[i]) {
-	    /* Point cursor to NEXT item so it is valid
-	       even if current item is free'd */
-	    *cursor = hash_next_cursor(tab, tab->buckets[i]);
-	    return GET_ITEM(tab, tab->buckets[i]);
-	}
+    for (i=0; i<HASHTAB_SIZE; i++)
+    {
+        if (tab->buckets[i])
+        {
+            /* Point cursor to NEXT item so it is valid
+               even if current item is free'd */
+            *cursor = hash_next_cursor(tab, tab->buckets[i]);
+            return GET_ITEM(tab, tab->buckets[i]);
+        }
     }
     *cursor = NULL;
     return NULL;
@@ -203,7 +218,10 @@ hash_next(hash_table *tab, void **cursor)
 {
     hash_bucket *b;
 
-    if (!*cursor) return NULL;
+    if (!*cursor)
+    {
+        return NULL;
+    }
 
     b = (hash_bucket *) *cursor;
     *cursor = hash_next_cursor(tab, b);
@@ -222,12 +240,22 @@ static void *
 hash_next_cursor(hash_table *tab, hash_bucket *b)
 {
     unsigned int i;
-    if (!b) return NULL;
-    if (b->next) return b->next;
+    if (!b)
+    {
+        return NULL;
+    }
+    if (b->next)
+    {
+        return b->next;
+    }
 
     i = b->hashval % HASHTAB_SIZE;
-    for (++i; i<HASHTAB_SIZE; ++i) {
-	if (tab->buckets[i]) return tab->buckets[i];
+    for (++i; i<HASHTAB_SIZE; ++i)
+    {
+        if (tab->buckets[i])
+        {
+            return tab->buckets[i];
+        }
     }
     return NULL;
 }
@@ -254,13 +282,15 @@ hash_pjw(char const * str)
 {
     unsigned int hash_value, i;
 
-    for (hash_value = 0; *str; ++str) {
+    for (hash_value = 0; *str; ++str)
+    {
         hash_value = ( hash_value << ONE_EIGHTH ) + *str;
-        if (( i = hash_value & HIGH_BITS ) != 0 ) {
+        if (( i = hash_value & HIGH_BITS ) != 0 )
+        {
             hash_value =
                 ( hash_value ^ ( i >> THREE_QUARTERS )) &
-		~HIGH_BITS;
-	}
+                ~HIGH_BITS;
+        }
     }
     return hash_value;
 }

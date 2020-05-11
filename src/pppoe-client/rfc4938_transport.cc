@@ -127,8 +127,7 @@ PPPoETransport::~PPPoETransport()
 
 void PPPoETransport::processUpstreamPacket(EMANE::UpstreamPacket & pkt, const EMANE::ControlMessages & msgs) 
  { 
-   RFC4938_DEBUG_PACKET("%s:(%hu): pkt len %zd, src %hu\n", 
-                        __func__, 
+   LOGGER(LOG_PKT, "(%hu): pkt len %zd, src %hu\n", 
                         id_, 
                         pkt.length(), 
                         pkt.getPacketInfo().getSource()); 
@@ -137,8 +136,7 @@ void PPPoETransport::processUpstreamPacket(EMANE::UpstreamPacket & pkt, const EM
 
    if(isAHello(pkt.get(), pkt.length()))
     {
-      RFC4938_DEBUG_PACKET("%s:(%hu): consume hello from %hu\n", 
-                           __func__, 
+      LOGGER(LOG_PKT, "(%hu): consume hello from %hu\n", 
                            id_, 
                            pkt.getPacketInfo().getSource()); 
       return;
@@ -193,26 +191,26 @@ void PPPoETransport::processTimedEvent(EMANE::TimerEventId,
 
 void PPPoETransport::initialize(EMANE::Registrar & )
  { 
-   RFC4938_DEBUG_EVENT("%s:(%hu):\n", __func__, id_); 
+   LOGGER(LOG_INFO, "(%hu):\n", id_); 
  }
 
 
 void PPPoETransport::configure(const EMANE::ConfigurationUpdate & )
  {
-   RFC4938_DEBUG_EVENT("%s:(%hu):\n", __func__, id_); 
+   LOGGER(LOG_INFO, "(%hu):\n", id_); 
  }
 
 
 void PPPoETransport::start()
  { 
-   RFC4938_DEBUG_EVENT("%s:(%hu):\n", __func__, id_); 
+   LOGGER(LOG_INFO, "(%hu):\n", id_); 
 
  }
 
 
 void PPPoETransport::postStart()
  { 
-   RFC4938_DEBUG_EVENT("%s:(%hu):\n", __func__, id_); 
+   LOGGER(LOG_INFO, "(%hu):\n", id_); 
 
    if(rfc4938_config_is_flow_control_enabled())
      {
@@ -225,7 +223,7 @@ void PPPoETransport::postStart()
 
 void PPPoETransport::stop()
  { 
-   RFC4938_DEBUG_EVENT("%s:(%hu):\n", __func__, id_); 
+   LOGGER(LOG_INFO, "(%hu):\n", id_); 
 
    bCanceled_ = true;
 
@@ -243,7 +241,7 @@ void PPPoETransport::stop()
 
 void PPPoETransport::destroy() throw () 
  { 
-   RFC4938_DEBUG_EVENT("%s:(%hu):\n", __func__, id_); 
+   LOGGER(LOG_INFO, "(%hu):\n", id_); 
  }
 
 
@@ -362,8 +360,7 @@ void PPPoETransport::enableHellos(float fInterval)
 
    if(fInterval > 0.0)
      {
-       RFC4938_DEBUG_EVENT("%s:(%hu): send hello every %f sec\n", 
-                           __func__, id_, fInterval);
+       LOGGER(LOG_INFO, "(%hu): send hello every %f sec\n", id_, fInterval);
 
        helloInterval_ = std::chrono::duration_cast<EMANE::Microseconds>(EMANE::DoubleSeconds(fInterval));
 
@@ -376,7 +373,7 @@ void PPPoETransport::enableHellos(float fInterval)
 
 void PPPoETransport::disableHellos()
  { 
-   RFC4938_DEBUG_EVENT("%s:(%hu):\n", __func__, id_); 
+   LOGGER(LOG_INFO, "(%hu):\n", id_); 
 
    if(helloTimedEventId_ != 0)
     {
@@ -421,8 +418,7 @@ int PPPoETransport::getResources_i(const EMANE::DoubleSeconds & totalBandWidthCo
      result = 100;
    }
 
-  RFC4938_DEBUG_EVENT("%s:(%hu): consumption %64.lf sec, interval %64.lf sec, result %d\n", 
-                      __func__, 
+  LOGGER(LOG_INFO, "(%hu): consumption %64.lf sec, interval %64.lf sec, result %d\n", 
                       id_, 
                       totalBandWidthConsumption.count(), 
                       interval.count(), 
@@ -468,8 +464,7 @@ PPPoETransport::DataRateScaledPair PPPoETransport::getDataRateScaleFactor_i(std:
        pair.second = DR_TBS;
      }
 
-   RFC4938_DEBUG_EVENT("%s:(%hu): datarate  %ju bps, adjusted %hu, scale %hu\n", 
-                       __func__, 
+   LOGGER(LOG_INFO, "(%hu): datarate  %ju bps, adjusted %hu, scale %hu\n", 
                        id_, 
                        u64DataRatebps, 
                        pair.first, 
@@ -510,11 +505,11 @@ void PPPoETransport::updateNeighborCacheAndStats_i(NEMIdSet & latestNeighbors)
 
              if(deltaT > nbrInitTimeOut)
               {
-                RFC4938_DEBUG_EVENT("%s:(%hu): nbr %hu session is %s, inactive timeout after %6.4lf, terminate this session\n", 
-                                    __func__, id_, 
-                                    nbrEntry.first, 
-                                    rfc4938_neighbor_status_to_string(state),  
-                                    deltaT.count()); 
+                LOGGER(LOG_INFO, "(%hu): nbr %hu session is %s, inactive timeout after %6.4lf, terminate this session\n", 
+                                   id_, 
+                                   nbrEntry.first, 
+                                   rfc4938_neighbor_status_to_string(state),  
+                                   deltaT.count()); 
 
                 // add to delete set
                 nbrSetToRemove.insert(nbrEntry.first);
@@ -524,12 +519,12 @@ void PPPoETransport::updateNeighborCacheAndStats_i(NEMIdSet & latestNeighbors)
               }
              else
               {
-                RFC4938_DEBUG_EVENT("%s:(%hu): nbr %hu session is %s, inactive time %6.4lf, holding until %6.4lf\n", 
-                                    __func__, id_, 
-                                    nbrEntry.first, 
-                                    rfc4938_neighbor_status_to_string(state),  
-                                    deltaT.count(), 
-                                    nbrInitTimeOut.count()); 
+                LOGGER(LOG_INFO, "(%hu): nbr %hu session is %s, inactive time %6.4lf, holding until %6.4lf\n", 
+                                   id_, 
+                                   nbrEntry.first, 
+                                   rfc4938_neighbor_status_to_string(state),  
+                                   deltaT.count(), 
+                                   nbrInitTimeOut.count()); 
               }
            }
         }
@@ -546,8 +541,7 @@ void PPPoETransport::updateNeighborCacheAndStats_i(NEMIdSet & latestNeighbors)
               
        pPlatformService_->timerService().scheduleTimedEvent(EMANE::Clock::now() + reportDelay, p);
 
-       RFC4938_DEBUG_EVENT("%s:(%hu): new nbr %hu, scalar %hu, scheduled padi event\n", 
-                           __func__, 
+       LOGGER(LOG_INFO, "(%hu): new nbr %hu, scalar %hu, scheduled padi event\n", 
                            id_, 
                            nbr, 
                            rfc4938_config_get_credit_scalar());
@@ -559,7 +553,7 @@ void PPPoETransport::updateNeighborCacheAndStats_i(NEMIdSet & latestNeighbors)
    // remove old nbrs
    for(auto nbr : nbrSetToRemove)
     {
-      RFC4938_DEBUG_EVENT("%s:(%hu): expunge old nbr %hu\n", __func__, id_, nbr); 
+      LOGGER(LOG_INFO, "(%hu): expunge old nbr %hu\n", id_, nbr); 
 
       // tell pppoe this nbr is gone
       rfc4938_parser_cli_terminate_session(nbr, CMD_SRC_TRANSPORT);
@@ -571,8 +565,7 @@ void PPPoETransport::updateNeighborCacheAndStats_i(NEMIdSet & latestNeighbors)
    // update nbr cache with the latest set
    cachedNeighbors_ = latestNeighbors;
 
-   RFC4938_DEBUG_EVENT("%s:(%hu): updated cache, num nbrs is %zu\n", 
-                       __func__, 
+   LOGGER(LOG_INFO, "(%hu): updated cache, num nbrs is %zu\n", 
                        id_, 
                        cachedNeighbors_.size());
 }
@@ -603,8 +596,7 @@ void PPPoETransport::handleTokenUpdate_i()
               
                pPlatformService_->timerService().scheduleTimedEvent(EMANE::Clock::now() + reportDelay, p);
 
-               RFC4938_DEBUG_EVENT("%s:(%hu): nbr %hu, credits (total %hu, dist %hu), scheduled padg event\n", 
-                                   __func__, 
+               LOGGER(LOG_INFO, "(%hu): nbr %hu, credits (total %hu, dist %hu), scheduled padg event\n", 
                                    id_, 
                                    nbrEntry.first, 
                                    u16TotalCredits, 
@@ -625,11 +617,11 @@ void PPPoETransport::handleMetricMessage_i(const MetricUpdate * pUpdate)
 
    auto NbrMetrics = pUpdate->pNbrMetric_->getNeighborMetrics();
 
-   RFC4938_DEBUG_EVENT("%s:(%hu): %zu entries\n", __func__, id_, NbrMetrics.size());
+   LOGGER(LOG_INFO, "(%hu): %zu entries\n", id_, NbrMetrics.size());
 
    for(auto metric : NbrMetrics)
     {
-      RFC4938_DEBUG_EVENT("%s:(%hu): nbr %hu\n", __func__, id_, metric.getId());
+      LOGGER(LOG_INFO, "(%hu): nbr %hu\n", id_, metric.getId());
 
       // sum up the bw consumption
       totalBandWidthConsumption += metric.getBandwidthConsumption();
@@ -670,7 +662,7 @@ void PPPoETransport::handleMetricMessage_i(const MetricUpdate * pUpdate)
     {
       u64MaxSysDataRate_ = maxDataRate;
 
-      RFC4938_DEBUG_EVENT("%s:(%hu): max datarate %ju bps \n", __func__, id_, u64MaxSysDataRate_);
+      LOGGER(LOG_INFO, "(%hu): max datarate %lu bps \n", id_, u64MaxSysDataRate_);
     }
 
       
@@ -844,8 +836,7 @@ int PPPoETransport::getRLQ_i(const std::uint16_t nbr, const float fSINRAvg,
   // save the rr
   iter->second.fRRlast_ = fTheRR;
 
-  RFC4938_DEBUG_EVENT("%s:(%hu): nbr %hu, sinr %f, rr %f, RLQ %d\n", 
-                      __func__, 
+  LOGGER(LOG_INFO, "(%hu): nbr %hu, sinr %f, rr %f, RLQ %d\n", 
                       id_, 
                       nbr, 
                       fTheSINR, 
@@ -871,8 +862,7 @@ PPPoETransport::sendDownstream_i(EMANE::DownstreamPacket * p, std::uint16_t cred
 
    const EMANE::NEMId dst = p->getPacketInfo().getDestination();
 
-   RFC4938_DEBUG_PACKET("%s:(%hu): send pkt dst %hu, len %zd, credits %hu, distmode %d\n", 
-                        __func__, 
+   LOGGER(LOG_PKT, "(%hu): send pkt dst %hu, len %zd, credits %hu, distmode %d\n", 
                         id_, 
                         dst, 
                         p->length(), 
@@ -924,8 +914,7 @@ PPPoETransport::sendDownstream_i(EMANE::DownstreamPacket * p, std::uint16_t cred
               
        pPlatformService_->timerService().scheduleTimedEvent(tp, p);
 
-       RFC4938_DEBUG_PACKET("%s:(%hu): dst %hu, duration %f usec, credits consumed %hu, scheduled padg event\n", 
-                            __func__, 
+       LOGGER(LOG_PKT, "(%hu): dst %hu, duration %f usec, credits consumed %hu, scheduled padg event\n", 
                             id_, 
                             dst, 
                             duration.count(), 
@@ -940,8 +929,7 @@ PPPoETransport::enqueueWorkItem_i(WorkItem & item)
 {
   workQueue_.enqueue(item);
 
-  RFC4938_DEBUG_EVENT("%s:(%hu): push item %s, depth %zd\n", 
-                      __func__, 
+  LOGGER(LOG_INFO, "(%hu): push item %s, depth %zd\n", 
                       id_, 
                       workIdToString(item.id_), 
                       workQueue_.size());
@@ -957,8 +945,7 @@ PPPoETransport::processWorkQueue_i()
       //  blocking call
       WorkItem item = workQueue_.dequeue();
  
-      RFC4938_DEBUG_EVENT("%s:(%hu): pull item %s, depth %zd\n", 
-                          __func__, 
+      LOGGER(LOG_INFO, "(%hu): pull item %s, depth %zd\n", 
                           id_, 
                           workIdToString(item.id_), 
                           workQueue_.size());
@@ -1028,8 +1015,7 @@ PPPoETransport::processWorkQueue_i()
                  {
                    iter->second.u16PendingCredits_ += p->credits_;
 
-                   RFC4938_DEBUG_PACKET("%s:(%hu): dst %hu, add %hu to %hu pending credits\n", 
-                                        __func__, 
+                   LOGGER(LOG_PKT, "(%hu): dst %hu, add %hu to %hu pending credits\n", 
                                         id_, 
                                         p->nbrId_, 
                                         p->credits_, 
@@ -1082,7 +1068,7 @@ PPPoETransport::processWorkQueue_i()
 
 int rfc4938_transport_setup (const char *pzPlatformEndpoint, const char *pzTransportEndpoint, unsigned long id)
 {
-  RFC4938_DEBUG_EVENT("%s:(%u): begin\n",  __func__, rfc4938_config_get_node_id()); 
+  LOGGER(LOG_INFO, "(%u): begin\n", rfc4938_config_get_node_id()); 
 
   EMANE::Application::TransportBuilder tb;
 
@@ -1110,7 +1096,7 @@ int rfc4938_transport_setup (const char *pzPlatformEndpoint, const char *pzTrans
 
   pTransportManager->postStart();
 
-  RFC4938_DEBUG_EVENT("%s:(%u): complete\n",  __func__, rfc4938_config_get_node_id()); 
+  LOGGER(LOG_INFO, "(%u): complete\n",  rfc4938_config_get_node_id()); 
 
   return 0;
 }

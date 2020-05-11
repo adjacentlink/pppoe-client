@@ -13,8 +13,7 @@
 *
 ***********************************************************************/
 
-static char const RCSID[] =
-"$Id: pppoe.c,v 1.7 2009/05/01 14:32:04 powellj Exp $";
+//static char const RCSID[] = "$Id: pppoe.c,v 1.7 2009/05/01 14:32:04 powellj Exp $";
 
 #include "../pppoe.h"
 
@@ -59,16 +58,16 @@ static char const RCSID[] =
 #define DEFAULT_IF "eth0"
 
 /* Global variables -- options */
-int optInactivityTimeout = 0;	/* Inactivity timeout */
-int optClampMSS          = 0;	/* Clamp MSS to this value */
-int optSkipSession       = 0;	/* Perform discovery, print session info
-				   and exit */
+int optInactivityTimeout = 0;   /* Inactivity timeout */
+int optClampMSS          = 0;   /* Clamp MSS to this value */
+int optSkipSession       = 0;   /* Perform discovery, print session info
+                   and exit */
 int optFloodDiscovery    = 0;   /* Flood server with discovery requests.
-				   USED FOR STRESS-TESTING ONLY.  DO NOT
-				   USE THE -F OPTION AGAINST A REAL ISP */
+                   USED FOR STRESS-TESTING ONLY.  DO NOT
+                   USE THE -F OPTION AGAINST A REAL ISP */
 
 PPPoEConnection *Connection = NULL; /* Must be global -- used
-				       in signal handler */
+                       in signal handler */
 
 static UINT16_t computePeerCredits (PPPoEConnection * conn, PPPoEPacket * packet);
 
@@ -80,10 +79,11 @@ FILE * LoggerFp = NULL;
 #ifdef SUPPORT_RFC4938
 /* describe link metics for a 10mbit ethernet interface */
 unsigned char METRICS_STUB[] = {0x01, 0x07, 0x00, 0x0A, 0x00, 0x00, 0x64,
-                                0x64, 0x00, 0x00, 0x26, 0x26, 0x26, 0x26};
+                                0x64, 0x00, 0x00, 0x26, 0x26, 0x26, 0x26
+                               };
 #endif
 
-int persist = 0; 		/* We are not a pppd plugin */
+int persist = 0;        /* We are not a pppd plugin */
 /***********************************************************************
 *%FUNCTION: sendSessionPacket
 *%ARGUMENTS:
@@ -99,22 +99,26 @@ void
 sendSessionPacket(PPPoEConnection *conn, PPPoEPacket *packet, int len)
 {
     packet->length = htons(len);
-    if (optClampMSS) {
-	clampMSS(packet, "outgoing", optClampMSS);
+    if (optClampMSS)
+    {
+        clampMSS(packet, "outgoing", optClampMSS);
     }
 
-    if (sendPacket(conn, conn->sessionSocket, packet, len + HDR_SIZE) < 0) {
-	if (errno == ENOBUFS) {
-	    /* No buffer space is a transient error */
-	    return;
-	}
-	exit(EXIT_FAILURE);
+    if (sendPacket(conn, conn->sessionSocket, packet, len + HDR_SIZE) < 0)
+    {
+        if (errno == ENOBUFS)
+        {
+            /* No buffer space is a transient error */
+            return;
+        }
+        exit(EXIT_FAILURE);
     }
 #ifdef DEBUGGING_ENABLED
-    if (conn->debugFile) {
-	dumpPacket(conn->debugFile, packet, "SENT");
-	fprintf(conn->debugFile, "\n");
-	fflush(conn->debugFile);
+    if (conn->debugFile)
+    {
+        dumpPacket(conn->debugFile, packet, "SENT");
+        fprintf(conn->debugFile, "\n");
+        fflush(conn->debugFile);
     }
 #endif
 }
@@ -140,26 +144,30 @@ static void
 sessionDiscoveryPacket(PPPoEPacket *packet)
 {
     /* Sanity check */
-    if (packet->code != CODE_PADT) {
-	return;
+    if (packet->code != CODE_PADT)
+    {
+        return;
     }
 
     /* It's a PADT, all right.  Is it for us? */
-    if (packet->session != Connection->session) {
-	/* Nope, ignore it */
-	return;
+    if (packet->session != Connection->session)
+    {
+        /* Nope, ignore it */
+        return;
     }
-    if (memcmp(packet->ethHdr.h_dest, Connection->myEth, ETH_ALEN)) {
-	return;
+    if (memcmp(packet->ethHdr.h_dest, Connection->myEth, ETH_ALEN))
+    {
+        return;
     }
 
-    if (memcmp(packet->ethHdr.h_source, Connection->peerEth, ETH_ALEN)) {
-	return;
+    if (memcmp(packet->ethHdr.h_source, Connection->peerEth, ETH_ALEN))
+    {
+        return;
     }
 
     LOGGER(LOG_INFO,
-	   "Session %d terminated -- received PADT from peer",
-	   (int) ntohs(packet->session));
+           "Session %d terminated -- received PADT from peer",
+           (int) ntohs(packet->session));
     parsePacket(packet, parseLogErrs, NULL);
     sendPADT(Connection, "Received PADT from peer");
     exit(EXIT_SUCCESS);
@@ -181,45 +189,52 @@ sessionDiscoveryPacket(PPPoEConnection *conn)
     PPPoEPacket packet;
     int len;
 
-    if (receivePacket(conn->discoverySocket, &packet, &len) < 0) {
-	return;
+    if (receivePacket(conn->discoverySocket, &packet, &len) < 0)
+    {
+        return;
     }
 
     /* Check length */
-    if (ntohs(packet.length) + HDR_SIZE > len) {
-	LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
-	       (unsigned int) ntohs(packet.length));
-	return;
+    if (ntohs(packet.length) + HDR_SIZE > (unsigned)len)
+    {
+        LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
+               (unsigned int) ntohs(packet.length));
+        return;
     }
 
-    if (packet.code != CODE_PADT) {
-	/* Not PADT; ignore it */
-	return;
+    if (packet.code != CODE_PADT)
+    {
+        /* Not PADT; ignore it */
+        return;
     }
 
     /* It's a PADT, all right.  Is it for us? */
-    if (packet.session != conn->session) {
-	/* Nope, ignore it */
-	return;
+    if (packet.session != conn->session)
+    {
+        /* Nope, ignore it */
+        return;
     }
 
-    if (memcmp(packet.ethHdr.h_dest, conn->myEth, ETH_ALEN)) {
-	return;
+    if (memcmp(packet.ethHdr.h_dest, conn->myEth, ETH_ALEN))
+    {
+        return;
     }
 
-    if (memcmp(packet.ethHdr.h_source, conn->peerEth, ETH_ALEN)) {
-	return;
+    if (memcmp(packet.ethHdr.h_source, conn->peerEth, ETH_ALEN))
+    {
+        return;
     }
 #ifdef DEBUGGING_ENABLED
-    if (conn->debugFile) {
-	dumpPacket(conn->debugFile, &packet, "RCVD");
-	fprintf(conn->debugFile, "\n");
-	fflush(conn->debugFile);
+    if (conn->debugFile)
+    {
+        dumpPacket(conn->debugFile, &packet, "RCVD");
+        fprintf(conn->debugFile, "\n");
+        fflush(conn->debugFile);
     }
 #endif
     LOGGER(LOG_INFO,
-	   "Session %d terminated -- received PADT from peer",
-	   (int) ntohs(packet.session));
+           "Session %d terminated -- received PADT from peer",
+           (int) ntohs(packet.session));
     parsePacket(&packet, parseLogErrs, NULL);
     sendPADT(conn, "Received PADT from peer");
     exit(EXIT_SUCCESS);
@@ -241,10 +256,12 @@ sessionDiscoveryPacket(PPPoEConnection *conn)
 ***********************************************************************/
 void
 parseRFC4938Tags(UINT16_t type, UINT16_t len, unsigned char *data,
-  void *extra) {
+                 void *extra)
+{
     PPPoEConnection *conn = (PPPoEConnection *) extra;
 
-    switch(type) {
+    switch(type)
+    {
     case TAG_CREDITS:
         conn->creditPtr = data;
         break;
@@ -268,7 +285,8 @@ parseRFC4938Tags(UINT16_t type, UINT16_t len, unsigned char *data,
 * Transposes the ethernet addresses and modifies the packet code.
 ***********************************************************************/
 void
-modifyForResponse(PPPoEPacket *packet, int code) {
+modifyForResponse(PPPoEPacket *packet, int code)
+{
     unsigned char buffer[ETH_ALEN];
 
     /* swap the source and destination addresses */
@@ -302,10 +320,16 @@ sendPADG (PPPoEConnection *conn, UINT16_t credits)
     UINT16_t plen = 0;
 
     /* Do nothing if no session established yet */
-    if (!conn->session) return;
+    if (!conn->session)
+    {
+        return;
+    }
 
     /* Do nothing if still waiting on a PADC */
-    if (conn->padcPending) return;
+    if (conn->padcPending)
+    {
+        return;
+    }
 
     memcpy(packet.ethHdr.h_dest, conn->peerEth, ETH_ALEN);
     memcpy(packet.ethHdr.h_source, conn->myEth, ETH_ALEN);
@@ -318,12 +342,13 @@ sendPADG (PPPoEConnection *conn, UINT16_t credits)
 
     /* Add Sequence Number */
     conn->padgSequence++;
-    if(conn->padgSequence > 65535) {
+    if(conn->padgSequence > 65535)
+    {
         conn->padgSequence = 0;
     }
     sequenceTag.type = htons(TAG_SEQUENCE_NUMBER);
     sequenceTag.length = htons(TAG_SEQUENCE_NUMBER_SIZE);
-	SET_SEQUENCE_NUMBER(sequenceTag.payload, conn->padgSequence);
+    SET_SEQUENCE_NUMBER(sequenceTag.payload, conn->padgSequence);
 
     plen += TAG_SEQUENCE_NUMBER_SIZE + TAG_HDR_SIZE;
     memcpy(cursor, &sequenceTag, TAG_SEQUENCE_NUMBER_SIZE + TAG_HDR_SIZE);
@@ -341,7 +366,8 @@ sendPADG (PPPoEConnection *conn, UINT16_t credits)
     packet.length = htons(plen);
 
     conn->peerCredits += credits;
-    if(conn->peerCredits > RFC_MAX_CREDITS) {
+    if(conn->peerCredits > RFC_MAX_CREDITS)
+    {
         conn->peerCredits = RFC_MAX_CREDITS;
     }
 
@@ -351,7 +377,7 @@ sendPADG (PPPoEConnection *conn, UINT16_t credits)
     conn->padcPending = 1;
 
     LOGGER(LOG_INFO, "pppoe(%u): Sent PADG packet with fcn:0x%04x bcn:0x%04x seq:0x%04x",
-                       ntohs(conn->session), credits, conn->hostCredits, conn->padgSequence);
+           ntohs(conn->session), credits, conn->hostCredits, conn->padgSequence);
 
 }
 
@@ -370,17 +396,19 @@ processRfc4938Packet(PPPoEConnection *conn)
 {
     int size, plen;
     PPPoEPacket packet;
-	UINT16_t credits;
+    UINT16_t credits;
 
     /* grab the packet */
-    if ((size = recv(conn->rfc4938Socket, &packet, sizeof(PPPoEPacket), 0)) < 0) {
+    if ((size = recv(conn->rfc4938Socket, &packet, sizeof(PPPoEPacket), 0)) < 0)
+    {
         LOGGER(LOG_ERR, "recv (processRfc4938Packet)");
         return ;
     }
 
 
 #ifdef DEBUGGING_ENABLED
-    if (conn->debugFile) {
+    if (conn->debugFile)
+    {
         dumpPacket(conn->debugFile, &packet, "RCVD");
         fprintf(conn->debugFile, "\n");
         fflush(conn->debugFile);
@@ -390,35 +418,42 @@ processRfc4938Packet(PPPoEConnection *conn)
 
     /* sanity check */
     if (packet.code != CODE_PADG && packet.code != CODE_PADC &&
-        packet.code != CODE_PADQ) {
+            packet.code != CODE_PADQ)
+    {
         LOGGER(LOG_ERR, "Unexpected packet code %d", (int) packet.code);
         return;
     }
-    if (packet.ver != 1) {
+    if (packet.ver != 1)
+    {
         LOGGER(LOG_ERR, "Unexpected packet version %d", (int) packet.ver);
         return;
     }
-    if (packet.type != 1) {
+    if (packet.type != 1)
+    {
         LOGGER(LOG_ERR, "Unexpected packet type %d", (int) packet.type);
         return;
     }
-    if (memcmp(packet.ethHdr.h_dest, conn->myEth, ETH_ALEN)) {
+    if (memcmp(packet.ethHdr.h_dest, conn->myEth, ETH_ALEN))
+    {
         return;
     }
-    if (memcmp(packet.ethHdr.h_source, conn->peerEth, ETH_ALEN)) {
+    if (memcmp(packet.ethHdr.h_source, conn->peerEth, ETH_ALEN))
+    {
         /* Not for us -- must be another session.  This is not an error,
            so don't log anything.  */
         return;
     }
 
-    if (packet.session != conn->session) {
+    if (packet.session != conn->session)
+    {
         LOGGER(LOG_ERR, "Unexpected packet session %d",
-                           (int) ntohs(packet.session));
+               (int) ntohs(packet.session));
         return;
     }
 
     plen = ntohs(packet.length);
-    if (plen + HDR_SIZE > size) {
+    if (plen + HDR_SIZE > (unsigned)size)
+    {
         LOGGER(LOG_ERR, "Bogus length field in RFC4938 packet %d (%d)",
                (int) plen, (int) size);
         return;
@@ -426,19 +461,22 @@ processRfc4938Packet(PPPoEConnection *conn)
 
     parsePacket(&packet, parseRFC4938Tags, conn);
 
-    if (packet.code == CODE_PADG) {
-        if (!conn->creditPtr) {
+    if (packet.code == CODE_PADG)
+    {
+        if (!conn->creditPtr)
+        {
             return; /* not a valid PADG, ignore it */
         }
 
-       LOGGER(LOG_INFO, "pppoe(%u): Recv PADG packet with fcn:0x%04x bcn:0x%04x",
-              ntohs(conn->session), GET_FCN(conn->creditPtr), GET_BCN(conn->creditPtr));
+        LOGGER(LOG_INFO, "pppoe(%u): Recv PADG packet with fcn:0x%04x bcn:0x%04x",
+               ntohs(conn->session), GET_FCN(conn->creditPtr), GET_BCN(conn->creditPtr));
 
         /* update the current credits */
         conn->hostCredits += GET_FCN(conn->creditPtr);
         conn->peerCredits = GET_BCN(conn->creditPtr);
         /* clamp our credits to the maximum allowed */
-        if (conn->hostCredits > RFC_MAX_CREDITS) {
+        if (conn->hostCredits > RFC_MAX_CREDITS)
+        {
             conn->hostCredits = RFC_MAX_CREDITS;
         }
 
@@ -448,21 +486,25 @@ processRfc4938Packet(PPPoEConnection *conn)
         SET_BCN(conn->creditPtr, conn->hostCredits);
         conn->creditPtr = NULL; /* prepare for next time */
 
-       
+
         /* "fill-up lacking peer-credits (following Cisco) */
-        if(conn->peerCredits < RFC_PEER_CREDITS_THRESH) {
-             credits = RFC_MAX_CREDITS - conn->peerCredits;
-             sendPADG(conn, credits);
+        if(conn->peerCredits < RFC_PEER_CREDITS_THRESH)
+        {
+            credits = RFC_MAX_CREDITS - conn->peerCredits;
+            sendPADG(conn, credits);
         }
     }
-    else if (packet.code == CODE_PADC) {
-        if (!conn->creditPtr) {
+    else if (packet.code == CODE_PADC)
+    {
+        if (!conn->creditPtr)
+        {
             return; /* not a valid PADC, ignore it */
         }
-        if (conn->sequence != conn->padgSequence) {
+        if (conn->sequence != conn->padgSequence)
+        {
             conn->creditPtr = NULL; /* prepare for next time */
 
-            LOGGER(LOG_ERR, "pppoe(%hu): Recv PADC with incorrect seq num %hu != %hu, ignore", 
+            LOGGER(LOG_ERR, "pppoe(%hu): Recv PADC with incorrect seq num %hu != %hu, ignore",
                    htons(conn->session), conn->sequence, conn->padgSequence);
 
             return; /* This is not the PADC we are looking for */
@@ -476,15 +518,16 @@ processRfc4938Packet(PPPoEConnection *conn)
         conn->peerCredits = GET_BCN(conn->creditPtr);
 
         /* clamp our credits to the maximum allowed */
-        if (conn->hostCredits > RFC_MAX_CREDITS) {
+        if (conn->hostCredits > RFC_MAX_CREDITS)
+        {
             conn->hostCredits = RFC_MAX_CREDITS;
         }
 
-       LOGGER(LOG_INFO, "pppoe(%hu): Recv PADC FCN (host credits) old/new %hu/%hu, BCN (peer credits) old/new %hu/%hu, seq:0x%04x", 
-              htons(conn->session),
-              oldHostCredits, conn->hostCredits, 
-              oldPeerCredits, conn->peerCredits, 
-              conn->padgSequence);
+        LOGGER(LOG_INFO, "pppoe(%hu): Recv PADC FCN (host credits) old/new %hu/%hu, BCN (peer credits) old/new %hu/%hu, seq:0x%04x",
+               htons(conn->session),
+               oldHostCredits, conn->hostCredits,
+               oldPeerCredits, conn->peerCredits,
+               conn->padgSequence);
 
         conn->creditPtr = NULL; /* prepare for next time */
         packet.length = 0; /* do not send a response */
@@ -492,23 +535,28 @@ processRfc4938Packet(PPPoEConnection *conn)
         /* clear PADC is pending */
         conn->padcPending = 0;
     }
-    else if (packet.code == CODE_PADQ) {
-        if (conn->metricsRequested) {
+    else if (packet.code == CODE_PADQ)
+    {
+        if (conn->metricsRequested)
+        {
             modifyForResponse(&packet, CODE_PADQ);
             memcpy(packet.payload, &METRICS_STUB[0], sizeof(METRICS_STUB));
             packet.length = htons(sizeof(METRICS_STUB));
             size = sizeof(METRICS_STUB) + HDR_SIZE;
             conn->metricsRequested = 0; /* prepare for next time */
         }
-        else {
+        else
+        {
             packet.length = 0; /* do not send a response */
         }
     }
-    else {
+    else
+    {
         packet.length = 0; /* do not send a response */
     }
 
-    if (packet.length != 0) {
+    if (packet.length != 0)
+    {
         struct sockaddr_in address;
 
         address.sin_family      = AF_INET;
@@ -518,7 +566,8 @@ processRfc4938Packet(PPPoEConnection *conn)
         if (sendto(conn->rfc4938Socket, &packet,
                    ntohs(packet.length) + HDR_SIZE, 0,
                    (const struct sockaddr *) &address,
-                   sizeof(struct sockaddr_in)) < 0) {
+                   sizeof(struct sockaddr_in)) < 0)
+        {
             LOGGER(LOG_ERR, "sendto (forwardRfc4938Packet)");
             return;
         }
@@ -549,10 +598,19 @@ session(PPPoEConnection *conn)
 
     /* Prepare for select() */
 #ifdef SUPPORT_RFC4938
-    if (conn->rfc4938Socket > maxFD)   maxFD = conn->rfc4938Socket;
+    if (conn->rfc4938Socket > maxFD)
+    {
+        maxFD = conn->rfc4938Socket;
+    }
 #endif
-    if (conn->sessionSocket > maxFD)   maxFD = conn->sessionSocket;
-    if (conn->discoverySocket > maxFD) maxFD = conn->discoverySocket;
+    if (conn->sessionSocket > maxFD)
+    {
+        maxFD = conn->sessionSocket;
+    }
+    if (conn->discoverySocket > maxFD)
+    {
+        maxFD = conn->discoverySocket;
+    }
     maxFD++;
 
     /* Fill in the constant fields of the packet to save time */
@@ -572,97 +630,129 @@ session(PPPoEConnection *conn)
 
 #ifdef USE_BPF
     /* check for buffered session data */
-    while (BPF_BUFFER_HAS_DATA) {
-	if (conn->synchronous) {
-	    syncReadFromEth(conn, conn->sessionSocket, optClampMSS);
-	} else {
-	    asyncReadFromEth(conn, conn->sessionSocket, optClampMSS);
-	}
+    while (BPF_BUFFER_HAS_DATA)
+    {
+        if (conn->synchronous)
+        {
+            syncReadFromEth(conn, conn->sessionSocket, optClampMSS);
+        }
+        else
+        {
+            asyncReadFromEth(conn, conn->sessionSocket, optClampMSS);
+        }
     }
 #endif
 
-    for (;;) {
-	if (optInactivityTimeout > 0) {
-	    tv.tv_sec = optInactivityTimeout;
-	    tv.tv_usec = 0;
-	    tvp = &tv;
-	}
-	FD_ZERO(&readable);
+    for (;;)
+    {
+        if (optInactivityTimeout > 0)
+        {
+            tv.tv_sec = optInactivityTimeout;
+            tv.tv_usec = 0;
+            tvp = &tv;
+        }
+        FD_ZERO(&readable);
 #ifdef SUPPORT_RFC4938
-        if (!conn->held) { /* don't read from pppd until the packet is sent */
+        if (!conn->held)   /* don't read from pppd until the packet is sent */
+        {
 #endif
-	FD_SET(0, &readable);     /* ppp packets come from stdin */
+            FD_SET(0, &readable);     /* ppp packets come from stdin */
 #ifdef SUPPORT_RFC4938
         }
 
-        if (conn->rfc4938Socket >= 0) {
+        if (conn->rfc4938Socket >= 0)
+        {
             FD_SET(conn->rfc4938Socket, &readable);
         }
 #endif
-	if (conn->discoverySocket >= 0) {
-	    FD_SET(conn->discoverySocket, &readable);
-	}
-	FD_SET(conn->sessionSocket, &readable);
-	while(1) {
-	    r = select(maxFD, &readable, NULL, NULL, tvp);
-	    if (r >= 0 || errno != EINTR) break;
-	}
-	if (r < 0) {
-	    fatalSys("select (session)");
-	}
-	if (r == 0) { /* Inactivity timeout */
-	    LOGGER(LOG_ERR, "Inactivity timeout... something wicked happened on session %d",
-		   (int) ntohs(conn->session));
-	    sendPADT(conn, "RP-PPPoE: Inactivity timeout");
-	    exit(EXIT_FAILURE);
-	}
+        if (conn->discoverySocket >= 0)
+        {
+            FD_SET(conn->discoverySocket, &readable);
+        }
+        FD_SET(conn->sessionSocket, &readable);
+        while(1)
+        {
+            r = select(maxFD, &readable, NULL, NULL, tvp);
+            if (r >= 0 || errno != EINTR)
+            {
+                break;
+            }
+        }
+        if (r < 0)
+        {
+            fatalSys("select (session)");
+        }
+        if (r == 0)   /* Inactivity timeout */
+        {
+            LOGGER(LOG_ERR, "Inactivity timeout... something wicked happened on session %d",
+                   (int) ntohs(conn->session));
+            sendPADT(conn, "RP-PPPoE: Inactivity timeout");
+            exit(EXIT_FAILURE);
+        }
 
-	/* Handle ready sockets */
-	if (FD_ISSET(0, &readable)) {
-	    if (conn->synchronous) {
-		syncReadFromPPP(conn, &packet);
-	    } else {
-		asyncReadFromPPP(conn, &packet);
-	    }
-	}
+        /* Handle ready sockets */
+        if (FD_ISSET(0, &readable))
+        {
+            if (conn->synchronous)
+            {
+                syncReadFromPPP(conn, &packet);
+            }
+            else
+            {
+                asyncReadFromPPP(conn, &packet);
+            }
+        }
 
-	if (FD_ISSET(conn->sessionSocket, &readable)) {
-	    do {
-		if (conn->synchronous) {
-		    syncReadFromEth(conn, conn->sessionSocket, optClampMSS);
-		} else {
-		    asyncReadFromEth(conn, conn->sessionSocket, optClampMSS);
-		}
-	    } while (BPF_BUFFER_HAS_DATA);
+        if (FD_ISSET(conn->sessionSocket, &readable))
+        {
+            do
+            {
+                if (conn->synchronous)
+                {
+                    syncReadFromEth(conn, conn->sessionSocket, optClampMSS);
+                }
+                else
+                {
+                    asyncReadFromEth(conn, conn->sessionSocket, optClampMSS);
+                }
+            }
+            while (BPF_BUFFER_HAS_DATA);
 
 #ifdef SUPPORT_RFC4938
-           /* keep the client fed */
-           if (conn->enableRfc4938FlowControl) {
-             if(conn->peerCredits < RFC_PEER_CREDITS / 2) {
-  	        sendPADG(conn, RFC_PEER_CREDITS - conn->peerCredits);
-             }
-           }
+            /* keep the client fed */
+            if (conn->enableRfc4938FlowControl)
+            {
+                if(conn->peerCredits < RFC_PEER_CREDITS / 2)
+                {
+                    sendPADG(conn, RFC_PEER_CREDITS - conn->peerCredits);
+                }
+            }
 #endif
-	}
+        }
 
 #ifdef SUPPORT_RFC4938
-        if (conn->rfc4938Socket >= 0) {
-            if (FD_ISSET(conn->rfc4938Socket, &readable)) {
+        if (conn->rfc4938Socket >= 0)
+        {
+            if (FD_ISSET(conn->rfc4938Socket, &readable))
+            {
                 processRfc4938Packet(conn);
             }
         }
 
-        if (conn->held) {
+        if (conn->held)
+        {
             int creditCost = (conn->held->length - TAG_HDR_SIZE -
-                                                   TAG_CREDITS_SIZE + 63) >> 6;
+                              TAG_CREDITS_SIZE + 63) >> 6;
 
-            if (conn->hostCredits - creditCost >= RFC_MIN_CREDITS) {
+            if (conn->hostCredits - creditCost >= RFC_MIN_CREDITS)
+            {
                 PPPoETag *credits = (PPPoETag *) &conn->held->payload[0];
 
                 /* reduce the available credits */
                 conn->hostCredits -= creditCost;
 
-                if(!conn->avoidInBandFlowControl) {
+                if(!conn->avoidInBandFlowControl)
+                {
                     /* update the FCN and BCN in the packet*/
                     SET_FCN(credits->payload,
                             conn->peerCredits < RFC_PEER_CREDITS ?
@@ -678,13 +768,15 @@ session(PPPoEConnection *conn)
 #endif
 
 #ifndef USE_BPF
-	/* BSD uses a single socket, see *syncReadFromEth() */
-	/* for calls to sessionDiscoveryPacket() */
-	if (conn->discoverySocket >= 0) {
-	    if (FD_ISSET(conn->discoverySocket, &readable)) {
-		sessionDiscoveryPacket(conn);
-	    }
-	}
+        /* BSD uses a single socket, see *syncReadFromEth() */
+        /* for calls to sessionDiscoveryPacket() */
+        if (conn->discoverySocket >= 0)
+        {
+            if (FD_ISSET(conn->discoverySocket, &readable))
+            {
+                sessionDiscoveryPacket(conn);
+            }
+        }
 #endif
 
     }
@@ -704,10 +796,10 @@ session(PPPoEConnection *conn)
 static void
 sigPADT(int src)
 {
-  LOGGER(LOG_DEBUG,"Received signal %d on session %d.",
-	 (int)src, (int) ntohs(Connection->session));
-  sendPADTf(Connection, "RP-PPPoE: Received signal %d", src);
-  exit(EXIT_SUCCESS);
+    LOGGER(LOG_DEBUG,"Received signal %d on session %d.",
+           (int)src, (int) ntohs(Connection->session));
+    sendPADTf(Connection, "RP-PPPoE: Received signal %d", src);
+    exit(EXIT_SUCCESS);
 }
 
 /**********************************************************************
@@ -728,7 +820,7 @@ usage(char const *argv0)
     fprintf(stderr, "   -I if_name     -- Specify interface (REQUIRED)\n");
 #else
     fprintf(stderr, "   -I if_name     -- Specify interface (default %s.)\n",
-	    DEFAULT_IF);
+            DEFAULT_IF);
 #endif
 #ifdef DEBUGGING_ENABLED
     fprintf(stderr, "   -D filename    -- Log debugging information in filename.\n");
@@ -739,28 +831,28 @@ usage(char const *argv0)
     fprintf(stderr, "   -a             -- Do not perform RFC4938 flow control in band.\n");
 #endif
     fprintf(stderr,
-	    "   -T timeout     -- Specify inactivity timeout in seconds.\n"
-	    "   -t timeout     -- Initial timeout for discovery packets in seconds\n"
-	    "   -V             -- Print version and exit.\n"
-	    "   -A             -- Print access concentrator names and exit.\n"
-	    "   -S name        -- Set desired service name.\n"
-	    "   -C name        -- Set desired access concentrator name.\n"
-	    "   -U             -- Use Host-Unique to allow multiple PPPoE sessions.\n"
-	    "   -s             -- Use synchronous PPP encapsulation.\n"
-	    "   -m MSS         -- Clamp incoming and outgoing MSS options.\n"
-	    "   -p pidfile     -- Write process-ID to pidfile.\n"
-	    "   -e sess:mac    -- Skip discovery phase; use existing session.\n"
-	    "   -n             -- Do not open discovery socket.\n"
-	    "   -k             -- Kill a session with PADT (requires -e)\n"
-	    "   -d             -- Perform discovery, print session info and exit.\n"
-    	"   -i             -- Bind PPPoE session to Common Virtual Multipoint Interface (CVMI).\n"
-	    "   -f disc:sess   -- Set Ethernet frame types (hex).\n"
-	    "   -h             -- Print usage information.\n\n"
-	    "PPPoE Version %s, Copyright (C) 2001-2006 Roaring Penguin Software Inc.\n"
-	    "PPPoE comes with ABSOLUTELY NO WARRANTY.\n"
-	    "This is free software, and you are welcome to redistribute it under the terms\n"
-	    "of the GNU General Public License, version 2 or any later version.\n"
-	    "http://www.roaringpenguin.com\n", VERSION);
+            "   -T timeout     -- Specify inactivity timeout in seconds.\n"
+            "   -t timeout     -- Initial timeout for discovery packets in seconds\n"
+            "   -V             -- Print version and exit.\n"
+            "   -A             -- Print access concentrator names and exit.\n"
+            "   -S name        -- Set desired service name.\n"
+            "   -C name        -- Set desired access concentrator name.\n"
+            "   -U             -- Use Host-Unique to allow multiple PPPoE sessions.\n"
+            "   -s             -- Use synchronous PPP encapsulation.\n"
+            "   -m MSS         -- Clamp incoming and outgoing MSS options.\n"
+            "   -p pidfile     -- Write process-ID to pidfile.\n"
+            "   -e sess:mac    -- Skip discovery phase; use existing session.\n"
+            "   -n             -- Do not open discovery socket.\n"
+            "   -k             -- Kill a session with PADT (requires -e)\n"
+            "   -d             -- Perform discovery, print session info and exit.\n"
+            "   -i             -- Bind PPPoE session to Common Virtual Multipoint Interface (CVMI).\n"
+            "   -f disc:sess   -- Set Ethernet frame types (hex).\n"
+            "   -h             -- Print usage information.\n\n"
+            "PPPoE Version %s, Copyright (C) 2001-2006 Roaring Penguin Software Inc.\n"
+            "PPPoE comes with ABSOLUTELY NO WARRANTY.\n"
+            "This is free software, and you are welcome to redistribute it under the terms\n"
+            "of the GNU General Public License, version 2 or any later version.\n"
+            "http://www.roaringpenguin.com\n", VERSION);
     exit(EXIT_SUCCESS);
 }
 
@@ -778,8 +870,8 @@ main(int argc, char *argv[])
 {
     int opt;
     int n;
-    unsigned int m[6];		/* MAC address in -e option */
-    unsigned int s;		/* Temporary to hold session */
+    unsigned int m[6];      /* MAC address in -e option */
+    unsigned int s;     /* Temporary to hold session */
     FILE *pidfile;
     unsigned int discoveryType, sessionType;
     char const *options;
@@ -792,8 +884,9 @@ main(int argc, char *argv[])
 #endif
 
     if (getuid() != geteuid() ||
-	getgid() != getegid()) {
-	IsSetID = 1;
+            getgid() != getegid())
+    {
+        IsSetID = 1;
     }
 
     /* Initialize connection info */
@@ -819,233 +912,266 @@ main(int argc, char *argv[])
 
     options = "I:VAT:"
 #ifdef DEBUGGING_ENABLED
-        "D:"
+              "D:"
 #endif
 #ifdef SUPPORT_RFC4938
-        "Xx:a"
+              "Xx:a"
 #endif
-        "hS:C:Usm:np:e:kdf:F:t:i:";
+              "hS:C:Usm:np:e:kdf:F:t:i:";
 
-    while((opt = getopt(argc, argv, options)) != -1) {
-	switch(opt) {
-	case 't':
-	    if (sscanf(optarg, "%d", &conn.discoveryTimeout) != 1) {
-		fprintf(stderr, "Illegal argument to -t: Should be -t timeout\n");
-		exit(EXIT_FAILURE);
-	    }
-	    if (conn.discoveryTimeout < 1) {
-		conn.discoveryTimeout = 1;
-	    }
-	    break;
-	case 'F':
-	    if (sscanf(optarg, "%d", &optFloodDiscovery) != 1) {
-		fprintf(stderr, "Illegal argument to -F: Should be -F numFloods\n");
-		exit(EXIT_FAILURE);
-	    }
-	    if (optFloodDiscovery < 1) optFloodDiscovery = 1;
-	    fprintf(stderr,
-		    "WARNING: DISCOVERY FLOOD IS MEANT FOR STRESS-TESTING\n"
-		    "A PPPOE SERVER WHICH YOU OWN.  DO NOT USE IT AGAINST\n"
-		    "A REAL ISP.  YOU HAVE 5 SECONDS TO ABORT.\n");
-	    sleep(5);
-	    break;
-	case 'f':
-	    if (sscanf(optarg, "%x:%x", &discoveryType, &sessionType) != 2) {
-		fprintf(stderr, "Illegal argument to -f: Should be disc:sess in hex\n");
-		exit(EXIT_FAILURE);
-	    }
-	    Eth_PPPOE_Discovery = (UINT16_t) discoveryType;
-	    Eth_PPPOE_Session   = (UINT16_t) sessionType;
-	    break;
-	case 'd':
-	    optSkipSession = 1;
-	    break;
+    while((opt = getopt(argc, argv, options)) != -1)
+    {
+        switch(opt)
+        {
+        case 't':
+            if (sscanf(optarg, "%d", &conn.discoveryTimeout) != 1)
+            {
+                fprintf(stderr, "Illegal argument to -t: Should be -t timeout\n");
+                exit(EXIT_FAILURE);
+            }
+            if (conn.discoveryTimeout < 1)
+            {
+                conn.discoveryTimeout = 1;
+            }
+            break;
+        case 'F':
+            if (sscanf(optarg, "%d", &optFloodDiscovery) != 1)
+            {
+                fprintf(stderr, "Illegal argument to -F: Should be -F numFloods\n");
+                exit(EXIT_FAILURE);
+            }
+            if (optFloodDiscovery < 1)
+            {
+                optFloodDiscovery = 1;
+            }
+            fprintf(stderr,
+                    "WARNING: DISCOVERY FLOOD IS MEANT FOR STRESS-TESTING\n"
+                    "A PPPOE SERVER WHICH YOU OWN.  DO NOT USE IT AGAINST\n"
+                    "A REAL ISP.  YOU HAVE 5 SECONDS TO ABORT.\n");
+            sleep(5);
+            break;
+        case 'f':
+            if (sscanf(optarg, "%x:%x", &discoveryType, &sessionType) != 2)
+            {
+                fprintf(stderr, "Illegal argument to -f: Should be disc:sess in hex\n");
+                exit(EXIT_FAILURE);
+            }
+            Eth_PPPOE_Discovery = (UINT16_t) discoveryType;
+            Eth_PPPOE_Session   = (UINT16_t) sessionType;
+            break;
+        case 'd':
+            optSkipSession = 1;
+            break;
 
-	case 'k':
-	    conn.killSession = 1;
-	    break;
+        case 'k':
+            conn.killSession = 1;
+            break;
 
-	case 'n':
-	    /* Do not even open a discovery socket -- used when invoked
-	       by pppoe-server */
-	    conn.noDiscoverySocket = 1;
-	    break;
+        case 'n':
+            /* Do not even open a discovery socket -- used when invoked
+               by pppoe-server */
+            conn.noDiscoverySocket = 1;
+            break;
 
-	case 'e':
-	    /* Existing session: "sess:xx:yy:zz:aa:bb:cc" where "sess" is
-	       session-ID, and xx:yy:zz:aa:bb:cc is MAC-address of peer */
-	    n = sscanf(optarg, "%u:%2x:%2x:%2x:%2x:%2x:%2x",
-		       &s, &m[0], &m[1], &m[2], &m[3], &m[4], &m[5]);
-	    if (n != 7) {
-		fprintf(stderr, "Illegal argument to -e: Should be sess:xx:yy:zz:aa:bb:cc\n");
-		exit(EXIT_FAILURE);
-	    }
+        case 'e':
+            /* Existing session: "sess:xx:yy:zz:aa:bb:cc" where "sess" is
+               session-ID, and xx:yy:zz:aa:bb:cc is MAC-address of peer */
+            n = sscanf(optarg, "%u:%2x:%2x:%2x:%2x:%2x:%2x",
+                       &s, &m[0], &m[1], &m[2], &m[3], &m[4], &m[5]);
+            if (n != 7)
+            {
+                fprintf(stderr, "Illegal argument to -e: Should be sess:xx:yy:zz:aa:bb:cc\n");
+                exit(EXIT_FAILURE);
+            }
 
-	    /* Copy MAC address of peer */
-	    for (n=0; n<6; n++) {
-		conn.peerEth[n] = (unsigned char) m[n];
-	    }
+            /* Copy MAC address of peer */
+            for (n=0; n<6; n++)
+            {
+                conn.peerEth[n] = (unsigned char) m[n];
+            }
 
-	    /* Convert session */
-	    conn.session = htons(s);
+            /* Convert session */
+            conn.session = htons(s);
 
-	    /* Skip discovery phase! */
-	    conn.skipDiscovery = 1;
-	    break;
+            /* Skip discovery phase! */
+            conn.skipDiscovery = 1;
+            break;
 
-	case 'p':
-	    switchToRealID();
-	    pidfile = fopen(optarg, "w");
-	    if (pidfile) {
-		fprintf(pidfile, "%lu\n", (unsigned long) getpid());
-		fclose(pidfile);
-	    }
-	    switchToEffectiveID();
-	    break;
-	case 'S':
-	    SET_STRING(conn.serviceName, optarg);
-	    break;
-	case 'C':
-	    SET_STRING(conn.acName, optarg);
-	    break;
-	case 's':
-	    conn.synchronous = 1;
-	    break;
-	case 'U':
-	    conn.useHostUniq = 1;
-	    break;
+        case 'p':
+            switchToRealID();
+            pidfile = fopen(optarg, "w");
+            if (pidfile)
+            {
+                fprintf(pidfile, "%lu\n", (unsigned long) getpid());
+                fclose(pidfile);
+            }
+            switchToEffectiveID();
+            break;
+        case 'S':
+            SET_STRING(conn.serviceName, optarg);
+            break;
+        case 'C':
+            SET_STRING(conn.acName, optarg);
+            break;
+        case 's':
+            conn.synchronous = 1;
+            break;
+        case 'U':
+            conn.useHostUniq = 1;
+            break;
 #ifdef DEBUGGING_ENABLED
-	case 'D':
-	    switchToRealID();
-	    conn.debugFile = fopen(optarg, "w");
-	    switchToEffectiveID();
-	    if (!conn.debugFile) {
-		fprintf(stderr, "Could not open %s: %s\n",
-			optarg, strerror(errno));
-		exit(EXIT_FAILURE);
-	    }
+        case 'D':
+            switchToRealID();
+            conn.debugFile = fopen(optarg, "w");
+            switchToEffectiveID();
+            if (!conn.debugFile)
+            {
+                fprintf(stderr, "Could not open child logfile '%s': %s\n", optarg, strerror(errno));
+                exit(EXIT_FAILURE);
+            }
             LoggerFp = conn.debugFile;
 
-	    fprintf(conn.debugFile, "rp-pppoe-%s\n", VERSION);
-	    fflush(conn.debugFile);
-	    break;
+            fprintf(conn.debugFile, "rp-pppoe-%s\n", VERSION);
+            fflush(conn.debugFile);
+            break;
 #endif
 #ifdef SUPPORT_RFC4938
-  case 'x':
-      n = sscanf(optarg, "%d:%d,%d", &conn.initialCredits,
-                 &conn.rfc4938ServerPort, &conn.rfc4938CoordPort);
-      if (n < 1 || n == 2) {
-          fprintf(stderr, "Illegal argument to -x: Should be cred(:svr,cli)\n");
-          exit(EXIT_FAILURE);
-      }
-      if (conn.initialCredits < 0 || conn.initialCredits > 0xFFFF) {
-          fprintf(stderr, "Illegal argument to -x: cred should be between 0 "
-                                                    "and 65535 (inclusive)\n");
-          if (conn.initialCredits < 0) {
-              conn.initialCredits = 0;
-          }
-          else if (conn.initialCredits > 0xFFFF) {
-              conn.initialCredits = 0xFFFF;
-          }
-      }
-      if (n == 3 &&
-          (conn.rfc4938CoordPort < 1  || conn.rfc4938CoordPort > 65535 ||
-           conn.rfc4938ServerPort < 1 || conn.rfc4938ServerPort > 65535)) {
-          fprintf(stderr, "Illegal argument to -x: ports should be between 1 "
-                                                    "and 65535 (inclusive)\n");
-          exit(EXIT_FAILURE);
-      }
-      /* Fall through */
-  case 'X':
-      conn.enableRfc4938FlowControl = 1;
-      break;
-  case 'a':
-      /* don't perform in-band flow control, implies flow control */
-      conn.enableRfc4938FlowControl = conn.avoidInBandFlowControl = 1;
-      break;
+        case 'x':
+            n = sscanf(optarg, "%d:%d,%d", &conn.initialCredits,
+                       &conn.rfc4938ServerPort, &conn.rfc4938CoordPort);
+            if (n < 1 || n == 2)
+            {
+                fprintf(stderr, "Illegal argument to -x: Should be cred(:svr,cli)\n");
+                exit(EXIT_FAILURE);
+            }
+            if (conn.initialCredits < 0 || conn.initialCredits > 0xFFFF)
+            {
+                fprintf(stderr, "Illegal argument to -x: cred should be between 0 "
+                        "and 65535 (inclusive)\n");
+                if (conn.initialCredits < 0)
+                {
+                    conn.initialCredits = 0;
+                }
+                else if (conn.initialCredits > 0xFFFF)
+                {
+                    conn.initialCredits = 0xFFFF;
+                }
+            }
+            if (n == 3 &&
+                    (conn.rfc4938CoordPort < 1  || conn.rfc4938CoordPort > 65535 ||
+                     conn.rfc4938ServerPort < 1 || conn.rfc4938ServerPort > 65535))
+            {
+                fprintf(stderr, "Illegal argument to -x: ports should be between 1 "
+                        "and 65535 (inclusive)\n");
+                exit(EXIT_FAILURE);
+            }
+        /* Fall through */
+        case 'X':
+            conn.enableRfc4938FlowControl = 1;
+            break;
+        case 'a':
+            /* don't perform in-band flow control, implies flow control */
+            conn.enableRfc4938FlowControl = conn.avoidInBandFlowControl = 1;
+            break;
 #endif
-	case 'T':
-	    optInactivityTimeout = (int) strtol(optarg, NULL, 10);
-	    if (optInactivityTimeout < 0) {
-		optInactivityTimeout = 0;
-	    }
-	    break;
-	case 'm':
-	    optClampMSS = (int) strtol(optarg, NULL, 10);
-	    if (optClampMSS < 536) {
-		fprintf(stderr, "-m: %d is too low (min 536)\n", optClampMSS);
-		exit(EXIT_FAILURE);
-	    }
-	    if (optClampMSS > 1452) {
-		fprintf(stderr, "-m: %d is too high (max 1452)\n", optClampMSS);
-		exit(EXIT_FAILURE);
-	    }
-	    break;
-	case 'I':
-	    SET_STRING(conn.ifName, optarg);
-	    break;
-	case 'V':
-	    printf("Roaring Penguin PPPoE Version %s\n", VERSION);
-	    exit(EXIT_SUCCESS);
-	case 'A':
-	    conn.printACNames = 1;
-	    break;
-	case 'h':
-	    usage(argv[0]);
-	    break;
-	default:
-	    usage(argv[0]);
-	}
+        case 'T':
+            optInactivityTimeout = (int) strtol(optarg, NULL, 10);
+            if (optInactivityTimeout < 0)
+            {
+                optInactivityTimeout = 0;
+            }
+            break;
+        case 'm':
+            optClampMSS = (int) strtol(optarg, NULL, 10);
+            if (optClampMSS < 536)
+            {
+                fprintf(stderr, "-m: %d is too low (min 536)\n", optClampMSS);
+                exit(EXIT_FAILURE);
+            }
+            if (optClampMSS > 1452)
+            {
+                fprintf(stderr, "-m: %d is too high (max 1452)\n", optClampMSS);
+                exit(EXIT_FAILURE);
+            }
+            break;
+        case 'I':
+            SET_STRING(conn.ifName, optarg);
+            break;
+        case 'V':
+            printf("Roaring Penguin PPPoE Version %s\n", VERSION);
+            exit(EXIT_SUCCESS);
+        case 'A':
+            conn.printACNames = 1;
+            break;
+        case 'h':
+            usage(argv[0]);
+            break;
+        default:
+            usage(argv[0]);
+        }
     }
 
     /* Pick a default interface name */
-    if (!conn.ifName) {
+    if (!conn.ifName)
+    {
 #ifdef USE_BPF
-	fprintf(stderr, "No interface specified (-I option)\n");
-	exit(EXIT_FAILURE);
+        fprintf(stderr, "No interface specified (-I option)\n");
+        exit(EXIT_FAILURE);
 #else
-	SET_STRING(conn.ifName, DEFAULT_IF);
+        SET_STRING(conn.ifName, DEFAULT_IF);
 #endif
     }
 
-    if (!conn.printACNames) {
+    if (!conn.printACNames)
+    {
 
 #ifdef HAVE_N_HDLC
-	if (conn.synchronous) {
-	    if (ioctl(0, TIOCSETD, &disc) < 0) {
-		printErr("Unable to set line discipline to N_HDLC.  Make sure your kernel supports the N_HDLC line discipline, or do not use the SYNCHRONOUS option.  Quitting.");
-		exit(EXIT_FAILURE);
-	    } else {
-		LOGGER(LOG_INFO,
-		       "Changed pty line discipline to N_HDLC for synchronous mode");
-	    }
-	    /* There is a bug in Linux's select which returns a descriptor
-	     * as readable if N_HDLC line discipline is on, even if
-	     * it isn't really readable.  This return happens only when
-	     * select() times out.  To avoid blocking forever in read(),
-	     * make descriptor 0 non-blocking */
-	    flags = fcntl(0, F_GETFL);
-	    if (flags < 0) fatalSys("fcntl(F_GETFL)");
-	    if (fcntl(0, F_SETFL, (long) flags | O_NONBLOCK) < 0) {
-		fatalSys("fcntl(F_SETFL)");
-	    }
-	}
+        if (conn.synchronous)
+        {
+            if (ioctl(0, TIOCSETD, &disc) < 0)
+            {
+                printErr("Unable to set line discipline to N_HDLC.  Make sure your kernel supports the N_HDLC line discipline, or do not use the SYNCHRONOUS option.  Quitting.");
+                exit(EXIT_FAILURE);
+            }
+            else
+            {
+                LOGGER(LOG_INFO,
+                       "Changed pty line discipline to N_HDLC for synchronous mode");
+            }
+            /* There is a bug in Linux's select which returns a descriptor
+             * as readable if N_HDLC line discipline is on, even if
+             * it isn't really readable.  This return happens only when
+             * select() times out.  To avoid blocking forever in read(),
+             * make descriptor 0 non-blocking */
+            flags = fcntl(0, F_GETFL);
+            if (flags < 0)
+            {
+                fatalSys("fcntl(F_GETFL)");
+            }
+            if (fcntl(0, F_SETFL, (long) flags | O_NONBLOCK) < 0)
+            {
+                fatalSys("fcntl(F_SETFL)");
+            }
+        }
 #endif
 
     }
 
-    if (optFloodDiscovery) {
-	for (n=0; n < optFloodDiscovery; n++) {
-	    if (conn.printACNames) {
-		fprintf(stderr, "Sending discovery flood %d\n", n+1);
-	    }
+    if (optFloodDiscovery)
+    {
+        for (n=0; n < optFloodDiscovery; n++)
+        {
+            if (conn.printACNames)
+            {
+                fprintf(stderr, "Sending discovery flood %d\n", n+1);
+            }
             conn.discoverySocket =
-	        openInterface(conn.ifName, Eth_PPPOE_Discovery, conn.myEth);
-	    discovery(&conn);
-	    conn.discoveryState = STATE_SENT_PADI;
-	    close(conn.discoverySocket);
-	}
-	exit(EXIT_SUCCESS);
+                openInterface(conn.ifName, Eth_PPPOE_Discovery, conn.myEth);
+            discovery(&conn);
+            conn.discoveryState = STATE_SENT_PADI;
+            close(conn.discoverySocket);
+        }
+        exit(EXIT_SUCCESS);
     }
 
     /* Open session socket before discovery phase, to avoid losing session */
@@ -1054,45 +1180,56 @@ main(int argc, char *argv[])
     /* Opening this socket just before waitForPADS in the discovery()      */
     /* function would be more appropriate, but it would mess-up the code   */
     if (!optSkipSession)
+    {
         conn.sessionSocket = openInterface(conn.ifName, Eth_PPPOE_Session, conn.myEth);
+    }
 
     /* Skip discovery and don't open discovery socket? */
-    if (conn.skipDiscovery && conn.noDiscoverySocket) {
-	conn.discoveryState = STATE_SESSION;
-    } else {
+    if (conn.skipDiscovery && conn.noDiscoverySocket)
+    {
+        conn.discoveryState = STATE_SESSION;
+    }
+    else
+    {
         conn.discoverySocket =
-	    openInterface(conn.ifName, Eth_PPPOE_Discovery, conn.myEth);
+            openInterface(conn.ifName, Eth_PPPOE_Discovery, conn.myEth);
         discovery(&conn);
     }
-    if (optSkipSession) {
-	printf("%u:%02x:%02x:%02x:%02x:%02x:%02x\n",
-	       ntohs(conn.session),
-	       conn.peerEth[0],
-	       conn.peerEth[1],
-	       conn.peerEth[2],
-	       conn.peerEth[3],
-	       conn.peerEth[4],
-	       conn.peerEth[5]);
-	exit(EXIT_SUCCESS);
+    if (optSkipSession)
+    {
+        printf("%u:%02x:%02x:%02x:%02x:%02x:%02x\n",
+               ntohs(conn.session),
+               conn.peerEth[0],
+               conn.peerEth[1],
+               conn.peerEth[2],
+               conn.peerEth[3],
+               conn.peerEth[4],
+               conn.peerEth[5]);
+        exit(EXIT_SUCCESS);
     }
 
 #ifdef SUPPORT_RFC4938
-    if (conn.enableRfc4938FlowControl) {
-        if (conn.initialCredits != -1) {
+    if (conn.enableRfc4938FlowControl)
+    {
+        if (conn.initialCredits != -1)
+        {
             /* we have already been given this many credits */
             conn.hostCredits = conn.initialCredits;
         }
 
-        if (conn.skipDiscovery) {
+        if (conn.skipDiscovery)
+        {
             /* The peer has already been given this many credits */
             conn.peerCredits = RFC_PEER_CREDITS;
         }
 
-        if (conn.rfc4938CoordPort > 0 && conn.rfc4938ServerPort > 0) {
+        if (conn.rfc4938CoordPort > 0 && conn.rfc4938ServerPort > 0)
+        {
             struct sockaddr_in address;
 
             /* This is part of a server, prepare for out of band flow control */
-            if ((conn.rfc4938Socket = socket(PF_INET, SOCK_DGRAM, 0)) == -1) {
+            if ((conn.rfc4938Socket = socket(PF_INET, SOCK_DGRAM, 0)) == -1)
+            {
                 exit(EXIT_FAILURE);
             }
 
@@ -1101,20 +1238,22 @@ main(int argc, char *argv[])
             address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
             if (bind(conn.rfc4938Socket, (struct sockaddr *) &address,
-                                         sizeof(struct sockaddr_in)) == -1) {
+                     sizeof(struct sockaddr_in)) == -1)
+            {
                 exit(EXIT_FAILURE);
             }
 
             address.sin_port = htons(conn.rfc4938ServerPort);
 
             if (connect(conn.rfc4938Socket, (struct sockaddr *) &address,
-                                            sizeof(struct sockaddr_in)) == -1) {
+                        sizeof(struct sockaddr_in)) == -1)
+            {
                 exit(EXIT_FAILURE);
             }
         }
 
-	/* send an PADG to start to grant radios ability to send packets */
-	sendPADG(&conn, RFC_PEER_CREDITS);
+        /* send an PADG to start to grant radios ability to send packets */
+        sendPADG(&conn, RFC_PEER_CREDITS);
     }
 #endif
 
@@ -1140,10 +1279,10 @@ fatalSys(char const *str)
 {
     char buf[1024];
     sprintf(buf, "%.256s: Session %d: %.256s",
-	    str, (int) ntohs(Connection->session), strerror(errno));
+            str, (int) ntohs(Connection->session), strerror(errno));
     printErr(buf);
     sendPADTf(Connection, "RP-PPPoE: System call error: %s",
-	      strerror(errno));
+              strerror(errno));
     exit(EXIT_FAILURE);
 }
 
@@ -1178,7 +1317,7 @@ rp_fatal(char const *str)
 {
     printErr(str);
     sendPADTf(Connection, "RP-PPPoE: Session %d: %.256s",
-	      (int) ntohs(Connection->session), str);
+              (int) ntohs(Connection->session), str);
     exit(EXIT_FAILURE);
 }
 
@@ -1211,71 +1350,85 @@ asyncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
     int type;
 #endif
 
-    if (receivePacket(sock, &packet, &len) < 0) {
-	return;
+    if (receivePacket(sock, &packet, &len) < 0)
+    {
+        return;
     }
 
     /* Check length */
-    if (ntohs(packet.length) + HDR_SIZE > len) {
-	LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
-	       (unsigned int) ntohs(packet.length));
-	return;
+    if (ntohs(packet.length) + HDR_SIZE > (unsigned)len)
+    {
+        LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
+               (unsigned int) ntohs(packet.length));
+        return;
     }
 #ifdef DEBUGGING_ENABLED
-    if (conn->debugFile) {
-	dumpPacket(conn->debugFile, &packet, "RCVD");
-	fprintf(conn->debugFile, "\n");
-	fflush(conn->debugFile);
+    if (conn->debugFile)
+    {
+        dumpPacket(conn->debugFile, &packet, "RCVD");
+        fprintf(conn->debugFile, "\n");
+        fflush(conn->debugFile);
     }
 #endif
 
 #ifdef USE_BPF
     /* Make sure this is a session packet before processing further */
     type = etherType(&packet);
-    if (type == Eth_PPPOE_Discovery) {
-	sessionDiscoveryPacket(&packet);
-    } else if (type != Eth_PPPOE_Session) {
-	return;
+    if (type == Eth_PPPOE_Discovery)
+    {
+        sessionDiscoveryPacket(&packet);
+    }
+    else if (type != Eth_PPPOE_Session)
+    {
+        return;
     }
 #endif
 
     /* Sanity check */
-    if (packet.code != CODE_SESS) {
-	LOGGER(LOG_ERR, "Unexpected packet code %d", (int) packet.code);
-	return;
+    if (packet.code != CODE_SESS)
+    {
+        LOGGER(LOG_ERR, "Unexpected packet code %d", (int) packet.code);
+        return;
     }
-    if (packet.ver != 1) {
-	LOGGER(LOG_ERR, "Unexpected packet version %d", (int) packet.ver);
-	return;
+    if (packet.ver != 1)
+    {
+        LOGGER(LOG_ERR, "Unexpected packet version %d", (int) packet.ver);
+        return;
     }
-    if (packet.type != 1) {
-	LOGGER(LOG_ERR, "Unexpected packet type %d", (int) packet.type);
-	return;
+    if (packet.type != 1)
+    {
+        LOGGER(LOG_ERR, "Unexpected packet type %d", (int) packet.type);
+        return;
     }
-    if (memcmp(packet.ethHdr.h_dest, conn->myEth, ETH_ALEN)) {
-	return;
+    if (memcmp(packet.ethHdr.h_dest, conn->myEth, ETH_ALEN))
+    {
+        return;
     }
-    if (memcmp(packet.ethHdr.h_source, conn->peerEth, ETH_ALEN)) {
-	/* Not for us -- must be another session.  This is not an error,
-	   so don't log anything.  */
-	return;
+    if (memcmp(packet.ethHdr.h_source, conn->peerEth, ETH_ALEN))
+    {
+        /* Not for us -- must be another session.  This is not an error,
+           so don't log anything.  */
+        return;
     }
 
-    if (packet.session != conn->session) {
-	/* Not for us -- must be another session.  This is not an error,
-	   so don't log anything.  */
-	return;
+    if (packet.session != conn->session)
+    {
+        /* Not for us -- must be another session.  This is not an error,
+           so don't log anything.  */
+        return;
     }
     plen = ntohs(packet.length);
-    if (plen + HDR_SIZE > len) {
-	LOGGER(LOG_ERR, "Bogus length field in session packet %d (%d)",
-	       (int) plen, (int) len);
-	return;
+    if (plen + HDR_SIZE > (unsigned)len)
+    {
+        LOGGER(LOG_ERR, "Bogus length field in session packet %d (%d)",
+               (int) plen, (int) len);
+        return;
     }
 
     /* Clamp MSS */
-    if (clampMss) {
-	clampMSS(&packet, "incoming", clampMss);
+    if (clampMss)
+    {
+        clampMSS(&packet, "incoming", clampMss);
     }
 
 #ifdef SUPPORT_RFC4938
@@ -1284,28 +1437,32 @@ asyncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
     unsigned short oldPeerCredits = conn->peerCredits;
 
     if (conn->enableRfc4938FlowControl &&
-        GET_FCN(&(packet.payload[0])) == TAG_CREDITS) {
+            GET_FCN(&(packet.payload[0])) == TAG_CREDITS)
+    {
         /* shift the start of the payload */
         offset = TAG_HDR_SIZE + TAG_CREDITS_SIZE;
 
         /* update the current credit status for us and the peer */
         conn->hostCredits += GET_FCN(((PPPoETag *) packet.payload)->payload);
         conn->peerCredits =  GET_BCN(((PPPoETag *) packet.payload)->payload);
-        if (conn->hostCredits > RFC_MAX_CREDITS) {
+        if (conn->hostCredits > RFC_MAX_CREDITS)
+        {
             conn->hostCredits = RFC_MAX_CREDITS;
         }
 
-       LOGGER(LOG_INFO, "pppoe(%hu): Recv Inband PADG update FCN (host credits) old/new %hu/%hu, BCN (peer credits) old/new %hu/%hu", 
-              htons(conn->session),
-              oldHostCredits, conn->hostCredits, 
-              oldPeerCredits, conn->peerCredits);
-     } else {
-      unsigned short delPeerCredits = computePeerCredits(conn, &packet);
+        LOGGER(LOG_INFO, "pppoe(%hu): Recv Inband PADG update FCN (host credits) old/new %hu/%hu, BCN (peer credits) old/new %hu/%hu",
+               htons(conn->session),
+               oldHostCredits, conn->hostCredits,
+               oldPeerCredits, conn->peerCredits);
+    }
+    else
+    {
+        unsigned short delPeerCredits = computePeerCredits(conn, &packet);
 
-      conn->peerCredits -= delPeerCredits;
+        conn->peerCredits -= delPeerCredits;
 
-      LOGGER(LOG_INFO, "pppoe(%hu): decrement %hu credits from %hu peer_credits = %hu", 
-              htons(conn->session), delPeerCredits, oldPeerCredits, conn->peerCredits);
+        LOGGER(LOG_INFO, "pppoe(%hu): decrement %hu credits from %hu peer_credits = %hu",
+               htons(conn->session), delPeerCredits, oldPeerCredits, conn->peerCredits);
     }
 
 #endif
@@ -1327,32 +1484,42 @@ asyncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
     *ptr++ = FRAME_CTRL ^ FRAME_ENC;
 
 #ifndef SUPPORT_RFC4938
-    for (i=0; i<plen; i++) {
+    for (i=0; i<plen; i++)
+    {
 #else
-    for (i=offset; i<plen; i++) {
+    for (i=offset; i<plen; i++)
+    {
 #endif
-	c = packet.payload[i];
-	if (c == FRAME_FLAG || c == FRAME_ADDR || c == FRAME_ESC || c < 0x20) {
-	    *ptr++ = FRAME_ESC;
-	    *ptr++ = c ^ FRAME_ENC;
-	} else {
-	    *ptr++ = c;
-	}
+        c = packet.payload[i];
+        if (c == FRAME_FLAG || c == FRAME_ADDR || c == FRAME_ESC || c < 0x20)
+        {
+            *ptr++ = FRAME_ESC;
+            *ptr++ = c ^ FRAME_ENC;
+        }
+        else
+        {
+            *ptr++ = c;
+        }
     }
-    for (i=0; i<2; i++) {
-	c = tail[i];
-	if (c == FRAME_FLAG || c == FRAME_ADDR || c == FRAME_ESC || c < 0x20) {
-	    *ptr++ = FRAME_ESC;
-	    *ptr++ = c ^ FRAME_ENC;
-	} else {
-	    *ptr++ = c;
-	}
+    for (i=0; i<2; i++)
+    {
+        c = tail[i];
+        if (c == FRAME_FLAG || c == FRAME_ADDR || c == FRAME_ESC || c < 0x20)
+        {
+            *ptr++ = FRAME_ESC;
+            *ptr++ = c ^ FRAME_ENC;
+        }
+        else
+        {
+            *ptr++ = c;
+        }
     }
     *ptr++ = FRAME_FLAG;
 
     /* Ship it out */
-    if (write(1, pppBuf, (ptr-pppBuf)) < 0) {
-	fatalSys("asyncReadFromEth: write");
+    if (write(1, pppBuf, (ptr-pppBuf)) < 0)
+    {
+        fatalSys("asyncReadFromEth: write");
     }
 }
 
@@ -1380,72 +1547,86 @@ syncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
     int type;
 #endif
 
-    if (receivePacket(sock, &packet, &len) < 0) {
-	return;
+    if (receivePacket(sock, &packet, &len) < 0)
+    {
+        return;
     }
 
     /* Check length */
-    if (ntohs(packet.length) + HDR_SIZE > len) {
-	LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
-	       (unsigned int) ntohs(packet.length));
-	return;
+    if (ntohs(packet.length) + HDR_SIZE > (unsigned)len)
+    {
+        LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
+               (unsigned int) ntohs(packet.length));
+        return;
     }
 #ifdef DEBUGGING_ENABLED
-    if (conn->debugFile) {
-	dumpPacket(conn->debugFile, &packet, "RCVD");
-	fprintf(conn->debugFile, "\n");
-	fflush(conn->debugFile);
+    if (conn->debugFile)
+    {
+        dumpPacket(conn->debugFile, &packet, "RCVD");
+        fprintf(conn->debugFile, "\n");
+        fflush(conn->debugFile);
     }
 #endif
 
 #ifdef USE_BPF
     /* Make sure this is a session packet before processing further */
     type = etherType(&packet);
-    if (type == Eth_PPPOE_Discovery) {
-	sessionDiscoveryPacket(&packet);
-    } else if (type != Eth_PPPOE_Session) {
-	return;
+    if (type == Eth_PPPOE_Discovery)
+    {
+        sessionDiscoveryPacket(&packet);
+    }
+    else if (type != Eth_PPPOE_Session)
+    {
+        return;
     }
 #endif
 
     /* Sanity check */
-    if (packet.code != CODE_SESS) {
-	LOGGER(LOG_ERR, "Unexpected packet code %d", (int) packet.code);
-	return;
+    if (packet.code != CODE_SESS)
+    {
+        LOGGER(LOG_ERR, "Unexpected packet code %d", (int) packet.code);
+        return;
     }
-    if (packet.ver != 1) {
-	LOGGER(LOG_ERR, "Unexpected packet version %d", (int) packet.ver);
-	return;
+    if (packet.ver != 1)
+    {
+        LOGGER(LOG_ERR, "Unexpected packet version %d", (int) packet.ver);
+        return;
     }
-    if (packet.type != 1) {
-	LOGGER(LOG_ERR, "Unexpected packet type %d", (int) packet.type);
-	return;
+    if (packet.type != 1)
+    {
+        LOGGER(LOG_ERR, "Unexpected packet type %d", (int) packet.type);
+        return;
     }
-    if (memcmp(packet.ethHdr.h_dest, conn->myEth, ETH_ALEN)) {
-	/* Not for us -- must be another session.  This is not an error,
-	   so don't log anything.  */
-	return;
+    if (memcmp(packet.ethHdr.h_dest, conn->myEth, ETH_ALEN))
+    {
+        /* Not for us -- must be another session.  This is not an error,
+           so don't log anything.  */
+        return;
     }
-    if (memcmp(packet.ethHdr.h_source, conn->peerEth, ETH_ALEN)) {
-	/* Not for us -- must be another session.  This is not an error,
-	   so don't log anything.  */
-	return;
+    if (memcmp(packet.ethHdr.h_source, conn->peerEth, ETH_ALEN))
+    {
+        /* Not for us -- must be another session.  This is not an error,
+           so don't log anything.  */
+        return;
     }
-    if (packet.session != conn->session) {
-	/* Not for us -- must be another session.  This is not an error,
-	   so don't log anything.  */
-	return;
+    if (packet.session != conn->session)
+    {
+        /* Not for us -- must be another session.  This is not an error,
+           so don't log anything.  */
+        return;
     }
     plen = ntohs(packet.length);
-    if (plen + HDR_SIZE > len) {
-	LOGGER(LOG_ERR, "Bogus length field in session packet %d (%d)",
-	       (int) plen, (int) len);
-	return;
+    if (plen + HDR_SIZE > (unsigned)len)
+    {
+        LOGGER(LOG_ERR, "Bogus length field in session packet %d (%d)",
+               (int) plen, (int) len);
+        return;
     }
 
     /* Clamp MSS */
-    if (clampMss) {
-	clampMSS(&packet, "incoming", clampMss);
+    if (clampMss)
+    {
+        clampMSS(&packet, "incoming", clampMss);
     }
 
 #ifdef SUPPORT_RFC4938
@@ -1454,27 +1635,31 @@ syncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
     unsigned short oldPeerCredits =  conn->peerCredits;
 
     if (conn->enableRfc4938FlowControl &&
-        GET_FCN(&(packet.payload[0])) == TAG_CREDITS) {
+            GET_FCN(&(packet.payload[0])) == TAG_CREDITS)
+    {
         /* shift the start and length of the payload */
         plen -= (offset = TAG_HDR_SIZE + TAG_CREDITS_SIZE);
 
         /* update the current credit status for us and the peer */
         conn->hostCredits += GET_FCN(((PPPoETag *) packet.payload)->payload);
         conn->peerCredits =  GET_BCN(((PPPoETag *) packet.payload)->payload);
-        if (conn->hostCredits > RFC_MAX_CREDITS) {
+        if (conn->hostCredits > RFC_MAX_CREDITS)
+        {
             conn->hostCredits = RFC_MAX_CREDITS;
         }
-       LOGGER(LOG_INFO, "pppoe(%hu): Recv Inband PADC FCN (host credits) old/new %hu/%hu, BCN (peer credits) old/new %hu/%hu", 
-              htons(conn->session),
-              oldHostCredits, conn->hostCredits, 
-              oldPeerCredits, conn->peerCredits);
-    } else {
-      unsigned short delPeerCredits = computePeerCredits(conn, &packet);
+        LOGGER(LOG_INFO, "pppoe(%hu): Recv Inband PADC FCN (host credits) old/new %hu/%hu, BCN (peer credits) old/new %hu/%hu",
+               htons(conn->session),
+               oldHostCredits, conn->hostCredits,
+               oldPeerCredits, conn->peerCredits);
+    }
+    else
+    {
+        unsigned short delPeerCredits = computePeerCredits(conn, &packet);
 
-      LOGGER(LOG_INFO, "pppoe(%hu): decrement %hu credits, peer_credits %hu", 
-              htons(conn->session), delPeerCredits, conn->peerCredits);
+        LOGGER(LOG_INFO, "pppoe(%hu): decrement %hu credits, peer_credits %hu",
+               htons(conn->session), delPeerCredits, conn->peerCredits);
 
-      conn->peerCredits -= delPeerCredits;
+        conn->peerCredits -= delPeerCredits;
     }
 
 #endif
@@ -1490,8 +1675,9 @@ syncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
 #endif
     vec[1].iov_len = plen;
 
-    if (writev(1, vec, 2) < 0) {
-	fatalSys("syncReadFromEth: write");
+    if (writev(1, vec, 2) < 0)
+    {
+        fatalSys("syncReadFromEth: write");
     }
 }
 
@@ -1499,7 +1685,7 @@ syncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
 int
 file_exists(const char * filename)
 {
-	FILE * file;
+    FILE * file;
     if ((file = fopen(filename, "r")))
     {
         fclose(file);
@@ -1509,24 +1695,24 @@ file_exists(const char * filename)
 }
 
 
-static UINT16_t computePeerCredits (PPPoEConnection * conn, PPPoEPacket * packet)
+static UINT16_t computePeerCredits (PPPoEConnection * conn __attribute__((unused)), PPPoEPacket * packet)
 {
-  UINT16_t credits = 0;
+    UINT16_t credits = 0;
 
-  /* 
-   * Credits are calculated based on ppp payload, therefore you must 
-   * subtract the PPP header out from the PPPoE payload
-   */
-  UINT16_t len = ntohs (packet->length) - PPP_OVERHEAD;
+    /*
+     * Credits are calculated based on ppp payload, therefore you must
+     * subtract the PPP header out from the PPPoE payload
+     */
+    UINT16_t len = ntohs (packet->length) - PPP_OVERHEAD;
 
-  credits = len / PEER_SCALE_FACTOR;
+    credits = len / PEER_SCALE_FACTOR;
 
-  if (len % PEER_SCALE_FACTOR != 0)
+    if (len % PEER_SCALE_FACTOR != 0)
     {
-      credits++;
+        credits++;
     }
 
-  return (credits);
+    return (credits);
 }
 
 

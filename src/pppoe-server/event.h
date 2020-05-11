@@ -30,8 +30,8 @@ struct EventSelector_t;
 
 /* Callback function */
 typedef void (*EventCallbackFunc)(struct EventSelector_t *es,
-				 int fd, unsigned int flags,
-				 void *data);
+                                  int fd, unsigned int flags,
+                                  void *data);
 
 #include "eventpriv.h"
 
@@ -46,31 +46,31 @@ extern int Event_HandleEvent(EventSelector *es);
 
 /* Add a handler for a ready file descriptor */
 extern EventHandler *Event_AddHandler(EventSelector *es,
-				      int fd,
-				      unsigned int flags,
-				      EventCallbackFunc fn, void *data);
+                                      int fd,
+                                      unsigned int flags,
+                                      EventCallbackFunc fn, void *data);
 
 /* Add a handler for a ready file descriptor with associated timeout*/
 extern EventHandler *Event_AddHandlerWithTimeout(EventSelector *es,
-						 int fd,
-						 unsigned int flags,
-						 struct timeval t,
-						 EventCallbackFunc fn,
-						 void *data);
+        int fd,
+        unsigned int flags,
+        struct timeval t,
+        EventCallbackFunc fn,
+        void *data);
 
 
 /* Add a timer handler */
 extern EventHandler *Event_AddTimerHandler(EventSelector *es,
-					   struct timeval t,
-					   EventCallbackFunc fn,
-					   void *data);
+        struct timeval t,
+        EventCallbackFunc fn,
+        void *data);
 
 /* Change the timeout of a timer handler */
 void Event_ChangeTimeout(EventHandler *handler, struct timeval t);
 
 /* Delete a handler */
 extern int Event_DelHandler(EventSelector *es,
-			    EventHandler *eh);
+                            EventHandler *eh);
 
 /* Retrieve callback function from a handler */
 extern EventCallbackFunc Event_GetCallback(EventHandler *eh);
@@ -80,15 +80,15 @@ extern void *Event_GetData(EventHandler *eh);
 
 /* Set callback and data to new values */
 extern void Event_SetCallbackAndData(EventHandler *eh,
-				     EventCallbackFunc fn,
-				     void *data);
+                                     EventCallbackFunc fn,
+                                     void *data);
 
 /* Handle a signal synchronously in event loop */
 int Event_HandleSignal(EventSelector *es, int sig, void (*handler)(int sig));
 
 /* Reap children synchronously in event loop */
 int Event_HandleChildExit(EventSelector *es, pid_t pid,
-			  void (*handler)(pid_t, int, void *), void *data);
+                          void (*handler)(pid_t, int, void *), void *data);
 
 extern int Event_EnableDebugging(char const *fname);
 

@@ -10,7 +10,7 @@
  * ===========================
  *
  * This file provides a set of typedefs used to promote
- * variable consistency.  
+ * variable consistency.
  *
  * ===========================
  *

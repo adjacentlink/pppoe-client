@@ -13,7 +13,7 @@
 * This file was modified on Feb 2008 by Cisco Systems, Inc.
 ***********************************************************************/
 
-static char const RCSID[] = "$Id: discovery.c,v 1.25 2006/01/03 03:20:38 dfs Exp $";
+//static char const RCSID[] = "$Id: discovery.c,v 1.25 2006/01/03 03:20:38 dfs Exp $";
 
 #include "pppoe.h"
 #include "pppoe_rfc4938.h"
@@ -51,24 +51,23 @@ static int waitOnDiscoverySocket(PPPoEConnection * conn, int timeout, PPPoEPacke
 static void
 parseForHostUniq (UINT16_t type, UINT16_t len, unsigned char *data, void *extra)
 {
-  int *val = (int *) extra;
+    int *val = (int *) extra;
 
-  if (type == TAG_HOST_UNIQ && len == sizeof (UINT32_t))
+    if (type == TAG_HOST_UNIQ && len == sizeof (UINT32_t))
     {
-      UINT32_t tmp;
+        UINT32_t tmp;
 
-      memcpy (&tmp, data, len);
+        memcpy (&tmp, data, len);
 
-      if (ntohl (tmp) == get_pppoe_conn()->host_id)
+        if (ntohl (tmp) == get_pppoe_conn()->host_id)
         {
-          *val = 1;
+            *val = 1;
         }
-      else
+        else
         {
-          PPPOE_DEBUG_PACKET ("%s: pkt id %u (0x%x) != our id %u (0x%x)\n", 
-                             __func__,  
-                             htonl(tmp), htonl(tmp), 
-                             get_pppoe_conn()->host_id, get_pppoe_conn()->host_id);
+            LOGGER(LOG_PKT, "pkt id %u (0x%x) != our id %u (0x%x)\n",
+                                htonl(tmp), htonl(tmp),
+                                get_pppoe_conn()->host_id, get_pppoe_conn()->host_id);
         }
     }
 }
@@ -87,25 +86,25 @@ parseForHostUniq (UINT16_t type, UINT16_t len, unsigned char *data, void *extra)
 static int
 packetIsForMe (PPPoEConnection * conn, PPPoEPacket * packet)
 {
-  int forMe = 0;
+    int forMe = 0;
 
-  /* If packet is not directed to our MAC address, forget it */
-  if (memcmp (packet->eth_hdr.dest, conn->myEth, PPPOE_ETH_ALEN))
-   {
-      PPPOE_DEBUG_PACKET ("%s:(%u,%hu): no, not out dst mac addr\n", 
-                         __func__, conn->peer_id, conn->sessionId);
-      return 0;
-   }
+    /* If packet is not directed to our MAC address, forget it */
+    if (memcmp (packet->eth_hdr.dest, conn->myEth, PPPOE_ETH_ALEN))
+    {
+        LOGGER(LOG_PKT, "(%u,%hu): no, not out dst mac addr\n",
+                            conn->peer_id, conn->sessionId);
+        return 0;
+    }
 
-  /* If we're not using the Host-Unique tag, then accept the packet */
-  if (!conn->useHostUniq)
-   {
-    return 1;
-   }
+    /* If we're not using the Host-Unique tag, then accept the packet */
+    if (!conn->useHostUniq)
+    {
+        return 1;
+    }
 
-  parseDiscoveryPacket (packet, parseForHostUniq, &forMe);
+    parseDiscoveryPacket (packet, parseForHostUniq, &forMe);
 
-  return forMe;
+    return forMe;
 }
 
 /**********************************************************************
@@ -125,58 +124,58 @@ packetIsForMe (PPPoEConnection * conn, PPPoEPacket * packet)
 static void
 parsePADOTags (UINT16_t type, UINT16_t len, unsigned char *data, void *extra)
 {
-  struct PacketCriteria *pc = (struct PacketCriteria *) extra;
-  PPPoEConnection *conn = pc->conn;
+    struct PacketCriteria *pc = (struct PacketCriteria *) extra;
+    PPPoEConnection *conn = pc->conn;
 
-  switch (type)
+    switch (type)
     {
     case TAG_AC_NAME:
-      pc->seenACName = 1;
+        pc->seenACName = 1;
 
-      if (conn->acName && len == strlen (conn->acName) &&
-          !strncmp ((char *) data, conn->acName, len))
+        if (conn->acName && len == strlen (conn->acName) &&
+                !strncmp ((char *) data, conn->acName, len))
         {
-          pc->acNameOK = 1;
+            pc->acNameOK = 1;
         }
-      break;
+        break;
 
     case TAG_SERVICE_NAME:
-      pc->seenServiceName = 1;
+        pc->seenServiceName = 1;
 
-      if (conn->serviceName && len == strlen (conn->serviceName) &&
-          !strncmp ((char *) data, conn->serviceName, len))
+        if (conn->serviceName && len == strlen (conn->serviceName) &&
+                !strncmp ((char *) data, conn->serviceName, len))
         {
-          pc->serviceNameOK = 1;
+            pc->serviceNameOK = 1;
         }
-      break;
+        break;
 
     case TAG_AC_COOKIE:
 
-      conn->cookie.type = htons (type);
-      conn->cookie.length = htons (len);
-      memcpy (conn->cookie.payload, data, len);
-      break;
+        conn->cookie.type = htons (type);
+        conn->cookie.length = htons (len);
+        memcpy (conn->cookie.payload, data, len);
+        break;
 
     case TAG_RELAY_SESSION_ID:
-      conn->relayId.type = htons (type);
-      conn->relayId.length = htons (len);
-      memcpy (conn->relayId.payload, data, len);
-      break;
+        conn->relayId.type = htons (type);
+        conn->relayId.length = htons (len);
+        memcpy (conn->relayId.payload, data, len);
+        break;
 
     case TAG_SERVICE_NAME_ERROR:
-          pktLogErrs ("PADO", type, len, data, extra);
-          exit (1);
-      break;
+        pktLogErrs ("PADO", type, len, data, extra);
+        exit (1);
+        break;
 
     case TAG_AC_SYSTEM_ERROR:
-          pktLogErrs ("PADO", type, len, data, extra);
-          exit (1);
-      break;
+        pktLogErrs ("PADO", type, len, data, extra);
+        exit (1);
+        break;
 
     case TAG_GENERIC_ERROR:
-          pktLogErrs ("PADO", type, len, data, extra);
-          exit (1);
-      break;
+        pktLogErrs ("PADO", type, len, data, extra);
+        exit (1);
+        break;
     }
 }
 
@@ -195,71 +194,71 @@ parsePADOTags (UINT16_t type, UINT16_t len, unsigned char *data, void *extra)
 static void
 parsePADSTags (UINT16_t type, UINT16_t len, unsigned char *data, void *extra)
 {
-  PPPoEConnection *conn = (PPPoEConnection *) extra;
-  UINT16_t fcn;
-  UINT16_t bcn;
-  UINT16_t credit_scalar;
+    PPPoEConnection *conn = (PPPoEConnection *) extra;
+    UINT16_t fcn;
+    UINT16_t bcn;
+    UINT16_t credit_scalar;
 
-  switch (type)
+    switch (type)
     {
     case TAG_SERVICE_NAME:
-      PPPOE_DEBUG_PACKET ("%s:(%u,%hu): PADS Service-Name: '%.*s'\n", __func__,
-                         conn->peer_id, conn->sessionId, (int) len, data);
-      break;
+        LOGGER(LOG_PKT, "(%u,%hu): PADS Service-Name: '%.*s'\n",
+                            conn->peer_id, conn->sessionId, (int) len, data);
+        break;
 
     case TAG_GENERIC_ERROR:
     case TAG_AC_SYSTEM_ERROR:
     case TAG_SERVICE_NAME_ERROR:
-      pktLogErrs ("PADS", type, len, data, extra);
-      conn->PADSHadError = 1;
-      break;
+        pktLogErrs ("PADS", type, len, data, extra);
+        conn->PADSHadError = 1;
+        break;
 
     case TAG_RELAY_SESSION_ID:
-      conn->relayId.type   = htons (type);
-      conn->relayId.length = htons (len);
-      memcpy (conn->relayId.payload, data, len);
-      break;
+        conn->relayId.type   = htons (type);
+        conn->relayId.length = htons (len);
+        memcpy (conn->relayId.payload, data, len);
+        break;
 
     case TAG_RFC4938_CREDITS:
-      fcn = get_word_from_buff(data, 0);
-      bcn = get_word_from_buff(data, 2);
+        fcn = get_word_from_buff(data, 0);
+        bcn = get_word_from_buff(data, 2);
 
-      PPPOE_DEBUG_PACKET ("%s:(%u,%hu): PADS: fcn:%hu, bcn:%hu\n", 
-                          __func__, conn->peer_id, conn->sessionId, fcn, bcn);
+        LOGGER(LOG_PKT, "(%u,%hu): PADS: fcn:%hu, bcn:%hu\n",
+                            conn->peer_id, conn->sessionId, fcn, bcn);
 
-      /* add credits */
-      handle_credit_grant(conn, fcn, bcn);
+        /* add credits */
+        handle_credit_grant(conn, fcn, bcn);
 
-      break;
+        break;
 
     case TAG_RFC4938_SCALAR:
-      if (conn->mode == MODE_RFC4938_SCALING)
+        if (conn->mode == MODE_RFC4938_SCALING)
         {
-          credit_scalar = get_word_from_buff(data, 0);
-          conn->peer_credit_scalar = credit_scalar;
-          conn->scalar_state = SCALAR_RECEIVED;
+            credit_scalar = get_word_from_buff(data, 0);
+            conn->peer_credit_scalar = credit_scalar;
+            conn->scalar_state = SCALAR_RECEIVED;
 
-          PPPOE_DEBUG_PACKET ("%s:(%u,%hu): Received credit scalar:%hu, in PADS\n", __func__,
-                              conn->peer_id, conn->sessionId, credit_scalar);
+            LOGGER(LOG_PKT, "(%u,%hu): Received credit scalar:%hu, in PADS\n",
+                                conn->peer_id, conn->sessionId, credit_scalar);
         }
-      else
+        else
         {
 
-          /* 
-           * Something is wrong. The user has requested a rfc4938 session only, 
-           * one without credit/metric scaling but the peer has sent a credit
-           * scaling tag.  We're going to send a padt and let the user figure 
-           * it out.
-           */
+            /*
+             * Something is wrong. The user has requested a rfc4938 session only,
+             * one without credit/metric scaling but the peer has sent a credit
+             * scaling tag.  We're going to send a padt and let the user figure
+             * it out.
+             */
 
-          PPPOE_DEBUG_PACKET ("%s:(%u,%hu): A scaling tag was detected in the PADS packet"
-                              " but the session was RFC4938_ONLY\n", __func__,
-                              conn->peer_id, conn->sessionId);
+            LOGGER(LOG_PKT, "(%u,%hu): A scaling tag was detected in the PADS packet"
+                                " but the session was RFC4938_ONLY\n",
+                                conn->peer_id, conn->sessionId);
 
-          sendPADTandExit (conn, "PPPoEClient: credit/scaling mismatch", 1);
+            sendPADTandExit (conn, "PPPoEClient: credit/scaling mismatch", 1);
         }
 
-      break;
+        break;
     }
 }
 
@@ -275,81 +274,81 @@ parsePADSTags (UINT16_t type, UINT16_t len, unsigned char *data, void *extra)
 static void
 sendPADI (PPPoEConnection * conn)
 {
-  PPPoEPacket packet;
-  unsigned char *cursor = packet.payload;
-  PPPoETag *svc = (PPPoETag *) (&packet.payload);
-  UINT16_t namelen = 0;
-  UINT16_t plen;
-  int omit_service_name = 0;
+    PPPoEPacket packet;
+    unsigned char *cursor = packet.payload;
+    PPPoETag *svc = (PPPoETag *) (&packet.payload);
+    UINT16_t namelen = 0;
+    UINT16_t plen;
+    int omit_service_name = 0;
 
-  if (conn->sessionId)
-   {
-     PPPOE_DEBUG_EVENT ("%s:(%u): already have session id %u, not sending PADI\n", __func__,
-                        conn->peer_id, conn->sessionId);
-     return;
-   }
-
-  if (conn->serviceName)
+    if (conn->sessionId)
     {
-      namelen = (UINT16_t) strlen (conn->serviceName);
-      if (!strcmp (conn->serviceName, "NO-SERVICE-NAME-NON-RFC-COMPLIANT"))
+        LOGGER(LOG_INFO, "(%u): already have session id %u, not sending PADI\n",
+                           conn->peer_id, conn->sessionId);
+        return;
+    }
+
+    if (conn->serviceName)
+    {
+        namelen = (UINT16_t) strlen (conn->serviceName);
+        if (!strcmp (conn->serviceName, "NO-SERVICE-NAME-NON-RFC-COMPLIANT"))
         {
-          omit_service_name = 1;
+            omit_service_name = 1;
         }
     }
 
-  /* Set destination to Ethernet broadcast address */
-  memset (packet.eth_hdr.dest, 0xFF, PPPOE_ETH_ALEN);
-  memcpy (packet.eth_hdr.source, conn->myEth, PPPOE_ETH_ALEN);
+    /* Set destination to Ethernet broadcast address */
+    memset (packet.eth_hdr.dest, 0xFF, PPPOE_ETH_ALEN);
+    memcpy (packet.eth_hdr.source, conn->myEth, PPPOE_ETH_ALEN);
 
-  packet.eth_hdr.proto = htons (Eth_PPPOE_Discovery);
-  packet.pppoe_ver = 1;
-  packet.pppoe_type = 1;
-  packet.pppoe_code = CODE_PADI;
-  packet.pppoe_session = 0;
+    packet.eth_hdr.proto = htons (Eth_PPPOE_Discovery);
+    packet.pppoe_ver = 1;
+    packet.pppoe_type = 1;
+    packet.pppoe_code = CODE_PADI;
+    packet.pppoe_session = 0;
 
-  if (!omit_service_name)
+    if (!omit_service_name)
     {
-      plen = TAG_HDR_SIZE + namelen;
-      CHECK_ROOM (cursor, packet.payload, plen);
+        plen = TAG_HDR_SIZE + namelen;
+        CHECK_ROOM (cursor, packet.payload, plen);
 
-      svc->type = TAG_SERVICE_NAME;
-      svc->length = htons (namelen);
+        svc->type = TAG_SERVICE_NAME;
+        svc->length = htons (namelen);
 
-      if (conn->serviceName)
+        if (conn->serviceName)
         {
-          memcpy (svc->payload, conn->serviceName, strlen (conn->serviceName));
+            memcpy (svc->payload, conn->serviceName, strlen (conn->serviceName));
         }
-      cursor += namelen + TAG_HDR_SIZE;
+        cursor += namelen + TAG_HDR_SIZE;
     }
-  else
+    else
     {
-      plen = 0;
+        plen = 0;
     }
 
-  /* If we're using Host-Uniq, copy it over */
-  if (conn->useHostUniq)
+    /* If we're using Host-Uniq, copy it over */
+    if (conn->useHostUniq)
     {
-      PPPoETag hostUniq;
-      UINT32_t id = htonl (conn->host_id);
+        PPPoETag hostUniq;
+        UINT32_t id = htonl (conn->host_id);
 
-      hostUniq.type   = htons (TAG_HOST_UNIQ);
-      hostUniq.length = htons (sizeof (id));
+        hostUniq.type   = htons (TAG_HOST_UNIQ);
+        hostUniq.length = htons (sizeof (id));
 
-      memcpy (hostUniq.payload, &id, sizeof (id));
-      CHECK_ROOM (cursor, packet.payload, sizeof (id) + TAG_HDR_SIZE);
+        memcpy (hostUniq.payload, &id, sizeof (id));
+        CHECK_ROOM (cursor, packet.payload, sizeof (id) + TAG_HDR_SIZE);
 
-      memcpy (cursor, &hostUniq, sizeof (id) + TAG_HDR_SIZE);
-      cursor += sizeof (id) + TAG_HDR_SIZE;
-      plen   += sizeof (id) + TAG_HDR_SIZE;
+        memcpy (cursor, &hostUniq, sizeof (id) + TAG_HDR_SIZE);
+        cursor += sizeof (id) + TAG_HDR_SIZE;
+        plen   += sizeof (id) + TAG_HDR_SIZE;
     }
 
-  PPPOE_DEBUG_PACKET ("%s:(%u,%hu): sending PADI len %d\n", __func__,
-                      conn->peer_id, conn->sessionId, (int) (plen + ETH_PPPOE_OVERHEAD));
+    LOGGER(LOG_PKT, "(%u,%hu): sending PADI len %d\n",
+                        conn->peer_id, conn->sessionId, (int) (plen + ETH_PPPOE_OVERHEAD));
 
-  packet.pppoe_length = htons (plen);
+    packet.pppoe_length = htons (plen);
 
-  send_discovery_packet_to_ac (conn, &packet);
+    send_discovery_packet_to_ac (conn, &packet);
 }
 
 /**********************************************************************
@@ -365,134 +364,135 @@ sendPADI (PPPoEConnection * conn)
 static void
 waitForPADO (PPPoEConnection * conn, int timeout)
 {
-  PPPoEPacket packet;
+    PPPoEPacket packet;
 
-  struct PacketCriteria pc;
-  pc.conn = conn;
-  pc.acNameOK = (conn->acName) ? 0 : 1;
-  pc.serviceNameOK = (conn->serviceName) ? 0 : 1;
-  pc.seenACName = 0;
-  pc.seenServiceName = 0;
+    struct PacketCriteria pc;
+    pc.conn = conn;
+    pc.acNameOK = (conn->acName) ? 0 : 1;
+    pc.serviceNameOK = (conn->serviceName) ? 0 : 1;
+    pc.seenACName = 0;
+    pc.seenServiceName = 0;
 
-  const int endtime = time(NULL) + timeout;
+    const int endtime = time(NULL) + timeout;
 
-  do {
-       int r;
+    do
+    {
+        int r;
 
-       if(timeout > 0)
+        if(timeout > 0)
         {
-          r = waitOnDiscoverySocket (conn, timeout, &packet);
+            r = waitOnDiscoverySocket (conn, timeout, &packet);
         }
-       else
+        else
         {
-           PPPOE_DEBUG_EVENT ("%s:(%u,%hu, 0x%x): no more time, done\n", 
-                              __func__, conn->peer_id, conn->sessionId, conn->host_id);
+            LOGGER(LOG_INFO, "(%u,%hu, 0x%x): no more time, done\n",
+                               conn->peer_id, conn->sessionId, conn->host_id);
 
-           return;
-        }
-
-       if (r == 0)
-        {
-          PPPOE_DEBUG_PACKET ("%s:(%u,%hu, 0x%x): ignore frame, continue\n", 
-                                __func__, conn->peer_id, conn->sessionId, conn->host_id);
-
-          timeout = endtime - time(NULL);
-          
-          continue;
-        }
-       else if (r == -2)
-        {
-          PPPOE_DEBUG_EVENT ("%s:(%u,%hu,0x%x): timed out, done\n", 
-                             __func__, conn->peer_id, conn->sessionId, conn->host_id);
- 
-          return; /* Timed out */
-        }
-       else if (r == -1)
-        {
-          PPPOE_DEBUG_PACKET ("%s:(%u,%hu): read error, terminate\n", 
-                             __func__, conn->peer_id, conn->sessionId);
- 
-          fatalSys ("select (PADO discovery)", strerror(errno));
-
-          return;            
+            return;
         }
 
-      /* Check length */
-      if ((int) (ntohs (packet.pppoe_length) + ETH_PPPOE_OVERHEAD) > r)
+        if (r == 0)
         {
-          PPPOE_DEBUG_ERROR ("%s:(%u,%hu): Bogus PPPoE length field (%hu)\n", __func__,
-                             conn->peer_id, conn->sessionId, ntohs (packet.pppoe_length));
+            LOGGER(LOG_PKT, "(%u,%hu, 0x%x): ignore frame, continue\n",
+                                conn->peer_id, conn->sessionId, conn->host_id);
 
+            timeout = endtime - time(NULL);
 
-          timeout = endtime - time(NULL);
+            continue;
+        }
+        else if (r == -2)
+        {
+            LOGGER(LOG_INFO, "(%u,%hu,0x%x): timed out, done\n",
+                               conn->peer_id, conn->sessionId, conn->host_id);
 
-          continue;
+            return; /* Timed out */
+        }
+        else if (r == -1)
+        {
+            LOGGER(LOG_PKT, "(%u,%hu): read error, terminate\n",
+                                conn->peer_id, conn->sessionId);
+
+            fatalSys ("select (PADO discovery)", strerror(errno));
+
+            return;
         }
 
-      /* If it's not for us, loop again */
-      if (!packetIsForMe (conn, &packet))
-       {
-        PPPOE_DEBUG_PACKET ("%s:(%u,%hu,0x%x): Frame not for me, drop\n", 
-                           __func__, conn->peer_id, conn->sessionId, conn->host_id);
-
-        timeout = endtime - time(NULL);
-
-        continue;
-       }
-
-      if (packet.pppoe_code == CODE_PADO)
+        /* Check length */
+        if ((int) (ntohs (packet.pppoe_length) + ETH_PPPOE_OVERHEAD) > r)
         {
-          if (NOT_UNICAST (packet.eth_hdr.source))
+            LOGGER(LOG_ERR, "(%u,%hu): Bogus PPPoE length field (%hu)\n",
+                               conn->peer_id, conn->sessionId, ntohs (packet.pppoe_length));
+
+
+            timeout = endtime - time(NULL);
+
+            continue;
+        }
+
+        /* If it's not for us, loop again */
+        if (!packetIsForMe (conn, &packet))
+        {
+            LOGGER(LOG_PKT, "(%u,%hu,0x%x): Frame not for me, drop\n",
+                                conn->peer_id, conn->sessionId, conn->host_id);
+
+            timeout = endtime - time(NULL);
+
+            continue;
+        }
+
+        if (packet.pppoe_code == CODE_PADO)
+        {
+            if (NOT_UNICAST (packet.eth_hdr.source))
             {
-              PPPOE_DEBUG_ERROR ("%s:(%u,%hu): Ignoring PADO packet from "
-                                 "non-unicast MAC address", __func__,
-                                 conn->peer_id, conn->sessionId);
+                LOGGER(LOG_ERR, "(%u,%hu): Ignoring PADO packet from "
+                                   "non-unicast MAC address",
+                                   conn->peer_id, conn->sessionId);
 
-              timeout = endtime - time(NULL);
+                timeout = endtime - time(NULL);
 
-              continue;
+                continue;
             }
 
-          parseDiscoveryPacket (&packet, parsePADOTags, &pc);
+            parseDiscoveryPacket (&packet, parsePADOTags, &pc);
 
-          if (!pc.seenACName)
+            if (!pc.seenACName)
             {
-              PPPOE_DEBUG_ERROR ("%s:(%u,%hu): Ignoring PADO packet with no "
-                                 "AC-Name tag", __func__, conn->peer_id, conn->sessionId);
+                LOGGER(LOG_ERR, "(%u,%hu): Ignoring PADO packet with no "
+                                   "AC-Name tag", conn->peer_id, conn->sessionId);
 
-              timeout = endtime - time(NULL);
+                timeout = endtime - time(NULL);
 
-              continue;
+                continue;
             }
 
-          if (!pc.seenServiceName)
+            if (!pc.seenServiceName)
             {
-              PPPOE_DEBUG_ERROR ("%s:(%u,%hu): Ignoring PADO packet with "
-                                 "no Service-Name tag", __func__, conn->peer_id, conn->sessionId);
+                LOGGER(LOG_ERR, "(%u,%hu): Ignoring PADO packet with "
+                                   "no Service-Name tag", conn->peer_id, conn->sessionId);
 
-              timeout = endtime - time(NULL);
+                timeout = endtime - time(NULL);
 
-              continue;
+                continue;
             }
 
-          conn->numPADOs++;
+            conn->numPADOs++;
 
-          if (pc.acNameOK && pc.serviceNameOK)
+            if (pc.acNameOK && pc.serviceNameOK)
             {
-              memcpy (conn->peerEth, packet.eth_hdr.source, PPPOE_ETH_ALEN);
+                memcpy (conn->peerEth, packet.eth_hdr.source, PPPOE_ETH_ALEN);
 
-              PPPOE_DEBUG_PACKET ("%s:(%u,%hu,0x%x):PADO received, AC-Ethernet-Address: %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx\n",
-                                 __func__, conn->peer_id, conn->sessionId, conn->host_id, 
-                                 conn->peerEth[0], conn->peerEth[1], conn->peerEth[2],
-                                 conn->peerEth[3], conn->peerEth[4], conn->peerEth[5]);
+                LOGGER(LOG_PKT, "(%u,%hu,0x%x):PADO received, AC-Ethernet-Address: %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx\n",
+                                    conn->peer_id, conn->sessionId, conn->host_id,
+                                    conn->peerEth[0], conn->peerEth[1], conn->peerEth[2],
+                                    conn->peerEth[3], conn->peerEth[4], conn->peerEth[5]);
 
-              conn->discoveryState = STATE_RECEIVED_PADO;
+                conn->discoveryState = STATE_RECEIVED_PADO;
 
-              break;
+                break;
             }
         }
     }
-  while (conn->discoveryState != STATE_RECEIVED_PADO);
+    while (conn->discoveryState != STATE_RECEIVED_PADO);
 }
 
 /***********************************************************************
@@ -507,116 +507,116 @@ waitForPADO (PPPoEConnection * conn, int timeout)
 static void
 sendPADR (PPPoEConnection * conn)
 {
-  PPPoEPacket packet;
-  PPPoETag *svc = (PPPoETag *) packet.payload;
-  unsigned char *cursor = packet.payload;
+    PPPoEPacket packet;
+    PPPoETag *svc = (PPPoETag *) packet.payload;
+    unsigned char *cursor = packet.payload;
 
-  UINT16_t namelen = 0;
-  UINT16_t plen;
+    UINT16_t namelen = 0;
+    UINT16_t plen;
 
-  if (conn->sessionId)
-   {
-     PPPOE_DEBUG_EVENT ("%s:(%u): already have session id %u, not sending PADR\n", __func__,
-                        conn->peer_id, conn->sessionId);
-     return;
-   }
-
-  if (conn->serviceName)
+    if (conn->sessionId)
     {
-      namelen = (UINT16_t) strlen (conn->serviceName);
+        LOGGER(LOG_INFO, "(%u): already have session id %u, not sending PADR\n",
+                           conn->peer_id, conn->sessionId);
+        return;
     }
 
-  plen = TAG_HDR_SIZE + namelen;
-  CHECK_ROOM (cursor, packet.payload, plen);
-
-  memcpy (packet.eth_hdr.dest, conn->peerEth, PPPOE_ETH_ALEN);
-  memcpy (packet.eth_hdr.source, conn->myEth, PPPOE_ETH_ALEN);
-
-  packet.eth_hdr.proto = htons (Eth_PPPOE_Discovery);
-  packet.pppoe_ver = 1;
-  packet.pppoe_type = 1;
-  packet.pppoe_code = CODE_PADR;
-  packet.pppoe_session = 0;
-
-  svc->type = TAG_SERVICE_NAME;
-  svc->length = htons (namelen);
-  if (conn->serviceName)
+    if (conn->serviceName)
     {
-      memcpy (svc->payload, conn->serviceName, namelen);
-    }
-  cursor += namelen + TAG_HDR_SIZE;
-
-  /* If we're using Host-Uniq, copy it over */
-  if (conn->useHostUniq)
-    {
-      PPPoETag hostUniq;
-      UINT32_t id = htonl (conn->host_id);
-
-      hostUniq.type   = htons (TAG_HOST_UNIQ);
-      hostUniq.length = htons (sizeof (id));
-
-      memcpy (hostUniq.payload, &id, sizeof (id));
-      CHECK_ROOM (cursor, packet.payload, sizeof (id) + TAG_HDR_SIZE);
-
-      memcpy (cursor, &hostUniq, sizeof (id) + TAG_HDR_SIZE);
-
-      cursor += sizeof (id) + TAG_HDR_SIZE;
-      plen   += sizeof (id) + TAG_HDR_SIZE;
+        namelen = (UINT16_t) strlen (conn->serviceName);
     }
 
-  /* Copy cookie and relay-ID if needed */
-  if (conn->cookie.type)
-    {
-      CHECK_ROOM (cursor, packet.payload, ntohs (conn->cookie.length) + TAG_HDR_SIZE);
+    plen = TAG_HDR_SIZE + namelen;
+    CHECK_ROOM (cursor, packet.payload, plen);
 
-      memcpy (cursor, &conn->cookie, ntohs (conn->cookie.length) + TAG_HDR_SIZE);
-      cursor += ntohs (conn->cookie.length) + TAG_HDR_SIZE;
-      plen   += ntohs (conn->cookie.length) + TAG_HDR_SIZE;
+    memcpy (packet.eth_hdr.dest, conn->peerEth, PPPOE_ETH_ALEN);
+    memcpy (packet.eth_hdr.source, conn->myEth, PPPOE_ETH_ALEN);
+
+    packet.eth_hdr.proto = htons (Eth_PPPOE_Discovery);
+    packet.pppoe_ver = 1;
+    packet.pppoe_type = 1;
+    packet.pppoe_code = CODE_PADR;
+    packet.pppoe_session = 0;
+
+    svc->type = TAG_SERVICE_NAME;
+    svc->length = htons (namelen);
+    if (conn->serviceName)
+    {
+        memcpy (svc->payload, conn->serviceName, namelen);
+    }
+    cursor += namelen + TAG_HDR_SIZE;
+
+    /* If we're using Host-Uniq, copy it over */
+    if (conn->useHostUniq)
+    {
+        PPPoETag hostUniq;
+        UINT32_t id = htonl (conn->host_id);
+
+        hostUniq.type   = htons (TAG_HOST_UNIQ);
+        hostUniq.length = htons (sizeof (id));
+
+        memcpy (hostUniq.payload, &id, sizeof (id));
+        CHECK_ROOM (cursor, packet.payload, sizeof (id) + TAG_HDR_SIZE);
+
+        memcpy (cursor, &hostUniq, sizeof (id) + TAG_HDR_SIZE);
+
+        cursor += sizeof (id) + TAG_HDR_SIZE;
+        plen   += sizeof (id) + TAG_HDR_SIZE;
     }
 
-  if (conn->relayId.type)
+    /* Copy cookie and relay-ID if needed */
+    if (conn->cookie.type)
     {
-      CHECK_ROOM (cursor, packet.payload, ntohs (conn->relayId.length) + TAG_HDR_SIZE);
+        CHECK_ROOM (cursor, packet.payload, ntohs (conn->cookie.length) + TAG_HDR_SIZE);
 
-      memcpy (cursor, &conn->relayId, ntohs (conn->relayId.length) + TAG_HDR_SIZE);
-      cursor += ntohs (conn->relayId.length) + TAG_HDR_SIZE;
-      plen   += ntohs (conn->relayId.length) + TAG_HDR_SIZE;
+        memcpy (cursor, &conn->cookie, ntohs (conn->cookie.length) + TAG_HDR_SIZE);
+        cursor += ntohs (conn->cookie.length) + TAG_HDR_SIZE;
+        plen   += ntohs (conn->cookie.length) + TAG_HDR_SIZE;
     }
 
-   /* add credit tag */
-   PPPoETag creditTag;
-   add_credit_tag (&creditTag, conn->grant_limit, 0);
+    if (conn->relayId.type)
+    {
+        CHECK_ROOM (cursor, packet.payload, ntohs (conn->relayId.length) + TAG_HDR_SIZE);
 
-   CHECK_ROOM (cursor, packet.payload, TAG_CREDITS_LENGTH + TAG_HDR_SIZE);
+        memcpy (cursor, &conn->relayId, ntohs (conn->relayId.length) + TAG_HDR_SIZE);
+        cursor += ntohs (conn->relayId.length) + TAG_HDR_SIZE;
+        plen   += ntohs (conn->relayId.length) + TAG_HDR_SIZE;
+    }
 
-   memcpy (cursor, &creditTag, TAG_CREDITS_LENGTH + TAG_HDR_SIZE);
-   cursor += TAG_CREDITS_LENGTH + TAG_HDR_SIZE;
-   plen   += TAG_CREDITS_LENGTH + TAG_HDR_SIZE;
+    /* add credit tag */
+    PPPoETag creditTag;
+    add_credit_tag (&creditTag, conn->grant_limit, 0);
 
-   PPPOE_DEBUG_PACKET ("%s:(%u,%hu): add credit tag, fcn:%hu, bcn:%hu, len is now  %d\n", __func__,
-                       conn->peer_id, conn->sessionId,
-                       conn->grant_limit, 0, (int) (plen + ETH_PPPOE_OVERHEAD));
+    CHECK_ROOM (cursor, packet.payload, TAG_CREDITS_LENGTH + TAG_HDR_SIZE);
 
-   /* add credit scalar tag if requested */
-   if (conn->mode == MODE_RFC4938_SCALING)
-     {
-       PPPoETag scalarTag;
+    memcpy (cursor, &creditTag, TAG_CREDITS_LENGTH + TAG_HDR_SIZE);
+    cursor += TAG_CREDITS_LENGTH + TAG_HDR_SIZE;
+    plen   += TAG_CREDITS_LENGTH + TAG_HDR_SIZE;
 
-       add_scalar_tag (&scalarTag, conn->local_credit_scalar);
-       CHECK_ROOM (cursor, packet.payload, TAG_SCALAR_LENGTH + TAG_HDR_SIZE);
+    LOGGER(LOG_PKT, "(%u,%hu): add credit tag, fcn:%hu, bcn:%hu, len is now  %d\n",
+                        conn->peer_id, conn->sessionId,
+                        conn->grant_limit, 0, (int) (plen + ETH_PPPOE_OVERHEAD));
 
-       memcpy (cursor, &scalarTag, TAG_SCALAR_LENGTH + TAG_HDR_SIZE);
-       cursor += TAG_SCALAR_LENGTH + TAG_HDR_SIZE;
-       plen   += TAG_SCALAR_LENGTH + TAG_HDR_SIZE;
+    /* add credit scalar tag if requested */
+    if (conn->mode == MODE_RFC4938_SCALING)
+    {
+        PPPoETag scalarTag;
 
-       PPPOE_DEBUG_PACKET ("%s:(%u,%hu): add credit tag, credit scalar:%hu, len is now %d\n", __func__,
-                           conn->peer_id, conn->sessionId,
-                           conn->local_credit_scalar, (int) (plen + ETH_PPPOE_OVERHEAD));
-     }
+        add_scalar_tag (&scalarTag, conn->local_credit_scalar);
+        CHECK_ROOM (cursor, packet.payload, TAG_SCALAR_LENGTH + TAG_HDR_SIZE);
 
-  packet.pppoe_length = htons (plen);
+        memcpy (cursor, &scalarTag, TAG_SCALAR_LENGTH + TAG_HDR_SIZE);
+        cursor += TAG_SCALAR_LENGTH + TAG_HDR_SIZE;
+        plen   += TAG_SCALAR_LENGTH + TAG_HDR_SIZE;
 
-  send_discovery_packet_to_ac (conn, &packet);
+        LOGGER(LOG_PKT, "(%u,%hu): add credit tag, credit scalar:%hu, len is now %d\n",
+                            conn->peer_id, conn->sessionId,
+                            conn->local_credit_scalar, (int) (plen + ETH_PPPOE_OVERHEAD));
+    }
+
+    packet.pppoe_length = htons (plen);
+
+    send_discovery_packet_to_ac (conn, &packet);
 }
 
 /**********************************************************************
@@ -632,131 +632,132 @@ sendPADR (PPPoEConnection * conn)
 static void
 waitForPADS (PPPoEConnection * conn, int timeout)
 {
-  PPPoEPacket packet;
+    PPPoEPacket packet;
 
-  const int endtime = time(NULL) + timeout;
+    const int endtime = time(NULL) + timeout;
 
-  do {
-       int r;
-
-       if(timeout > 0)
-        {
-          r = waitOnDiscoverySocket (conn, timeout, &packet);
-        }
-       else
-        {
-           PPPOE_DEBUG_EVENT ("%s:(%u,%hu, 0x%x): no more time, done\n", 
-                              __func__, conn->peer_id, conn->sessionId, conn->host_id);
-
-           return;
-        }
-
-       if (r == 0)
-        {
-           PPPOE_DEBUG_PACKET ("%s:(%u,%hu, 0x%x): ignore frame, continue\n", 
-                              __func__, conn->peer_id, conn->sessionId, conn->host_id);
-          
-           timeout = endtime - time(NULL);
-
-           continue;
-        }
-       else if (r == -2)
-        {
-          PPPOE_DEBUG_EVENT ("%s:(%u,%hu): timed out, done\n", __func__, conn->peer_id, conn->sessionId);
- 
-          return; /* Timed out */
-        }
-       else if (r < 0)
-        {
-          PPPOE_DEBUG_PACKET ("%s:(%u,%hu): read error, terminate\n", __func__, conn->peer_id, conn->sessionId);
- 
-          fatalSys ("select (PADS discovery)", strerror(errno));
-
-          return;            
-        }
-
-      /* Check length */
-      if ((int) (ntohs (packet.pppoe_length) + ETH_PPPOE_OVERHEAD) != r)
-        {
-          PPPOE_DEBUG_ERROR ("%s:(%u,%hu): Bogus PPPoE length field (%hu) != %d\n", __func__,
-                             conn->peer_id, conn->sessionId, ntohs (packet.pppoe_length), r);
-
-          timeout = endtime - time(NULL);
-
-          continue;
-        }
-
-      /* If it's not from the AC, it's not for me */
-      if (memcmp (packet.eth_hdr.source, conn->peerEth, PPPOE_ETH_ALEN))
-        {
-           PPPOE_DEBUG_PACKET ("%s:(%u,%hu,0x%x): Frame not from the AC, drop\n", 
-                              __func__, conn->peer_id, conn->sessionId, conn->host_id);
-
-
-          timeout = endtime - time(NULL);
-
-          continue;
-        }
-
-      /* If it's not for us, loop again */
-      if (!packetIsForMe (conn, &packet))
-       {
-         PPPOE_DEBUG_PACKET ("%s:(%u,%hu,0x%x): Frame not for me, drop\n", 
-                           __func__, conn->peer_id, conn->sessionId, conn->host_id);
-
-         timeout = endtime - time(NULL);
-
-         continue;
-       }
-
-      /* Is it PADS?  */
-      if (packet.pppoe_code == CODE_PADS)
-        {
-          /* Parse for goodies */
-          conn->PADSHadError = 0;
-
-          parseDiscoveryPacket (&packet, parsePADSTags, conn);
-
-          if (!conn->PADSHadError)
-            {
-              conn->discoveryState = STATE_SESSION;
-            }
-
-          if (conn->scalar_state == SCALAR_NEEDED)
-            {
-               PPPOE_DEBUG_PACKET ("%s:(%u,%hu,0x%x): PADS did NOT have scalar info, falling back to default\n", 
-                           __func__, conn->peer_id, conn->sessionId, conn->host_id);
-
-               conn->local_credit_scalar = RFC4938_CREDIT_SCALAR;
-
-              /* 
-               * Time to bail.  We sent a credit scalar, but we did not received 
-               * a scalar back, this is not compliant with the spec.
-               */
-
-              /* rp_fatal ("Did not receive credit scalar tag when one was sent.\n"); */
-            }
-        }
-    }
-  while (conn->discoveryState != STATE_SESSION);
-
-  /* save in host byte order */
-  conn->sessionId = ntohs (packet.pppoe_session);
-
-  PPPOE_DEBUG_EVENT ("%s:(%u,%hu,0x%x): PADS received, PPP session is %hu (0x%hx)\n", 
-                     __func__, conn->peer_id, conn->sessionId, conn->host_id, 
-                    conn->sessionId, conn->sessionId);
-
-  /* RFC 2516 says session id MUST NOT be zero or 0xFFFF */
-  if (conn->sessionId == 0 || conn->sessionId == 0xFFFF)
+    do
     {
-      PPPOE_DEBUG_ERROR ("%s:(%u,%hu)): Access concentrator used a session value of"
-                         " %hx -- the AC is violating RFC 2516\n", __func__,
-                         conn->peer_id, conn->sessionId, conn->sessionId);
+        int r;
+
+        if(timeout > 0)
+        {
+            r = waitOnDiscoverySocket (conn, timeout, &packet);
+        }
+        else
+        {
+            LOGGER(LOG_INFO, "(%u,%hu, 0x%x): no more time, done\n",
+                               conn->peer_id, conn->sessionId, conn->host_id);
+
+            return;
+        }
+
+        if (r == 0)
+        {
+            LOGGER(LOG_PKT, "(%u,%hu, 0x%x): ignore frame, continue\n",
+                                conn->peer_id, conn->sessionId, conn->host_id);
+
+            timeout = endtime - time(NULL);
+
+            continue;
+        }
+        else if (r == -2)
+        {
+            LOGGER(LOG_INFO, "(%u,%hu): timed out, done\n", conn->peer_id, conn->sessionId);
+
+            return; /* Timed out */
+        }
+        else if (r < 0)
+        {
+            LOGGER(LOG_PKT, "(%u,%hu): read error, terminate\n", conn->peer_id, conn->sessionId);
+
+            fatalSys ("select (PADS discovery)", strerror(errno));
+
+            return;
+        }
+
+        /* Check length */
+        if ((int) (ntohs (packet.pppoe_length) + ETH_PPPOE_OVERHEAD) != r)
+        {
+            LOGGER(LOG_ERR, "(%u,%hu): Bogus PPPoE length field (%hu) != %d\n", 
+                               conn->peer_id, conn->sessionId, ntohs (packet.pppoe_length), r);
+
+            timeout = endtime - time(NULL);
+
+            continue;
+        }
+
+        /* If it's not from the AC, it's not for me */
+        if (memcmp (packet.eth_hdr.source, conn->peerEth, PPPOE_ETH_ALEN))
+        {
+            LOGGER(LOG_PKT, "(%u,%hu,0x%x): Frame not from the AC, drop\n",
+                                conn->peer_id, conn->sessionId, conn->host_id);
+
+
+            timeout = endtime - time(NULL);
+
+            continue;
+        }
+
+        /* If it's not for us, loop again */
+        if (!packetIsForMe (conn, &packet))
+        {
+            LOGGER(LOG_PKT, "(%u,%hu,0x%x): Frame not for me, drop\n",
+                                conn->peer_id, conn->sessionId, conn->host_id);
+
+            timeout = endtime - time(NULL);
+
+            continue;
+        }
+
+        /* Is it PADS?  */
+        if (packet.pppoe_code == CODE_PADS)
+        {
+            /* Parse for goodies */
+            conn->PADSHadError = 0;
+
+            parseDiscoveryPacket (&packet, parsePADSTags, conn);
+
+            if (!conn->PADSHadError)
+            {
+                conn->discoveryState = STATE_SESSION;
+            }
+
+            if (conn->scalar_state == SCALAR_NEEDED)
+            {
+                LOGGER(LOG_PKT, "(%u,%hu,0x%x): PADS did NOT have scalar info, falling back to default\n",
+                                    conn->peer_id, conn->sessionId, conn->host_id);
+
+                conn->local_credit_scalar = RFC4938_CREDIT_SCALAR;
+
+                /*
+                 * Time to bail.  We sent a credit scalar, but we did not received
+                 * a scalar back, this is not compliant with the spec.
+                 */
+
+                /* rp_fatal ("Did not receive credit scalar tag when one was sent.\n"); */
+            }
+        }
+    }
+    while (conn->discoveryState != STATE_SESSION);
+
+    /* save in host byte order */
+    conn->sessionId = ntohs (packet.pppoe_session);
+
+    LOGGER(LOG_INFO, "(%u,%hu,0x%x): PADS received, PPP session is %hu (0x%hx)\n",
+                       conn->peer_id, conn->sessionId, conn->host_id,
+                       conn->sessionId, conn->sessionId);
+
+    /* RFC 2516 says session id MUST NOT be zero or 0xFFFF */
+    if (conn->sessionId == 0 || conn->sessionId == 0xFFFF)
+    {
+        LOGGER(LOG_ERR, "(%u,%hu)): Access concentrator used a session value of"
+                           " %hx -- the AC is violating RFC 2516\n", 
+                           conn->peer_id, conn->sessionId, conn->sessionId);
     }
 
-  /* Alert parent rfc4938 process of our session id*/
-  send_session_up (conn);
+    /* Alert parent rfc4938 process of our session id*/
+    send_session_up (conn);
 }
 
 /**********************************************************************
@@ -771,116 +772,117 @@ waitForPADS (PPPoEConnection * conn, int timeout)
 void
 doDiscovery (PPPoEConnection * conn)
 {
-  int padiAttempts = 0;
-  int padrAttempts = 0;
+    int padiAttempts = 0;
+    int padrAttempts = 0;
 
-  int timeout = conn->discoveryTimeout;
+    int timeout = conn->discoveryTimeout;
 
-  do {
-      padiAttempts++;
-
-      if (padiAttempts > MAX_PADI_ATTEMPTS)
-        {
-          rp_fatal ("Timeout waiting for PADO packets");
-        }
-
-      PPPOE_DEBUG_EVENT ("%s:(%u,%hu,0x%x): try number %d, timeout is in %d sec", 
-                         __func__, conn->peer_id, conn->sessionId, conn->host_id, 
-                        padiAttempts, timeout);
-
-      sendPADI (conn);
-
-      conn->discoveryState = STATE_SENT_PADI;
-
-      waitForPADO (conn, timeout);
-
-      timeout *= 2;
-    }
-  while (conn->discoveryState == STATE_SENT_PADI);
-
-  // reset
-  timeout = conn->discoveryTimeout;
-
-  do
+    do
     {
-      padrAttempts++;
+        padiAttempts++;
 
-      if (padrAttempts > MAX_PADR_ATTEMPTS)
+        if (padiAttempts > MAX_PADI_ATTEMPTS)
         {
-          rp_fatal ("Timeout waiting for PADS packets");
+            rp_fatal ("Timeout waiting for PADO packets");
         }
 
-      PPPOE_DEBUG_EVENT ("%s:(%u,%hu,0x%x): try number %d, timeout is in %d sec", 
-                         __func__, conn->peer_id, conn->sessionId, conn->host_id, 
-                        padrAttempts, timeout);
+        LOGGER(LOG_INFO, "(%u,%hu,0x%x): try number %d, timeout is in %d sec",
+                           conn->peer_id, conn->sessionId, conn->host_id,
+                           padiAttempts, timeout);
 
-      sendPADR (conn);
+        sendPADI (conn);
 
-      conn->discoveryState = STATE_SENT_PADR;
+        conn->discoveryState = STATE_SENT_PADI;
 
-      waitForPADS (conn, timeout);
+        waitForPADO (conn, timeout);
 
-      timeout *= 2;
+        timeout *= 2;
     }
-  while (conn->discoveryState == STATE_SENT_PADR);
+    while (conn->discoveryState == STATE_SENT_PADI);
 
-  /* We're done. */
-  conn->discoveryState = STATE_SESSION;
+    // reset
+    timeout = conn->discoveryTimeout;
 
-  return;
+    do
+    {
+        padrAttempts++;
+
+        if (padrAttempts > MAX_PADR_ATTEMPTS)
+        {
+            rp_fatal ("Timeout waiting for PADS packets");
+        }
+
+        LOGGER(LOG_INFO, "(%u,%hu,0x%x): try number %d, timeout is in %d sec",
+                           conn->peer_id, conn->sessionId, conn->host_id,
+                           padrAttempts, timeout);
+
+        sendPADR (conn);
+
+        conn->discoveryState = STATE_SENT_PADR;
+
+        waitForPADS (conn, timeout);
+
+        timeout *= 2;
+    }
+    while (conn->discoveryState == STATE_SENT_PADR);
+
+    /* We're done. */
+    conn->discoveryState = STATE_SESSION;
+
+    return;
 }
 
 
 static int waitOnDiscoverySocket(PPPoEConnection * conn, int timeout, PPPoEPacket * packet)
 {
-  struct timeval tv;
-  fd_set readable;
+    struct timeval tv;
+    fd_set readable;
 
-  tv.tv_sec  = timeout;
-  tv.tv_usec = 0;
+    tv.tv_sec  = timeout;
+    tv.tv_usec = 0;
 
-  FD_ZERO (&readable);
+    FD_ZERO (&readable);
 
-  int max = conn->udpIPCSocket;
+    int max = conn->udpIPCSocket;
 
-  FD_SET (conn->udpIPCSocket, &readable);
+    FD_SET (conn->udpIPCSocket, &readable);
 
-  PPPOE_DEBUG_PACKET ("%s:(%u,%hu): waiting for %d seconds", __func__, 
-                              conn->peer_id, conn->sessionId, timeout);
+    LOGGER(LOG_PKT, "(%u,%hu): waiting for %d seconds", 
+                        conn->peer_id, conn->sessionId, timeout);
 
-  int r = select (max + 1, &readable, NULL, NULL, &tv);
+    int r = select (max + 1, &readable, NULL, NULL, &tv);
 
-  if(r > 0)
+    if(r > 0)
     {
-      if(FD_ISSET (conn->udpIPCSocket, &readable))
+        if(FD_ISSET (conn->udpIPCSocket, &readable))
         {
-           int result = recv_packet_from_parent (conn, packet);
+            int result = recv_packet_from_parent (conn, packet);
 
-           PPPOE_DEBUG_PACKET ("%s:(%u,%hu): result %d", __func__, 
-                              conn->peer_id, conn->sessionId, result);
+            LOGGER(LOG_PKT, "(%u,%hu): result %d", 
+                                conn->peer_id, conn->sessionId, result);
 
-           return result;
+            return result;
         }
-      else
+        else
         {
-          PPPOE_DEBUG_ERROR ("%s:(%u,%hu): socket not raeady, error %s", __func__, 
-                             conn->peer_id, conn->sessionId, strerror(errno));
+            LOGGER(LOG_ERR, "(%u,%hu): socket not raeady, error %s",
+                               conn->peer_id, conn->sessionId, strerror(errno));
 
-          return -1;
+            return -1;
         }
     }
-   else if(r == 0)
+    else if(r == 0)
     {
-      PPPOE_DEBUG_EVENT ("%s:(%u,%hu): timed out", __func__, conn->peer_id, conn->sessionId);
+        LOGGER(LOG_INFO, "(%u,%hu): timed out", conn->peer_id, conn->sessionId);
 
-      return -2;
+        return -2;
     }
-   else 
+    else
     {
-      PPPOE_DEBUG_ERROR ("%s:(%u,%hu): error %s", __func__, 
-                         conn->peer_id, conn->sessionId, strerror(errno));
+        LOGGER(LOG_ERR, "(%u,%hu): error %s", 
+                           conn->peer_id, conn->sessionId, strerror(errno));
 
-      return -1;
+        return -1;
     }
 }
 

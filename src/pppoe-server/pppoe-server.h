@@ -30,16 +30,17 @@
 
 #define MAX_USERNAME_LEN 31
 /* An Ethernet interface */
-typedef struct {
-    char name[IFNAMSIZ+1];	/* Interface name */
-    int sock;			/* Socket for discovery frames */
+typedef struct
+{
+    char name[IFNAMSIZ+1];  /* Interface name */
+    int sock;           /* Socket for discovery frames */
     unsigned char mac[ETH_ALEN]; /* MAC address */
-    EventHandler *eh;		/* Event handler for this interface */
+    EventHandler *eh;       /* Event handler for this interface */
 
     /* Next fields are used only if we're an L2TP LAC */
 #ifdef HAVE_L2TP
-    int session_sock;		/* Session socket */
-    EventHandler *lac_eh;	/* LAC's event-handler */
+    int session_sock;       /* Session socket */
+    EventHandler *lac_eh;   /* LAC's event-handler */
 #endif
 } Interface;
 
@@ -58,7 +59,8 @@ struct ClientSessionStruct;
 /* Dispatch table for session-related functions.  We call different
    functions for L2TP-terminated sessions than for locally-terminated
    sessions. */
-typedef struct PppoeSessionFunctionTable_t {
+typedef struct PppoeSessionFunctionTable_t
+{
     /* Stop the session */
     void (*stop)(struct ClientSessionStruct *ses, char const *reason);
 
@@ -72,28 +74,29 @@ typedef struct PppoeSessionFunctionTable_t {
 extern PppoeSessionFunctionTable DefaultSessionFunctionTable;
 
 /* A client session */
-typedef struct ClientSessionStruct {
+typedef struct ClientSessionStruct
+{
     struct ClientSessionStruct *next; /* In list of free or active sessions */
     PppoeSessionFunctionTable *funcs; /* Function table */
-    pid_t pid;			/* PID of child handling session */
-    Interface *ethif;		/* Ethernet interface */
+    pid_t pid;          /* PID of child handling session */
+    Interface *ethif;       /* Ethernet interface */
     unsigned char myip[IPV4ALEN]; /* Local IP address */
     unsigned char peerip[IPV4ALEN]; /* Desired IP address of peer */
-    UINT16_t sess;		/* Session number */
+    UINT16_t sess;      /* Session number */
     unsigned char eth[ETH_ALEN]; /* Peer's Ethernet address */
-    unsigned int flags;		/* Various flags */
-    time_t startTime;		/* When session started */
-    char const *serviceName;	/* Service name */
+    unsigned int flags;     /* Various flags */
+    time_t startTime;       /* When session started */
+    char const *serviceName;    /* Service name */
 #ifdef HAVE_LICENSE
     char user[MAX_USERNAME_LEN+1]; /* Authenticated user-name */
     char realm[MAX_USERNAME_LEN+1]; /* Realm */
-    unsigned char realpeerip[IPV4ALEN];	/* Actual IP address -- may be assigned
-					   by RADIUS server */
-    int maxSessionsPerUser;	/* Max sessions for this user */
+    unsigned char realpeerip[IPV4ALEN]; /* Actual IP address -- may be assigned
+                       by RADIUS server */
+    int maxSessionsPerUser; /* Max sessions for this user */
 #endif
 #ifdef HAVE_L2TP
-    l2tp_session *l2tp_ses;	/* L2TP session */
-    struct sockaddr_in tunnel_endpoint;	/* L2TP endpoint */
+    l2tp_session *l2tp_ses; /* L2TP session */
+    struct sockaddr_in tunnel_endpoint; /* L2TP endpoint */
 #endif
 #ifdef SUPPORT_RFC4938
     int initialCredits;  /* The initial number of credits for the child */

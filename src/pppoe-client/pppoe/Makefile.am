@@ -6,6 +6,7 @@ rfc4938pppoe_LDFLAGS =
 
 rfc4938pppoe_SOURCES =      \
  ../rfc4938_messages.c      \
+ ../../common/logger.c      \
  common.c                   \
  debug.c                    \
  discovery.c                \

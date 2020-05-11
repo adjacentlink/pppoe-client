@@ -60,26 +60,28 @@
 #define PPPOE_ETH_DATA_LEN 1500
 #define PPPOE_ETH_ALEN 6
 
-struct pppoe_ethhdr {
+struct pppoe_ethhdr
+{
     unsigned char  dest[PPPOE_ETH_ALEN];
     unsigned char  source[PPPOE_ETH_ALEN];
-    unsigned short proto;	       
+    unsigned short proto;
 } __attribute__((packed));
 
 
-struct pppoehdr {
+struct pppoehdr
+{
 #if   __BYTE_ORDER ==__LITTLE_ENDIAN
-    unsigned int type:4;	     
-    unsigned int ver:4;		    
+    unsigned int type:4;
+    unsigned int ver:4;
 #elif  __BYTE_ORDER ==__BIG_ENDIAN
-    unsigned int ver:4;	        	
-    unsigned int type:4;	       
+    unsigned int ver:4;
+    unsigned int type:4;
 #else
 # error "Please fix <bits/endian.h>"
 #endif
-    unsigned char  code;               
-    unsigned short session;	       
-    unsigned short length;	       
+    unsigned char  code;
+    unsigned short session;
+    unsigned short length;
 } __attribute__((packed));
 #define pppoe_type    pppoe_hdr.type
 #define pppoe_ver     pppoe_hdr.ver
@@ -89,8 +91,9 @@ struct pppoehdr {
 
 
 /* A PPPoE Packet, including Ethernet headers */
-typedef struct PPPoEPacketStruct {
-    struct pppoe_ethhdr eth_hdr;	          /* Ethernet header */
+typedef struct PPPoEPacketStruct
+{
+    struct pppoe_ethhdr eth_hdr;              /* Ethernet header */
 
     struct pppoehdr pppoe_hdr;             /* PPPoE headr */
 
@@ -98,9 +101,10 @@ typedef struct PPPoEPacketStruct {
 } __attribute__((packed)) PPPoEPacket;
 
 
-typedef struct PPPHeaderStruct {
-    unsigned short type;	   /* type */
-    unsigned char  code;	   /* code */
+typedef struct PPPHeaderStruct
+{
+    unsigned short type;       /* type */
+    unsigned char  code;       /* code */
     unsigned char  id;             /* id */
     unsigned short length;         /* length */
     unsigned char data[0];         /* data */
@@ -108,9 +112,10 @@ typedef struct PPPHeaderStruct {
 
 /* PPPoE Tag */
 
-typedef struct PPPoETagStruct {
-    unsigned short type;	          /* tag type */
-    unsigned short length;	          /* Length of payload */
+typedef struct PPPoETagStruct
+{
+    unsigned short type;              /* tag type */
+    unsigned short length;            /* Length of payload */
     unsigned char  payload[PPPOE_ETH_DATA_LEN]; /* A LOT of room to spare */
 } __attribute__((packed)) PPPoETag;
 
@@ -147,11 +152,11 @@ typedef struct PPPoETagStruct {
 
 #define PPP_IPCP_OPT_IP_ADDRESSES   1
 #define PPP_IPCP_OPT_COMPRESSION    2
-#define PPP_IPCP_OPT_IP_ADDRESS     3 
+#define PPP_IPCP_OPT_IP_ADDRESS     3
 #define PPP_IPCP_OPT_MOBILE_IPV4    4
 
-#define ETH_OVERHEAD   14 
-#define PPPOE_OVERHEAD  6 
+#define ETH_OVERHEAD   14
+#define PPPOE_OVERHEAD  6
 #define PPP_OVERHEAD    2
 
 #define PIPE_RD_FD 0

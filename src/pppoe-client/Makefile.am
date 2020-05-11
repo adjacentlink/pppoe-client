@@ -10,6 +10,7 @@ rfc4938client_LDFLAGS =     \
  $(libemane_LIBS)
 
 rfc4938client_SOURCES =     \
+ ../common/logger.c         \
  rfc4938.c                  \
  rfc4938_messages.c         \
  rfc4938_debug.c            \

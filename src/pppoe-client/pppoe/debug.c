@@ -18,7 +18,7 @@
 * This file was modified on Feb 2008 by Cisco Systems, Inc.
 ***********************************************************************/
 
-static char const RCSID[] = "$Id: debug.c,v 1.6 2006/01/03 03:05:06 dfs Exp $";
+// static char const RCSID[] = "$Id: debug.c,v 1.6 2006/01/03 03:05:06 dfs Exp $";
 
 #include "pppoe.h"
 
@@ -43,52 +43,54 @@ static char const RCSID[] = "$Id: debug.c,v 1.6 2006/01/03 03:05:06 dfs Exp $";
 void
 dumpHex (FILE * fp, unsigned char const *buf, int len)
 {
-  int i;
-  int base;
+    int i;
+    int base;
 
-  if (!fp)
-    return;
-
-  /* do NOT dump PAP packets */
-  if (len >= 2 && buf[0] == 0xC0 && buf[1] == 0x23)
+    if (!fp)
     {
-      fprintf (fp, "(PAP Authentication Frame -- Contents not dumped)\n");
-      return;
+        return;
     }
 
-  for (base = 0; base < len; base += 16)
+    /* do NOT dump PAP packets */
+    if (len >= 2 && buf[0] == 0xC0 && buf[1] == 0x23)
     {
-      for (i = base; i < base + 16; i++)
+        fprintf (fp, "(PAP Authentication Frame -- Contents not dumped)\n");
+        return;
+    }
+
+    for (base = 0; base < len; base += 16)
+    {
+        for (i = base; i < base + 16; i++)
         {
-          if (i < len)
+            if (i < len)
             {
-              fprintf (fp, "%02x ", (unsigned) buf[i]);
+                fprintf (fp, "%02x ", (unsigned) buf[i]);
             }
-          else
+            else
             {
-              fprintf (fp, "   ");
+                fprintf (fp, "   ");
             }
         }
-      fprintf (fp, "  ");
-      for (i = base; i < base + 16; i++)
+        fprintf (fp, "  ");
+        for (i = base; i < base + 16; i++)
         {
-          if (i < len)
+            if (i < len)
             {
-              if (isprint (buf[i]))
+                if (isprint (buf[i]))
                 {
-                  fprintf (fp, "%c", buf[i]);
+                    fprintf (fp, "%c", buf[i]);
                 }
-              else
+                else
                 {
-                  fprintf (fp, ".");
+                    fprintf (fp, ".");
                 }
             }
-          else
+            else
             {
-              break;
+                break;
             }
         }
-      fprintf (fp, "\n");
+        fprintf (fp, "\n");
     }
 }
 
@@ -105,59 +107,59 @@ dumpHex (FILE * fp, unsigned char const *buf, int len)
 void
 printHex (unsigned char const *buf, int len)
 {
-  int i;
-  int base;
+    int i;
+    int base;
 
-  if (buf == NULL)
+    if (buf == NULL)
     {
-      return;
+        return;
     }
 
-  if (len > BIGBUF)
+    if (len > BIGBUF)
     {
-      return;
+        return;
     }
 
-  /* do NOT dump PAP packets */
-  if (len >= 2 && buf[0] == 0xC0 && buf[1] == 0x23)
+    /* do NOT dump PAP packets */
+    if (len >= 2 && buf[0] == 0xC0 && buf[1] == 0x23)
     {
-      printf ("(PAP Authentication Frame -- Contents not dumped)\n");
-      return;
+        printf ("(PAP Authentication Frame -- Contents not dumped)\n");
+        return;
     }
 
-  for (base = 0; base < len; base += 16)
+    for (base = 0; base < len; base += 16)
     {
-      for (i = base; i < base + 16; i++)
+        for (i = base; i < base + 16; i++)
         {
-          if (i < len)
+            if (i < len)
             {
-              printf ("%02x ", (unsigned) buf[i]);
+                printf ("%02x ", (unsigned) buf[i]);
             }
-          else
+            else
             {
-              printf ("   ");
+                printf ("   ");
             }
         }
-      printf ("  ");
-      for (i = base; i < base + 16; i++)
+        printf ("  ");
+        for (i = base; i < base + 16; i++)
         {
-          if (i < len)
+            if (i < len)
             {
-              if (isprint (buf[i]))
+                if (isprint (buf[i]))
                 {
-                  printf ("%c", buf[i]);
+                    printf ("%c", buf[i]);
                 }
-              else
+                else
                 {
-                  printf (".");
+                    printf (".");
                 }
             }
-          else
+            else
             {
-              break;
+                break;
             }
         }
-      printf ("\n");
+        printf ("\n");
     }
 }
 
@@ -176,95 +178,97 @@ printHex (unsigned char const *buf, int len)
 void
 dumpPacket (FILE * fp, PPPoEPacket * packet, char const *dir)
 {
-  int len = ntohs (packet->length);
+    int len = ntohs (packet->length);
 
-  /* Sheesh... printing times is a pain... */
-  struct timeval tv;
-  time_t now;
-  int millisec;
-  struct tm *lt;
-  char timebuf[256];
+    /* Sheesh... printing times is a pain... */
+    struct timeval tv;
+    time_t now;
+    int millisec;
+    struct tm *lt;
+    char timebuf[256];
 
-  UINT16_t type = getEtherType (packet);
-  if (!fp)
-    return;
-  gettimeofday (&tv, NULL);
-  now = (time_t) tv.tv_sec;
-  millisec = tv.tv_usec / 1000;
-  lt = localtime (&now);
-  strftime (timebuf, 256, "%H:%M:%S", lt);
-  fprintf (fp, "%s.%03d %s PPPoE ", timebuf, millisec, dir);
-
-  if (type == Eth_PPPOE_Discovery)
+    UINT16_t type = getEtherType (packet);
+    if (!fp)
     {
-      fprintf (fp, "Discovery (%x) ", (unsigned) type);
+        return;
     }
-  else if (type == Eth_PPPOE_Session)
+    gettimeofday (&tv, NULL);
+    now = (time_t) tv.tv_sec;
+    millisec = tv.tv_usec / 1000;
+    lt = localtime (&now);
+    strftime (timebuf, 256, "%H:%M:%S", lt);
+    fprintf (fp, "%s.%03d %s PPPoE ", timebuf, millisec, dir);
+
+    if (type == Eth_PPPOE_Discovery)
     {
-      fprintf (fp, "Session (%x) ", (unsigned) type);
+        fprintf (fp, "Discovery (%x) ", (unsigned) type);
     }
-  else
+    else if (type == Eth_PPPOE_Session)
     {
-      fprintf (fp, "Unknown (%x) ", (unsigned) type);
+        fprintf (fp, "Session (%x) ", (unsigned) type);
+    }
+    else
+    {
+        fprintf (fp, "Unknown (%x) ", (unsigned) type);
     }
 
-  switch (packet->code)
+    switch (packet->code)
     {
     case CODE_PADI:
-      fprintf (fp, "PADI ");
-      break;
+        fprintf (fp, "PADI ");
+        break;
     case CODE_PADO:
-      fprintf (fp, "PADO ");
-      break;
+        fprintf (fp, "PADO ");
+        break;
     case CODE_PADR:
-      fprintf (fp, "PADR ");
-      break;
+        fprintf (fp, "PADR ");
+        break;
     case CODE_PADS:
-      fprintf (fp, "PADS ");
-      break;
+        fprintf (fp, "PADS ");
+        break;
     case CODE_PADT:
-      fprintf (fp, "PADT ");
-      break;
+        fprintf (fp, "PADT ");
+        break;
     case CODE_PADQ:
-      fprintf (fp, "PADQ ");
-      break;
+        fprintf (fp, "PADQ ");
+        break;
     case CODE_PADG:
-      fprintf (fp, "PADG ");
-      break;
+        fprintf (fp, "PADG ");
+        break;
     case CODE_PADC:
-      fprintf (fp, "PADC ");
-      break;
+        fprintf (fp, "PADC ");
+        break;
     case CODE_PADM:
-      fprintf (fp, "PADM ");
-      break;
+        fprintf (fp, "PADM ");
+        break;
     case CODE_PADN:
-      fprintf (fp, "PADN ");
-      break;
+        fprintf (fp, "PADN ");
+        break;
     case CODE_SESS:
-      fprintf (fp, "SESS ");
-      break;
+        fprintf (fp, "SESS ");
+        break;
     }
 
-  fprintf (fp, "sess-id %d length %d\n", (int) ntohs (packet->session), len);
+    fprintf (fp, "sess-id %d length %d\n", (int) ntohs (packet->session), len);
 
-  /* Ugly... I apologize... */
-  fprintf (fp,
-           "SourceAddr %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx "
-           "DestAddr %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx\n",
-            packet->eth_hdr.source[0],
-            packet->eth_hdr.source[1],
-            packet->eth_hdr.source[2],
-            packet->eth_hdr.source[3],
-            packet->eth_hdr.source[4],
-            packet->eth_hdr.source[5],
-            packet->eth_hdr.dest[0],
-            packet->eth_hdr.dest[1],
-            packet->eth_hdr.dest[2],
-            packet->eth_hdr.dest[3],
-            packet->eth_hdr.dest[4], 
-            packet->eth_hdr.dest[5]);
+    /* Ugly... I apologize... */
+    fprintf (fp,
+             "SourceAddr %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx "
+             "DestAddr %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx\n",
+             packet->eth_hdr.source[0],
+             packet->eth_hdr.source[1],
+             packet->eth_hdr.source[2],
+             packet->eth_hdr.source[3],
+             packet->eth_hdr.source[4],
+             packet->eth_hdr.source[5],
+             packet->eth_hdr.dest[0],
+             packet->eth_hdr.dest[1],
+             packet->eth_hdr.dest[2],
+             packet->eth_hdr.dest[3],
+             packet->eth_hdr.dest[4],
+             packet->eth_hdr.dest[5]);
 
-  dumpHex (fp, packet->payload, ntohs (packet->length));
+    dumpHex (fp, packet->payload, ntohs (packet->length));
 }
 
 
@@ -281,92 +285,92 @@ dumpPacket (FILE * fp, PPPoEPacket * packet, char const *dir)
 void
 printPacket (PPPoEPacket * packet, char const *dir)
 {
-  int len = ntohs (packet->length);
+    int len = ntohs (packet->length);
 
-  /* Sheesh... printing times is a pain... */
-  struct timeval tv;
-  time_t now;
-  int millisec;
-  struct tm *lt;
-  char timebuf[256];
+    /* Sheesh... printing times is a pain... */
+    struct timeval tv;
+    time_t now;
+    int millisec;
+    struct tm *lt;
+    char timebuf[256];
 
-  UINT16_t type = getEtherType (packet);
-  gettimeofday (&tv, NULL);
-  now = (time_t) tv.tv_sec;
-  millisec = tv.tv_usec / 1000;
-  lt = localtime (&now);
-  strftime (timebuf, 256, "%H:%M:%S", lt);
-  printf ("%s.%03d %s PPPoE ", timebuf, millisec, dir);
+    UINT16_t type = getEtherType (packet);
+    gettimeofday (&tv, NULL);
+    now = (time_t) tv.tv_sec;
+    millisec = tv.tv_usec / 1000;
+    lt = localtime (&now);
+    strftime (timebuf, 256, "%H:%M:%S", lt);
+    printf ("%s.%03d %s PPPoE ", timebuf, millisec, dir);
 
-  if (type == Eth_PPPOE_Discovery)
+    if (type == Eth_PPPOE_Discovery)
     {
-      printf ("Discovery (%x) ", (unsigned) type);
+        printf ("Discovery (%x) ", (unsigned) type);
     }
-  else if (type == Eth_PPPOE_Session)
+    else if (type == Eth_PPPOE_Session)
     {
-      printf ("Session (%x) ", (unsigned) type);
+        printf ("Session (%x) ", (unsigned) type);
     }
-  else
+    else
     {
-      printf ("Unknown (%x) ", (unsigned) type);
+        printf ("Unknown (%x) ", (unsigned) type);
     }
 
-  switch (packet->code)
+    switch (packet->code)
     {
     case CODE_PADI:
-      printf ("PADI ");
-      break;
+        printf ("PADI ");
+        break;
     case CODE_PADO:
-      printf ("PADO ");
-      break;
+        printf ("PADO ");
+        break;
     case CODE_PADR:
-      printf ("PADR ");
-      break;
+        printf ("PADR ");
+        break;
     case CODE_PADS:
-      printf ("PADS ");
-      break;
+        printf ("PADS ");
+        break;
     case CODE_PADT:
-      printf ("PADT ");
-      break;
+        printf ("PADT ");
+        break;
     case CODE_PADM:
-      printf ("PADM ");
-      break;
+        printf ("PADM ");
+        break;
     case CODE_PADC:
-      printf ("PADC ");
-      break;
+        printf ("PADC ");
+        break;
     case CODE_PADG:
-      printf ("PADG ");
-      break;
+        printf ("PADG ");
+        break;
     case CODE_PADQ:
-      printf ("PADQ ");
-      break;
+        printf ("PADQ ");
+        break;
     case CODE_PADN:
-      printf ("PADN ");
-      break;
+        printf ("PADN ");
+        break;
     case CODE_SESS:
-      printf ("SESS ");
-      break;
+        printf ("SESS ");
+        break;
     }
 
-  printf ("sess-id %d length %d\n", (int) ntohs (packet->session), len);
+    printf ("sess-id %d length %d\n", (int) ntohs (packet->session), len);
 
-  /* Ugly... I apologize... */
-  printf ("SourceAddr %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx "
-          "DestAddr %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx\n",
-           packet->eth_hdr.source[0],
-           packet->eth_hdr.source[1],
-           packet->eth_hdr.source[2],
-           packet->eth_hdr.source[3],
-           packet->eth_hdr.source[4],
-           packet->eth_hdr.source[5],
-           packet->eth_hdr.dest[0],
-           packet->eth_hdr.dest[1],
-           packet->eth_hdr.dest[2],
-           packet->eth_hdr.dest[3],
-           packet->eth_hdr.dest[4], 
-           packet->eth_hdr.dest[5]);
+    /* Ugly... I apologize... */
+    printf ("SourceAddr %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx "
+            "DestAddr %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx\n",
+            packet->eth_hdr.source[0],
+            packet->eth_hdr.source[1],
+            packet->eth_hdr.source[2],
+            packet->eth_hdr.source[3],
+            packet->eth_hdr.source[4],
+            packet->eth_hdr.source[5],
+            packet->eth_hdr.dest[0],
+            packet->eth_hdr.dest[1],
+            packet->eth_hdr.dest[2],
+            packet->eth_hdr.dest[3],
+            packet->eth_hdr.dest[4],
+            packet->eth_hdr.dest[5]);
 
-  printHex (packet->payload, ntohs (packet->length));
+    printHex (packet->payload, ntohs (packet->length));
 }
 
 

@@ -35,8 +35,9 @@ start_pppoe_server()
   local lclip=$3
   local config=$4
   local logpath=$5
+  local logout=$5/pppoe_server.out
 
-  ${pppoe_path}/rfc4938server -X -I "$devname" -S rfc4938 -Q "$pppoepath" -L "$lclip" -O "$config" -D "$logpath"
+  ${pppoe_path}/rfc4938server -F -X -I "$devname" -S rfc4938 -Q "$pppoepath" -L "$lclip" -O "$config" -D "$logpath" &> "$logout"
 }
 
 start_pppoe_server \

@@ -12,7 +12,7 @@
  * rfc4938, "PPP Over Ethernet (PPPoE) Extensions for Credit Flow and
  * Link Metrics" and "PPP Over Ethernet (PPPoE) Extensions for Scaled
  * Credits and Link Metrics"
- * 
+ *
  * ===========================
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -56,10 +56,11 @@
 #define TRUE                   ( 1 )
 #define FALSE                  ( 0 )
 
-typedef union twobyte {
+typedef union twobyte
+{
     UINT8_t  byte[2];
     UINT16_t word;
-  } __attribute__((packed)) twobyte_t ;
+} __attribute__((packed)) twobyte_t ;
 
 /* function declarations */
 extern void pppoe_signal_handler(int signo);
@@ -76,8 +77,8 @@ extern void sendPADG(PPPoEConnection *conn, UINT16_t credits);
 extern void sendPADC(PPPoEConnection *conn, UINT16_t seq);
 extern void recvPADG(PPPoEConnection *conn, PPPoEPacket *packet);
 extern void recvPADC(PPPoEConnection *conn, PPPoEPacket *packet);
-extern void sendPADQ(PPPoEConnection *conn, UINT16_t mdr, UINT8_t mdr_scalar, 
-                     UINT16_t cdr, UINT8_t cdr_scalar, UINT16_t latency, 
+extern void sendPADQ(PPPoEConnection *conn, UINT16_t mdr, UINT8_t mdr_scalar,
+                     UINT16_t cdr, UINT8_t cdr_scalar, UINT16_t latency,
                      UINT8_t resources, UINT8_t rlq, UINT8_t receive);
 extern void recvPADQ(PPPoEConnection *conn, PPPoEPacket *packet);
 

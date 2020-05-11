@@ -10,7 +10,7 @@
  * ===========================
  *
  * Debug definitions
- * 
+ *
  * ===========================
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -35,7 +35,11 @@
 #include "rfc4938_types.h"
 #include "stdio.h"
 
+#include "../common/logger.h"
+
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
 
 #define RFC4938_PRINTF_ENABLED
 #define RFC4938_DEBUG_ENABLED        //enables debugs
@@ -51,12 +55,9 @@
 
 
 #ifdef RFC4938_PRINTF_ENABLED
-#define RFC4938_DEBUG_PRINT(myargs...) \
-    printf(myargs); \
-    syslog(LOG_INFO, myargs);
+#define RFC4938_DEBUG_PRINT(myargs...) LOGGER(myargs);
 #else
-#define RFC4938_DEBUG_PRINT(myargs...) \
-    syslog(LOG_INFO, myargs);
+#define RFC4938_DEBUG_PRINT(myargs...)
 #endif
 
 /*
@@ -92,7 +93,6 @@
 #else
 #define RFC4938_DEBUG_ERROR(args...)  ((void)0)
 #endif
-
 
 void rfc4938_debug_set_mask (UINT32_t mask);
 void rfc4938_debug_clear_mask (UINT32_t mask);

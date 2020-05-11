@@ -15,13 +15,12 @@
 *
 ***********************************************************************/
 
-static char const RCSID[] =
-"$Id: common.c 3 2009-02-04 21:03:29Z bcheng $";
+// static char const RCSID[] = "$Id: common.c 3 2009-02-04 21:03:29Z bcheng $";
 /* For vsnprintf prototype */
-#define _ISOC99_SOURCE 1
+// #define _ISOC99_SOURCE 1
 
 /* For seteuid prototype */
-#define _BSD_SOURCE 1
+// #define _BSD_SOURCE 1
 
 #include "pppoe.h"
 
@@ -46,8 +45,8 @@ static char const RCSID[] =
 /* Are we running SUID or SGID? */
 int IsSetID = 0;
 
-static uid_t saved_uid = -2;
-static uid_t saved_gid = -2;
+static int saved_uid = -2;
+static int saved_gid = -2;
 
 /**********************************************************************
 *%FUNCTION: parsePacket
@@ -68,38 +67,44 @@ parsePacket(PPPoEPacket *packet, ParseFunc *func, void *extra)
     unsigned char *curTag;
     UINT16_t tagType, tagLen;
 
-    if (packet->ver != 1) {
-	LOGGER(LOG_ERR, "Invalid PPPoE version (%d)", (int) packet->ver);
-	return -1;
+    if (packet->ver != 1)
+    {
+        LOGGER(LOG_ERR, "Invalid PPPoE version (%d)", (int) packet->ver);
+        return -1;
     }
-    if (packet->type != 1) {
-	LOGGER(LOG_ERR, "Invalid PPPoE type (%d)", (int) packet->type);
-	return -1;
+    if (packet->type != 1)
+    {
+        LOGGER(LOG_ERR, "Invalid PPPoE type (%d)", (int) packet->type);
+        return -1;
     }
 
     /* Do some sanity checks on packet */
-    if (len > ETH_DATA_LEN - 6) { /* 6-byte overhead for PPPoE header */
-	LOGGER(LOG_ERR, "Invalid PPPoE packet length (%u)", len);
-	return -1;
+    if (len > ETH_DATA_LEN - 6)   /* 6-byte overhead for PPPoE header */
+    {
+        LOGGER(LOG_ERR, "Invalid PPPoE packet length (%u)", len);
+        return -1;
     }
 
     /* Step through the tags */
     curTag = packet->payload;
-    while(curTag - packet->payload < len) {
-	/* Alignment is not guaranteed, so do this by hand... */
-	tagType = (((UINT16_t) curTag[0]) << 8) +
-	    (UINT16_t) curTag[1];
-	tagLen = (((UINT16_t) curTag[2]) << 8) +
-	    (UINT16_t) curTag[3];
-	if (tagType == TAG_END_OF_LIST) {
-	    return 0;
-	}
-	if ((curTag - packet->payload) + tagLen + TAG_HDR_SIZE > len) {
-	    LOGGER(LOG_ERR, "Invalid PPPoE tag length (%u)", tagLen);
-	    return -1;
-	}
-	func(tagType, tagLen, curTag+TAG_HDR_SIZE, extra);
-	curTag = curTag + TAG_HDR_SIZE + tagLen;
+    while(curTag - packet->payload < len)
+    {
+        /* Alignment is not guaranteed, so do this by hand... */
+        tagType = (((UINT16_t) curTag[0]) << 8) +
+                  (UINT16_t) curTag[1];
+        tagLen = (((UINT16_t) curTag[2]) << 8) +
+                 (UINT16_t) curTag[3];
+        if (tagType == TAG_END_OF_LIST)
+        {
+            return 0;
+        }
+        if ((curTag - packet->payload) + tagLen + TAG_HDR_SIZE > len)
+        {
+            LOGGER(LOG_ERR, "Invalid PPPoE tag length (%u)", tagLen);
+            return -1;
+        }
+        func(tagType, tagLen, curTag+TAG_HDR_SIZE, extra);
+        curTag = curTag + TAG_HDR_SIZE + tagLen;
     }
     return 0;
 }
@@ -123,41 +128,48 @@ findTag(PPPoEPacket *packet, UINT16_t type, PPPoETag *tag)
     unsigned char *curTag;
     UINT16_t tagType, tagLen;
 
-    if (packet->ver != 1) {
-	LOGGER(LOG_ERR, "Invalid PPPoE version (%d)", (int) packet->ver);
-	return NULL;
+    if (packet->ver != 1)
+    {
+        LOGGER(LOG_ERR, "Invalid PPPoE version (%d)", (int) packet->ver);
+        return NULL;
     }
-    if (packet->type != 1) {
-	LOGGER(LOG_ERR, "Invalid PPPoE type (%d)", (int) packet->type);
-	return NULL;
+    if (packet->type != 1)
+    {
+        LOGGER(LOG_ERR, "Invalid PPPoE type (%d)", (int) packet->type);
+        return NULL;
     }
 
     /* Do some sanity checks on packet */
-    if (len > ETH_DATA_LEN - 6) { /* 6-byte overhead for PPPoE header */
-	LOGGER(LOG_ERR, "Invalid PPPoE packet length (%u)", len);
-	return NULL;
+    if (len > ETH_DATA_LEN - 6)   /* 6-byte overhead for PPPoE header */
+    {
+        LOGGER(LOG_ERR, "Invalid PPPoE packet length (%u)", len);
+        return NULL;
     }
 
     /* Step through the tags */
     curTag = packet->payload;
-    while(curTag - packet->payload < len) {
-	/* Alignment is not guaranteed, so do this by hand... */
-	tagType = (((UINT16_t) curTag[0]) << 8) +
-	    (UINT16_t) curTag[1];
-	tagLen = (((UINT16_t) curTag[2]) << 8) +
-	    (UINT16_t) curTag[3];
-	if (tagType == TAG_END_OF_LIST) {
-	    return NULL;
-	}
-	if ((curTag - packet->payload) + tagLen + TAG_HDR_SIZE > len) {
-	    LOGGER(LOG_ERR, "Invalid PPPoE tag length (%u)", tagLen);
-	    return NULL;
-	}
-	if (tagType == type) {
-	    memcpy(tag, curTag, tagLen + TAG_HDR_SIZE);
-	    return curTag;
-	}
-	curTag = curTag + TAG_HDR_SIZE + tagLen;
+    while(curTag - packet->payload < len)
+    {
+        /* Alignment is not guaranteed, so do this by hand... */
+        tagType = (((UINT16_t) curTag[0]) << 8) +
+                  (UINT16_t) curTag[1];
+        tagLen = (((UINT16_t) curTag[2]) << 8) +
+                 (UINT16_t) curTag[3];
+        if (tagType == TAG_END_OF_LIST)
+        {
+            return NULL;
+        }
+        if ((curTag - packet->payload) + tagLen + TAG_HDR_SIZE > len)
+        {
+            LOGGER(LOG_ERR, "Invalid PPPoE tag length (%u)", tagLen);
+            return NULL;
+        }
+        if (tagType == type)
+        {
+            memcpy(tag, curTag, tagLen + TAG_HDR_SIZE);
+            return curTag;
+        }
+        curTag = curTag + TAG_HDR_SIZE + tagLen;
     }
     return NULL;
 }
@@ -172,18 +184,28 @@ findTag(PPPoEPacket *packet, UINT16_t type, PPPoETag *tag)
 * Sets effective user-ID and group-ID to real ones.  Aborts on failure
 ***********************************************************************/
 void
-switchToRealID (void) {
-    if (IsSetID) {
-	if (saved_uid < 0) saved_uid = geteuid();
-	if (saved_gid < 0) saved_gid = getegid();
-	if (setegid(getgid()) < 0) {
-	    printErr("setgid failed");
-	    exit(EXIT_FAILURE);
-	}
-	if (seteuid(getuid()) < 0) {
-	    printErr("seteuid failed");
-	    exit(EXIT_FAILURE);
-	}
+switchToRealID (void)
+{
+    if (IsSetID)
+    {
+        if (saved_uid < 0)
+        {
+            saved_uid = geteuid();
+        }
+        if (saved_gid < 0)
+        {
+            saved_gid = getegid();
+        }
+        if (setegid(getgid()) < 0)
+        {
+            printErr("setgid failed");
+            exit(EXIT_FAILURE);
+        }
+        if (seteuid(getuid()) < 0)
+        {
+            printErr("seteuid failed");
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -197,16 +219,20 @@ switchToRealID (void) {
 * Sets effective user-ID and group-ID back to saved gid/uid
 ***********************************************************************/
 void
-switchToEffectiveID (void) {
-    if (IsSetID) {
-	if (setegid(saved_gid) < 0) {
-	    printErr("setgid failed");
-	    exit(EXIT_FAILURE);
-	}
-	if (seteuid(saved_uid) < 0) {
-	    printErr("seteuid failed");
-	    exit(EXIT_FAILURE);
-	}
+switchToEffectiveID (void)
+{
+    if (IsSetID)
+    {
+        if (setegid(saved_gid) < 0)
+        {
+            printErr("setgid failed");
+            exit(EXIT_FAILURE);
+        }
+        if (seteuid(saved_uid) < 0)
+        {
+            printErr("seteuid failed");
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -225,16 +251,25 @@ dropPrivs(void)
 {
     struct passwd *pw = NULL;
     int ok = 0;
-    if (geteuid() == 0) {
-	pw = getpwnam("nobody");
-	if (pw) {
-	    if (setgid(pw->pw_gid) < 0) ok++;
-	    if (setuid(pw->pw_uid) < 0) ok++;
-	}
+    if (geteuid() == 0)
+    {
+        pw = getpwnam("nobody");
+        if (pw)
+        {
+            if (setgid(pw->pw_gid) < 0)
+            {
+                ok++;
+            }
+            if (setuid(pw->pw_uid) < 0)
+            {
+                ok++;
+            }
+        }
     }
-    if (ok < 2 && IsSetID) {
-	setegid(getgid());
-	seteuid(getuid());
+    if (ok < 2 && IsSetID)
+    {
+        setegid(getgid());
+        seteuid(getuid());
     }
 }
 
@@ -250,7 +285,6 @@ dropPrivs(void)
 void
 printErr(char const *str)
 {
-    fprintf(stderr, "pppoe: %s\n", str);
     LOGGER(LOG_ERR, "%s", str);
 }
 
@@ -266,8 +300,9 @@ char *
 strDup(char const *str)
 {
     char *copy = malloc(strlen(str)+1);
-    if (!copy) {
-	rp_fatal("strdup failed");
+    if (!copy)
+    {
+        rp_fatal("strdup failed");
     }
     strcpy(copy, str);
     return copy;
@@ -309,18 +344,21 @@ computeTCPChecksum(unsigned char *ipHdr, unsigned char *tcpHdr)
     sum += * ((UINT16_t *) (pseudoHeader+10));
 
     /* Checksum the TCP header and data */
-    while (count > 1) {
-	memcpy(&tmp, addr, sizeof(tmp));
-	sum += (UINT32_t) tmp;
-	addr += sizeof(tmp);
-	count -= sizeof(tmp);
+    while (count > 1)
+    {
+        memcpy(&tmp, addr, sizeof(tmp));
+        sum += (UINT32_t) tmp;
+        addr += sizeof(tmp);
+        count -= sizeof(tmp);
     }
-    if (count > 0) {
-	sum += (unsigned char) *addr;
+    if (count > 0)
+    {
+        sum += (unsigned char) *addr;
     }
 
-    while(sum >> 16) {
-	sum = (sum & 0xffff) + (sum >> 16);
+    while(sum >> 16)
+    {
+        sum = (sum & 0xffff) + (sum >> 16);
     }
     return (UINT16_t) ((~sum) & 0xFFFF);
 }
@@ -337,7 +375,7 @@ computeTCPChecksum(unsigned char *ipHdr, unsigned char *tcpHdr)
 * Clamps MSS option if TCP SYN flag is set.
 ***********************************************************************/
 void
-clampMSS(PPPoEPacket *packet, char const *dir, int clampMss)
+clampMSS(PPPoEPacket *packet, char const *dir __attribute__((unused)), int clampMss)
 {
     unsigned char *tcpHdr;
     unsigned char *ipHdr;
@@ -349,126 +387,151 @@ clampMSS(PPPoEPacket *packet, char const *dir, int clampMss)
     int len, minlen;
 
     /* check PPP protocol type */
-    if (packet->payload[0] & 0x01) {
+    if (packet->payload[0] & 0x01)
+    {
         /* 8 bit protocol type */
 
         /* Is it IPv4? */
-        if (packet->payload[0] != 0x21) {
+        if (packet->payload[0] != 0x21)
+        {
             /* Nope, ignore it */
             return;
         }
 
         ipHdr = packet->payload + 1;
-	minlen = 41;
-    } else {
+        minlen = 41;
+    }
+    else
+    {
         /* 16 bit protocol type */
 
         /* Is it IPv4? */
         if (packet->payload[0] != 0x00 ||
-            packet->payload[1] != 0x21) {
+                packet->payload[1] != 0x21)
+        {
             /* Nope, ignore it */
             return;
         }
 
         ipHdr = packet->payload + 2;
-	minlen = 42;
+        minlen = 42;
     }
 
     /* Is it too short? */
     len = (int) ntohs(packet->length);
-    if (len < minlen) {
-	/* 20 byte IP header; 20 byte TCP header; at least 1 or 2 byte PPP protocol */
-	return;
+    if (len < minlen)
+    {
+        /* 20 byte IP header; 20 byte TCP header; at least 1 or 2 byte PPP protocol */
+        return;
     }
 
     /* Verify once more that it's IPv4 */
-    if ((ipHdr[0] & 0xF0) != 0x40) {
-	return;
+    if ((ipHdr[0] & 0xF0) != 0x40)
+    {
+        return;
     }
 
     /* Is it a fragment that's not at the beginning of the packet? */
-    if ((ipHdr[6] & 0x1F) || ipHdr[7]) {
-	/* Yup, don't touch! */
-	return;
+    if ((ipHdr[6] & 0x1F) || ipHdr[7])
+    {
+        /* Yup, don't touch! */
+        return;
     }
     /* Is it TCP? */
-    if (ipHdr[9] != 0x06) {
-	return;
+    if (ipHdr[9] != 0x06)
+    {
+        return;
     }
 
     /* Get start of TCP header */
     tcpHdr = ipHdr + (ipHdr[0] & 0x0F) * 4;
 
     /* Is SYN set? */
-    if (!(tcpHdr[13] & 0x02)) {
-	return;
+    if (!(tcpHdr[13] & 0x02))
+    {
+        return;
     }
 
     /* Compute and verify TCP checksum -- do not touch a packet with a bad
        checksum */
     csum = computeTCPChecksum(ipHdr, tcpHdr);
-    if (csum) {
-	LOGGER(LOG_ERR, "Bad TCP checksum %x", (unsigned int) csum);
+    if (csum)
+    {
+        LOGGER(LOG_ERR, "Bad TCP checksum %x", (unsigned int) csum);
 
-	/* Upper layers will drop it */
-	return;
+        /* Upper layers will drop it */
+        return;
     }
 
     /* Look for existing MSS option */
     endHdr = tcpHdr + ((tcpHdr[12] & 0xF0) >> 2);
     opt = tcpHdr + 20;
-    while (opt < endHdr) {
-	if (!*opt) break;	/* End of options */
-	switch(*opt) {
-	case 1:
-	    opt++;
-	    break;
+    while (opt < endHdr)
+    {
+        if (!*opt)
+        {
+            break;    /* End of options */
+        }
+        switch(*opt)
+        {
+        case 1:
+            opt++;
+            break;
 
-	case 2:
-	    if (opt[1] != 4) {
-		/* Something fishy about MSS option length. */
-		LOGGER(LOG_ERR,
-		       "Bogus length for MSS option (%u) from %u.%u.%u.%u",
-		       (unsigned int) opt[1],
-		       (unsigned int) ipHdr[12],
-		       (unsigned int) ipHdr[13],
-		       (unsigned int) ipHdr[14],
-		       (unsigned int) ipHdr[15]);
-		return;
-	    }
-	    mssopt = opt;
-	    break;
-	default:
-	    if (opt[1] < 2) {
-		/* Someone's trying to attack us? */
-		LOGGER(LOG_ERR,
-		       "Bogus TCP option length (%u) from %u.%u.%u.%u",
-		       (unsigned int) opt[1],
-		       (unsigned int) ipHdr[12],
-		       (unsigned int) ipHdr[13],
-		       (unsigned int) ipHdr[14],
-		       (unsigned int) ipHdr[15]);
-		return;
-	    }
-	    opt += (opt[1]);
-	    break;
-	}
-	/* Found existing MSS option? */
-	if (mssopt) break;
+        case 2:
+            if (opt[1] != 4)
+            {
+                /* Something fishy about MSS option length. */
+                LOGGER(LOG_ERR,
+                       "Bogus length for MSS option (%u) from %u.%u.%u.%u",
+                       (unsigned int) opt[1],
+                       (unsigned int) ipHdr[12],
+                       (unsigned int) ipHdr[13],
+                       (unsigned int) ipHdr[14],
+                       (unsigned int) ipHdr[15]);
+                return;
+            }
+            mssopt = opt;
+            break;
+        default:
+            if (opt[1] < 2)
+            {
+                /* Someone's trying to attack us? */
+                LOGGER(LOG_ERR,
+                       "Bogus TCP option length (%u) from %u.%u.%u.%u",
+                       (unsigned int) opt[1],
+                       (unsigned int) ipHdr[12],
+                       (unsigned int) ipHdr[13],
+                       (unsigned int) ipHdr[14],
+                       (unsigned int) ipHdr[15]);
+                return;
+            }
+            opt += (opt[1]);
+            break;
+        }
+        /* Found existing MSS option? */
+        if (mssopt)
+        {
+            break;
+        }
     }
 
     /* If MSS exists and it's low enough, do nothing */
-    if (mssopt) {
-	unsigned mss = mssopt[2] * 256 + mssopt[3];
-	if (mss <= clampMss) {
-	    return;
-	}
+    if (mssopt)
+    {
+        int mss = mssopt[2] * 256 + mssopt[3];
+        if (mss <= clampMss)
+        {
+            return;
+        }
 
-	mssopt[2] = (((unsigned) clampMss) >> 8) & 0xFF;
-	mssopt[3] = ((unsigned) clampMss) & 0xFF;
-    } else {
-	/* No MSS option.  Don't add one; we'll have to use 536. */
-	return;
+        mssopt[2] = (((unsigned) clampMss) >> 8) & 0xFF;
+        mssopt[3] = ((unsigned) clampMss) & 0xFF;
+    }
+    else
+    {
+        /* No MSS option.  Don't add one; we'll have to use 536. */
+        return;
     }
 
     /* Recompute TCP checksum */
@@ -497,10 +560,16 @@ sendPADT(PPPoEConnection *conn, char const *msg)
     UINT16_t plen = 0;
 
     /* Do nothing if no session established yet */
-    if (!conn->session) return;
+    if (!conn->session)
+    {
+        return;
+    }
 
     /* Do nothing if no discovery socket */
-    if (conn->discoverySocket < 0) return;
+    if (conn->discoverySocket < 0)
+    {
+        return;
+    }
 
     memcpy(packet.ethHdr.h_dest, conn->peerEth, ETH_ALEN);
     memcpy(packet.ethHdr.h_source, conn->myEth, ETH_ALEN);
@@ -516,53 +585,58 @@ sendPADT(PPPoEConnection *conn, char const *msg)
     conn->session = 0;
 
     /* If we're using Host-Uniq, copy it over */
-    if (conn->useHostUniq) {
-	PPPoETag hostUniq;
-	pid_t pid = getpid();
-	hostUniq.type = htons(TAG_HOST_UNIQ);
-	hostUniq.length = htons(sizeof(pid));
-	memcpy(hostUniq.payload, &pid, sizeof(pid));
-	memcpy(cursor, &hostUniq, sizeof(pid) + TAG_HDR_SIZE);
-	cursor += sizeof(pid) + TAG_HDR_SIZE;
-	plen += sizeof(pid) + TAG_HDR_SIZE;
+    if (conn->useHostUniq)
+    {
+        PPPoETag hostUniq;
+        pid_t pid = getpid();
+        hostUniq.type = htons(TAG_HOST_UNIQ);
+        hostUniq.length = htons(sizeof(pid));
+        memcpy(hostUniq.payload, &pid, sizeof(pid));
+        memcpy(cursor, &hostUniq, sizeof(pid) + TAG_HDR_SIZE);
+        cursor += sizeof(pid) + TAG_HDR_SIZE;
+        plen += sizeof(pid) + TAG_HDR_SIZE;
     }
 
     /* Copy error message */
-    if (msg) {
-	PPPoETag err;
-	size_t elen = strlen(msg);
-	err.type = htons(TAG_GENERIC_ERROR);
-	err.length = htons(elen);
-	strcpy((char *) err.payload, msg);
-	memcpy(cursor, &err, elen + TAG_HDR_SIZE);
-	cursor += elen + TAG_HDR_SIZE;
-	plen += elen + TAG_HDR_SIZE;
+    if (msg)
+    {
+        PPPoETag err;
+        size_t elen = strlen(msg);
+        err.type = htons(TAG_GENERIC_ERROR);
+        err.length = htons(elen);
+        strcpy((char *) err.payload, msg);
+        memcpy(cursor, &err, elen + TAG_HDR_SIZE);
+        cursor += elen + TAG_HDR_SIZE;
+        plen += elen + TAG_HDR_SIZE;
     }
 
     /* Copy cookie and relay-ID if needed */
-    if (conn->cookie.type) {
-	CHECK_ROOM(cursor, packet.payload,
-		   ntohs(conn->cookie.length) + TAG_HDR_SIZE);
-	memcpy(cursor, &conn->cookie, ntohs(conn->cookie.length) + TAG_HDR_SIZE);
-	cursor += ntohs(conn->cookie.length) + TAG_HDR_SIZE;
-	plen += ntohs(conn->cookie.length) + TAG_HDR_SIZE;
+    if (conn->cookie.type)
+    {
+        CHECK_ROOM(cursor, packet.payload,
+                   ntohs(conn->cookie.length) + TAG_HDR_SIZE);
+        memcpy(cursor, &conn->cookie, ntohs(conn->cookie.length) + TAG_HDR_SIZE);
+        cursor += ntohs(conn->cookie.length) + TAG_HDR_SIZE;
+        plen += ntohs(conn->cookie.length) + TAG_HDR_SIZE;
     }
 
-    if (conn->relayId.type) {
-	CHECK_ROOM(cursor, packet.payload,
-		   ntohs(conn->relayId.length) + TAG_HDR_SIZE);
-	memcpy(cursor, &conn->relayId, ntohs(conn->relayId.length) + TAG_HDR_SIZE);
-	cursor += ntohs(conn->relayId.length) + TAG_HDR_SIZE;
-	plen += ntohs(conn->relayId.length) + TAG_HDR_SIZE;
+    if (conn->relayId.type)
+    {
+        CHECK_ROOM(cursor, packet.payload,
+                   ntohs(conn->relayId.length) + TAG_HDR_SIZE);
+        memcpy(cursor, &conn->relayId, ntohs(conn->relayId.length) + TAG_HDR_SIZE);
+        cursor += ntohs(conn->relayId.length) + TAG_HDR_SIZE;
+        plen += ntohs(conn->relayId.length) + TAG_HDR_SIZE;
     }
 
     packet.length = htons(plen);
     sendPacket(conn, conn->discoverySocket, &packet, (int) (plen + HDR_SIZE));
 #ifdef DEBUGGING_ENABLED
-    if (conn->debugFile) {
-	dumpPacket(conn->debugFile, &packet, "SENT");
-	fprintf(conn->debugFile, "\n");
-	fflush(conn->debugFile);
+    if (conn->debugFile)
+    {
+        dumpPacket(conn->debugFile, &packet, "SENT");
+        fprintf(conn->debugFile, "\n");
+        fflush(conn->debugFile);
     }
 #endif
     LOGGER(LOG_INFO,"Sent PADT");
@@ -608,48 +682,45 @@ sendPADTf(PPPoEConnection *conn, char const *fmt, ...)
 ***********************************************************************/
 void
 pktLogErrs(char const *pkt,
-	   UINT16_t type, UINT16_t len, unsigned char *data,
-	   void *extra)
+           UINT16_t type, UINT16_t len, unsigned char *data,
+           void *extra __attribute__((unused)))
 {
     int i = 0;
     char const *str;
     char const *fmt = "%s: %s: %.*s";
-    switch(type) {
+    switch(type)
+    {
     case TAG_SERVICE_NAME_ERROR:
-	str = "Service-Name-Error";
-	break;
+        str = "Service-Name-Error";
+        break;
     case TAG_AC_SYSTEM_ERROR:
-	str = "System-Error";
-	break;
+        str = "System-Error";
+        break;
     default:
-	str = "Generic-Error";
+        str = "Generic-Error";
     }
 
 
     for(; i < len; ++i)
-     {
-       if(! isprint(data[i]))
+    {
+        if(! isprint(data[i]))
         {
-          break;
+            break;
         }
-     }
+    }
 
     if(i == len)
-     {
-       LOGGER(LOG_ERR, fmt, pkt, str, (int) len, data);
-       fprintf(stderr, fmt, pkt, str, (int) len, data);
-       fprintf(stderr, "\n");
-     }
+    {
+        LOGGER(LOG_ERR, fmt, pkt, str, (int) len, data);
+    }
     else
-     {
-       const char * msg = "non-printable msg";
+    {
+        const char * msg = "non-printable msg";
 
-       len = strlen(msg);
+        len = strlen(msg);
 
-       LOGGER(LOG_ERR, fmt, pkt, str, (int) len, msg);
-       fprintf(stderr, fmt, pkt, str, (int) len, msg);
-       fprintf(stderr, "\n");
-     }
+        LOGGER(LOG_ERR, fmt, pkt, str, (int) len, msg);
+    }
 }
 
 /**********************************************************************
@@ -666,7 +737,7 @@ pktLogErrs(char const *pkt,
 ***********************************************************************/
 void
 parseLogErrs(UINT16_t type, UINT16_t len, unsigned char *data,
-	     void *extra)
+             void *extra)
 {
     pktLogErrs("PADT", type, len, data, extra);
 }

@@ -23,15 +23,18 @@
 
 #include "../pppoe_types.h"
 #include "../rfc4938_types.h"
+#include "../../common/logger.h"
 #include "pppoe_rfc4938_debug.h"
 
 extern int IsSetID;
 
-#define _POSIX_SOURCE 1 /* For sigaction defines */
+// #define _POSIX_SOURCE 1 /* For sigaction defines */
 
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
-#include <stdio.h>		/* For FILE */
-#include <sys/types.h>		/* For pid_t */
+#endif
+#include <stdio.h>      /* For FILE */
+#include <sys/types.h>      /* For pid_t */
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -95,19 +98,22 @@ extern void dropPrivs(void);
 
 
 /* states for granting credits for rfc4938 */
-typedef enum  {
+typedef enum
+{
     PADG_SENT = 0,
     PADC_RECEIVED,
 } grant_state_t;
 
 /* operating mode with respect to rfc4938 and the credit/metrics scaling */
-typedef enum {
-      MODE_RFC4938_ONLY    = 0x0,
-      MODE_RFC4938_SCALING = 0x1,
+typedef enum
+{
+    MODE_RFC4938_ONLY    = 0x0,
+    MODE_RFC4938_SCALING = 0x1,
 } rfc4938_operating_mode;
 
 /* credit scalar requirements in PADS packet */
-typedef enum  {
+typedef enum
+{
     SCALAR_NEEDED = 0,
     SCALAR_NOT_NEEDED,
     SCALAR_RECEIVED,
@@ -116,8 +122,9 @@ typedef enum  {
 
 
 
-typedef struct PPPOptionStruct {
-    unsigned char  opt;	           /* code */
+typedef struct PPPOptionStruct
+{
+    unsigned char  opt;            /* code */
     unsigned char  length;         /* length */
     unsigned char data[0];         /* data */
 } __attribute__((packed)) PPPOption;
@@ -129,24 +136,25 @@ typedef void ParseFunc(UINT16_t type, UINT16_t len, unsigned char *data, void *e
 
 /* Keep track of the state of a connection -- collect everything in one spot */
 
-typedef struct PPPoEConnectionStruct {
-    int discoveryState;		     /* Where we are in discovery */
+typedef struct PPPoEConnectionStruct
+{
+    int discoveryState;          /* Where we are in discovery */
     int udpIPCSocket;                /* udp socket for client ipc */
     int signalPipe[2];               /* pipe event signals */
     unsigned char myEth[PPPOE_ETH_ALEN];   /* My MAC address */
     unsigned char peerEth[PPPOE_ETH_ALEN]; /* Peer's MAC address */
-    UINT16_t sessionId;		     /* Session ID */
-    char *ifName;		     /* Interface name */
-    char *serviceName;		     /* Desired service name, if any */
-    char *acName;		     /* Desired AC name, if any */
-    int useHostUniq;		     /* Use Host-Uniq tag */
-    int numPADOs;		     /* Number of PADO packets received */
-    PPPoETag cookie;		     /* We have to send this if we get it */
-    PPPoETag relayId;		     /* Ditto */
+    UINT16_t sessionId;          /* Session ID */
+    char *ifName;            /* Interface name */
+    char *serviceName;           /* Desired service name, if any */
+    char *acName;            /* Desired AC name, if any */
+    int useHostUniq;             /* Use Host-Uniq tag */
+    int numPADOs;            /* Number of PADO packets received */
+    PPPoETag cookie;             /* We have to send this if we get it */
+    PPPoETag relayId;            /* Ditto */
     int PADSHadError;                /* If PADS had an error tag */
     int discoveryTimeout;            /* Timeout for discovery packets */
 
-/* rfc4938 and credit/metric scaling */
+    /* rfc4938 and credit/metric scaling */
 
     UINT16_t local_credits;           /* local credits per rfc4938 */
     UINT16_t local_credit_scalar;     /* scalar for these credits */
@@ -175,11 +183,12 @@ typedef struct PPPoEConnectionStruct {
     UINT32_t local_magic;             /* my magic id */
     UINT32_t peer_magic;              /* peer magic id */
     int enable_lcp_echo_reply;        /* enable lcp echo reply */
-    
+
 } PPPoEConnection;
 
 /* Structure used to determine acceptable PADO or PADS packet */
-struct PacketCriteria {
+struct PacketCriteria
+{
     PPPoEConnection *conn;
     int acNameOK;
     int serviceNameOK;
@@ -250,7 +259,7 @@ PPPoEConnection *get_pppoe_conn(void);
 #define CHECK_ROOM(cursor, start, len) \
 do {\
     if (((cursor)-(start))+(len) > MAX_PPPOE_PAYLOAD) { \
-        syslog(LOG_ERR, "Would create too-long packet"); \
+        LOGGER(LOG_ERR, "Would create too-long packet"); \
         return; \
     } \
 } while(0)
@@ -275,5 +284,5 @@ do {\
                                      (*y) = z;                      \
                                    }                                \
                                 } while(0);
- 
+
 #endif

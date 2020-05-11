@@ -68,9 +68,10 @@
 #include "rfc4938_transport.h"
 
 #define PPPOE_START_PORT ( 10000 )
-#define MAXARGS          ( 20 )
+#define MAXARGS          ( 25 )
 #define OPTLEN           ( 4 ) /* length of an option, a space, and a \0 '-R ' */
 #define PORTARG          ( 11 )
+#define PATHLEN          ( 256 )
 
 
 static unsigned short rfc4938_rolling_pppoe_port = PPPOE_START_PORT;
@@ -84,7 +85,7 @@ static rfc4938_neighbor_element_t *neighbor_head = NULL;
 
 rfc4938_neighbor_element_t * rfc4938_neighbor_get_neighbor_head()
 {
-  return neighbor_head;
+    return neighbor_head;
 }
 
 /*
@@ -104,30 +105,30 @@ rfc4938_neighbor_element_t * rfc4938_neighbor_get_neighbor_head()
 void
 rfc4938_neighbor_print (UINT32_t neighbor_id)
 {
-  rfc4938_neighbor_element_t *nbr = neighbor_head;
+    rfc4938_neighbor_element_t *nbr = neighbor_head;
 
-  while (nbr)
+    while (nbr)
     {
-      if (nbr->neighbor_id == neighbor_id)
+        if (nbr->neighbor_id == neighbor_id)
         {
-           printf ("\nNeighbor ID %u remote pid %u, local pid %u, port %hu, session id %hu, last seqnum %u, num missed seqnum %u\n",
-                   nbr->neighbor_id, 
-                   nbr->neighbor_pid, 
-                   nbr->child_pid, 
-                   nbr->child_port,
-                   nbr->session_id,
-                   nbr->last_seqnum,
-                   nbr->missed_seqnum);
-            
-           return;
+            printf ("\nNeighbor ID %u remote pid %u, local pid %u, port %hu, session id %hu, last seqnum %u, num missed seqnum %u\n",
+                    nbr->neighbor_id,
+                    nbr->neighbor_pid,
+                    nbr->child_pid,
+                    nbr->child_port,
+                    nbr->session_id,
+                    nbr->last_seqnum,
+                    nbr->missed_seqnum);
+
+            return;
         }
 
-      /* move to the next element */
-      nbr = nbr->next;
+        /* move to the next element */
+        nbr = nbr->next;
     }
-  printf ("\n");
+    printf ("\n");
 
-  return;
+    return;
 }
 
 
@@ -142,7 +143,7 @@ rfc4938_neighbor_print (UINT32_t neighbor_id)
  *
  * Outputs:
  *     Prints neighbor ID and ACTIVE/INACTIVE state
- *     
+ *
  * Returns:
  *     void
  *
@@ -150,19 +151,19 @@ rfc4938_neighbor_print (UINT32_t neighbor_id)
 void
 rfc4938_neighbor_print_all (void)
 {
-  rfc4938_neighbor_element_t *nbr = neighbor_head;
+    rfc4938_neighbor_element_t *nbr = neighbor_head;
 
-  printf ("Neighbor\t Active\n");
-  while (nbr)
+    printf ("Neighbor\t Active\n");
+    while (nbr)
     {
-       printf ("%u\t\t %s", nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
+        printf ("%u\t\t %s", nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
 
-      /* move to the next element */
-      nbr = nbr->next;
+        /* move to the next element */
+        nbr = nbr->next;
     }
-  printf ("\n");
+    printf ("\n");
 
-  return;
+    return;
 }
 
 
@@ -184,30 +185,30 @@ rfc4938_neighbor_print_all (void)
 void
 rfc4938_neighbor_print_all_string (char *dgram, size_t max_len)
 {
-  rfc4938_neighbor_element_t *nbr = neighbor_head;
+    rfc4938_neighbor_element_t *nbr = neighbor_head;
 
-  char tmp_str[LNLEN] = {0};
+    char tmp_str[LNLEN] = {0};
 
-  int total_len = snprintf (dgram, max_len, "Neighbor\t Active\n");
+    size_t total_len = snprintf (dgram, max_len, "Neighbor\t Active\n");
 
-  while (nbr && total_len < max_len)
+    while (nbr && total_len < max_len)
     {
-       int len = snprintf (tmp_str, LNLEN, "%u\t\t ", nbr->neighbor_id);
-       strncat (dgram, tmp_str, max_len - total_len);
+        int len = snprintf (tmp_str, LNLEN, "%u\t\t ", nbr->neighbor_id);
+        strncat (dgram, tmp_str, max_len - total_len);
 
-       total_len += len;
+        total_len += len;
 
-       len = snprintf (tmp_str, LNLEN, "%s\n", rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
-       strncat (dgram, tmp_str, max_len - total_len);
+        len = snprintf (tmp_str, LNLEN, "%s\n", rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
+        strncat (dgram, tmp_str, max_len - total_len);
 
-       total_len += len;
+        total_len += len;
 
-      /* move to the next element */
-      nbr = nbr->next;
+        /* move to the next element */
+        nbr = nbr->next;
     }
-  strncat (dgram, "\n", max_len - total_len);
+    strncat (dgram, "\n", max_len - total_len);
 
-  return;
+    return;
 }
 
 
@@ -233,29 +234,29 @@ rfc4938_neighbor_print_all_string (char *dgram, size_t max_len)
 int
 rfc4938_neighbor_query (UINT32_t neighbor_id, rfc4938_neighbor_element_t * p2neighbor)
 {
-  if (p2neighbor == NULL)
+    if (p2neighbor == NULL)
     {
-      return (-1);
+        return (-1);
     }
 
-  rfc4938_neighbor_element_t *nbr = neighbor_head;
+    rfc4938_neighbor_element_t *nbr = neighbor_head;
 
-  while (nbr)
+    while (nbr)
     {
-      if (nbr->neighbor_id == neighbor_id)
+        if (nbr->neighbor_id == neighbor_id)
         {
-          memcpy (p2neighbor, nbr, sizeof (rfc4938_neighbor_element_t));
+            memcpy (p2neighbor, nbr, sizeof (rfc4938_neighbor_element_t));
 
-          return  0;
+            return  0;
         }
-      else
+        else
         {
-          /* move to the next element */
-          nbr = nbr->next;
+            /* move to the next element */
+            nbr = nbr->next;
         }
     }
 
-  return -1;
+    return -1;
 }
 
 
@@ -280,30 +281,30 @@ rfc4938_neighbor_query (UINT32_t neighbor_id, rfc4938_neighbor_element_t * p2nei
 int
 rfc4938_neighbor_pointer_by_nbr_id (UINT32_t neighbor_id, rfc4938_neighbor_element_t ** p2neighbor)
 {
-  if (p2neighbor == NULL)
+    if (p2neighbor == NULL)
     {
-      return (-1);
+        return (-1);
     }
 
-  rfc4938_neighbor_element_t *nbr = neighbor_head;
+    rfc4938_neighbor_element_t *nbr = neighbor_head;
 
-  while (nbr)
+    while (nbr)
     {
-      if (nbr->neighbor_id == neighbor_id)
+        if (nbr->neighbor_id == neighbor_id)
         {
 
-          *p2neighbor = nbr;
+            *p2neighbor = nbr;
 
-          return 0;
+            return 0;
         }
-      else
+        else
         {
-          /* move to the next element */
-          nbr = nbr->next;
+            /* move to the next element */
+            nbr = nbr->next;
         }
     }
 
-  return -1;
+    return -1;
 }
 
 
@@ -328,88 +329,88 @@ rfc4938_neighbor_pointer_by_nbr_id (UINT32_t neighbor_id, rfc4938_neighbor_eleme
 int
 rfc4938_neighbor_pointer_by_pid (pid_t pid, rfc4938_neighbor_element_t ** p2neighbor)
 {
-  if (p2neighbor == NULL)
+    if (p2neighbor == NULL)
     {
-      return (-1);
+        return (-1);
     }
 
-  rfc4938_neighbor_element_t *nbr = neighbor_head;
+    rfc4938_neighbor_element_t *nbr = neighbor_head;
 
-  while (nbr)
+    while (nbr)
     {
-      if ((pid_t)nbr->child_pid == pid)
+        if ((pid_t)nbr->child_pid == pid)
         {
-          *p2neighbor = nbr;
+            *p2neighbor = nbr;
 
-          return 0;
+            return 0;
         }
-      else
+        else
         {
-          /* move to the next element */
-          nbr = nbr->next;
+            /* move to the next element */
+            nbr = nbr->next;
         }
     }
 
-  return -1;
+    return -1;
 }
 
 
 int
 rfc4938_neighbor_pointer_by_port (UINT16_t port, rfc4938_neighbor_element_t ** p2neighbor)
 {
-  if (p2neighbor == NULL)
+    if (p2neighbor == NULL)
     {
-      return (-1);
+        return (-1);
     }
 
-  rfc4938_neighbor_element_t *nbr = neighbor_head;
+    rfc4938_neighbor_element_t *nbr = neighbor_head;
 
-  while (nbr)
+    while (nbr)
     {
-      if ((pid_t)nbr->child_port == port)
+        if ((pid_t)nbr->child_port == port)
         {
-          *p2neighbor = nbr;
+            *p2neighbor = nbr;
 
-          return 0;
+            return 0;
         }
-      else
+        else
         {
-          /* move to the next element */
-          nbr = nbr->next;
+            /* move to the next element */
+            nbr = nbr->next;
         }
     }
 
-  return -1;
+    return -1;
 }
 
 
 int
 rfc4938_neighbor_pointer_by_session_id (UINT16_t session_id, rfc4938_neighbor_element_t ** p2neighbor)
 {
-  if (p2neighbor == NULL)
+    if (p2neighbor == NULL)
     {
-      return (-1);
+        return (-1);
     }
 
-  rfc4938_neighbor_element_t *nbr = neighbor_head;
+    rfc4938_neighbor_element_t *nbr = neighbor_head;
 
-  while (nbr)
+    while (nbr)
     {
-      if (nbr->session_id == session_id)
+        if (nbr->session_id == session_id)
         {
 
-          *p2neighbor = nbr;
+            *p2neighbor = nbr;
 
-          return 0;
+            return 0;
         }
-      else
+        else
         {
-          /* move to the next element */
-          nbr = nbr->next;
+            /* move to the next element */
+            nbr = nbr->next;
         }
     }
 
-  return -1;
+    return -1;
 }
 
 
@@ -433,109 +434,108 @@ int
 rfc4938_neighbor_toggle_all (void (*pt2func) (rfc4938_neighbor_element_t *, UINT16_t, UINT16_t),
                              UINT16_t cmdSRC)
 {
-  if (pt2func == NULL)
+    if (pt2func == NULL)
     {
-      return (-1);
+        return (-1);
     }
 
-  rfc4938_neighbor_element_t *nbr = neighbor_head;
+    rfc4938_neighbor_element_t *nbr = neighbor_head;
 
-  while (nbr)
+    while (nbr)
     {
-      pt2func (nbr, cmdSRC, 0);
+        pt2func (nbr, cmdSRC, 0);
 
-      nbr = nbr->next;
+        nbr = nbr->next;
     }
 
-  return 0;
+    return 0;
 }
 
 
 rfc4938_neighbor_element_t *
 rfc4938_neighbor_init (UINT32_t neighbor_id)
 {
-  if(rcf4938_numChildren >= rfc4938_config_get_max_nbrs())
-   {
-      return NULL;
-   }
-
-  rfc4938_neighbor_element_t *curr = neighbor_head;
-
-  while (curr)
+    if(rcf4938_numChildren >= rfc4938_config_get_max_nbrs())
     {
-      if (curr->neighbor_id == neighbor_id)
+        return NULL;
+    }
+
+    rfc4938_neighbor_element_t *curr = neighbor_head;
+
+    while (curr)
+    {
+        if (curr->neighbor_id == neighbor_id)
         {
-          return curr;
+            return curr;
         }
-      else
+        else
         {
-          /* move to the next element */
-          curr = curr->next;
+            /* move to the next element */
+            curr = curr->next;
         }
     }
 
-  rfc4938_neighbor_element_t *nbr =  malloc (sizeof (rfc4938_neighbor_element_t));
+    rfc4938_neighbor_element_t *nbr =  malloc (sizeof (rfc4938_neighbor_element_t));
 
-  if (nbr == NULL)
+    if (nbr == NULL)
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): malloc error \n", 
-                           __func__, rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error \n", rfc4938_config_get_node_id ());
 
-      return NULL;
+        return NULL;
     }
 
-   nbr->nbr_session_state = INACTIVE;
-   nbr->neighbor_id   = neighbor_id;
-   nbr->child_port    = 0;
-   nbr->session_id    = 0;
-   nbr->neighbor_pid  = 0;
-   nbr->child_pid     = 0;
-   nbr->last_seqnum   = 0;
-   nbr->missed_seqnum = 0;
-   nbr->child_sock    = -1;
+    nbr->nbr_session_state = INACTIVE;
+    nbr->neighbor_id   = neighbor_id;
+    nbr->child_port    = 0;
+    nbr->session_id    = 0;
+    nbr->neighbor_pid  = 0;
+    nbr->child_pid     = 0;
+    nbr->last_seqnum   = 0;
+    nbr->missed_seqnum = 0;
+    nbr->child_sock    = -1;
 
-   /* insert at the top */
-   nbr->next = neighbor_head;
+    /* insert at the top */
+    nbr->next = neighbor_head;
 
-   neighbor_head = nbr;
+    neighbor_head = nbr;
 
-   return nbr;
+    return nbr;
 }
 
 
 int
 rfc4938_neighbor_release (UINT32_t neighbor_id)
 {
-  rfc4938_neighbor_element_t *curr = neighbor_head;
-  rfc4938_neighbor_element_t *prev = NULL;
+    rfc4938_neighbor_element_t *curr = neighbor_head;
+    rfc4938_neighbor_element_t *prev = NULL;
 
-  while (curr)
+    while (curr)
     {
-      if (curr->neighbor_id == neighbor_id)
+        if (curr->neighbor_id == neighbor_id)
         {
-          if(prev == NULL)
-           {
-             neighbor_head = curr->next;
-           }
-          else
-           {
-             prev->next = curr->next;          
-           }
+            if(prev == NULL)
+            {
+                neighbor_head = curr->next;
+            }
+            else
+            {
+                prev->next = curr->next;
+            }
 
-          free(curr);
+            free(curr);
 
-          return 0;
+            return 0;
         }
-      else
+        else
         {
-          prev = curr;
+            prev = curr;
 
-          /* move to the next element */
-          curr = curr->next;
+            /* move to the next element */
+            curr = curr->next;
         }
     }
 
-  return -1;
+    return -1;
 }
 
 
@@ -544,285 +544,279 @@ void
 rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
                                    UINT32_t peer_pid, UINT16_t credit_scalar)
 {
-  int a;
-  int i;
-  pid_t pid;
-  int   port;
+    int a;
+    int i;
+    pid_t pid;
+    int   port;
 
-  char *arguments[MAXARGS];
+    char *arguments[MAXARGS];
 
-  rfc4938_neighbor_element_t * nbr = rfc4938_neighbor_init (neighbor_id);
+    rfc4938_neighbor_element_t * nbr = rfc4938_neighbor_init (neighbor_id);
 
-  if (nbr == NULL)
+    if (nbr == NULL)
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): could not allocate neighbor %u\n",
-                           __func__, rfc4938_config_get_node_id (), nbr->neighbor_id);
-      return;
+        LOGGER(LOG_ERR,"(%u): could not allocate neighbor %u\n",
+                        rfc4938_config_get_node_id (), nbr->neighbor_id);
+        return;
     }
 
-  if (nbr->nbr_session_state == ACTIVE)
+    if (nbr->nbr_session_state == ACTIVE)
     {
-      RFC4938_DEBUG_EVENT ("%s:(%u): neighbor %u already ACTIVE, not initiating new one\n",
-                           __func__, rfc4938_config_get_node_id (), nbr->neighbor_id);
-      return;
+        LOGGER(LOG_INFO, "(%u): neighbor %u already ACTIVE, not initiating new one\n",
+                          rfc4938_config_get_node_id (), nbr->neighbor_id);
+        return;
     }
 
-  if (nbr->child_pid != 0)
+    if (nbr->child_pid != 0)
     {
-      RFC4938_DEBUG_EVENT ("%s:(%u): already have a pppoe process (%d), for neighbor %u,"
-                           " not initiating new one\n", __func__, rfc4938_config_get_node_id (),
-                           nbr->child_pid, nbr->neighbor_id);
-      return;
+        LOGGER(LOG_INFO, "(%u): already have a pppoe process (%d), for neighbor %u,"
+                             " not initiating new one\n", rfc4938_config_get_node_id (),
+                             nbr->child_pid, nbr->neighbor_id);
+        return;
     }
 
-  if((nbr->child_sock = rfc4938_io_get_udp_socket(0, &port)) < 0)
+    if((nbr->child_sock = rfc4938_io_get_udp_socket(0, &port)) < 0)
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): could get child sock for pid (%d), for neighbor %u\n", 
-                           __func__, rfc4938_config_get_node_id (),
-                           nbr->child_pid, nbr->neighbor_id);
-      return;
+        LOGGER(LOG_ERR,"(%u): could get child sock for pid (%d), for neighbor %u\n",
+                             rfc4938_config_get_node_id (),
+                             nbr->child_pid, nbr->neighbor_id);
+        return;
     }
-  else
+    else
     {
-      RFC4938_DEBUG_EVENT ("%s:(%u): opened child sock (%d), port %hu, for neighbor %u\n", 
-                           __func__, rfc4938_config_get_node_id (),
-                           nbr->child_sock, nbr->child_port, nbr->neighbor_id);
-    }
-
-
-  /* build argument list */
-
-  /* prevent rollover of port */
-  if (rfc4938_rolling_pppoe_port == 0xFFFF)
-    {
-      rfc4938_rolling_pppoe_port = PPPOE_START_PORT;
-    }
-  else
-    {
-      rfc4938_rolling_pppoe_port++;
+        LOGGER(LOG_INFO, "(%u): opened child sock (%d), port %hu, for neighbor %u\n",
+                          rfc4938_config_get_node_id (),
+                             nbr->child_sock, nbr->child_port, nbr->neighbor_id);
     }
 
-  a = 0;
 
-  arguments[a] = rfc4938_config_get_pppoe_binary_path();
-  a++;
+    /* build argument list */
 
-  /* set host unique tag to be used */
-  arguments[a] = "-U";
-  a++;
-
-  /* set interface name */
-  arguments[a] = malloc (sizeof (char) * (strlen (rfc4938_config_get_iface ()) + OPTLEN));
-  if (arguments[a] == NULL)
+    /* prevent rollover of port */
+    if (rfc4938_rolling_pppoe_port == 0xFFFF)
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): malloc error for iface name\n", __func__,
-                           rfc4938_config_get_node_id ());
-      return;
+        rfc4938_rolling_pppoe_port = PPPOE_START_PORT;
     }
-  sprintf (arguments[a], "-I%s", rfc4938_config_get_iface ());
-  a++;
-
-  /* set service name */
-  arguments[a] = malloc (sizeof (char) * (strlen (rfc4938_config_get_service_name ()) + OPTLEN));
-  if (arguments[a] == NULL)
+    else
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): malloc error for service name\n", __func__,
-                           rfc4938_config_get_node_id ());
-      return;
+        rfc4938_rolling_pppoe_port++;
     }
-  sprintf (arguments[a], "-S%s", rfc4938_config_get_service_name ());
-  a++;
 
-  /* set id of neighbor */
-  arguments[a] = malloc (sizeof (char *) * PORTARG);
-  if (arguments[a] == NULL)
+    a = 0;
+
+    arguments[a] = rfc4938_config_get_pppoe_binary_path();
+    a++;
+
+    /* set host unique tag to be used */
+    arguments[a] = "-U";
+    a++;
+
+    /* set interface name */
+    arguments[a] = malloc (sizeof (char) * (strlen (rfc4938_config_get_iface ()) + OPTLEN));
+    if (arguments[a] == NULL)
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): malloc error for nbr id arg\n", __func__,
-                           rfc4938_config_get_node_id ());
-      return;
+        LOGGER(LOG_ERR,"(%u): malloc error for iface name\n", rfc4938_config_get_node_id ());
+        return;
     }
-  sprintf (arguments[a], "-y%u", nbr->neighbor_id);
-  a++;
+    sprintf (arguments[a], "-I%s", rfc4938_config_get_iface ());
+    a++;
 
-  /* set id of parent */
-  arguments[a] = malloc (sizeof (char *) * PORTARG);
-  if (arguments[a] == NULL)
+    /* set service name */
+    arguments[a] = malloc (sizeof (char) * (strlen (rfc4938_config_get_service_name ()) + OPTLEN));
+    if (arguments[a] == NULL)
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): malloc error for parent id arg\n", __func__,
-                           rfc4938_config_get_node_id ());
-      return;
+        LOGGER(LOG_ERR,"(%u): malloc error for service name\n", rfc4938_config_get_node_id ());
+        return;
     }
-  sprintf (arguments[a], "-Y%u", rfc4938_config_get_node_id ());
-  a++;
+    sprintf (arguments[a], "-S%s", rfc4938_config_get_service_name ());
+    a++;
 
-  /* set pid of neighbor */
-  arguments[a] = malloc (sizeof (char *) * PORTARG);
-  if (arguments[a] == NULL)
+    /* set id of neighbor */
+    arguments[a] = malloc (sizeof (char *) * PORTARG);
+    if (arguments[a] == NULL)
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): malloc error for nbr pid arg\n", __func__,
-                           rfc4938_config_get_node_id ());
-      return;
+        LOGGER(LOG_ERR,"(%u): malloc error for nbr id arg\n", rfc4938_config_get_node_id ());
+        return;
     }
-  sprintf (arguments[a], "-R%u", peer_pid);
-  a++;
+    sprintf (arguments[a], "-y%u", nbr->neighbor_id);
+    a++;
 
-  /* set port for pppoe to listen to */
-  arguments[a] = malloc (sizeof (char) * PORTARG);
-  if (arguments[a] == NULL)
+    /* set id of parent */
+    arguments[a] = malloc (sizeof (char *) * PORTARG);
+    if (arguments[a] == NULL)
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): malloc error for pppoe port arg\n", __func__,
-                           rfc4938_config_get_node_id ());
-      return;
+        LOGGER(LOG_ERR,"(%u): malloc error for parent id arg\n", rfc4938_config_get_node_id ());
+        return;
     }
-  sprintf (arguments[a], "-r%hu", rfc4938_rolling_pppoe_port);
-  a++;
+    sprintf (arguments[a], "-Y%u", rfc4938_config_get_node_id ());
+    a++;
 
-  /* set the scaling factor */
-  arguments[a] = malloc (sizeof (char) * PORTARG);
-  if (arguments[a] == NULL)
+    /* set pid of neighbor */
+    arguments[a] = malloc (sizeof (char *) * PORTARG);
+    if (arguments[a] == NULL)
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): malloc error for rfc4938 scalar arg\n", __func__,
-                           rfc4938_config_get_node_id ());
-      return;
+        LOGGER(LOG_ERR,"(%u): malloc error for nbr pid arg\n", rfc4938_config_get_node_id ());
+        return;
     }
-  sprintf (arguments[a], "-x%hu", credit_scalar);
-  a++;
+    sprintf (arguments[a], "-R%u", peer_pid);
+    a++;
 
-  /* set port for parent process */
-  arguments[a] = malloc (sizeof (char) * PORTARG);
-  if (arguments[a] == NULL)
+    /* set port for pppoe to listen to */
+    arguments[a] = malloc (sizeof (char) * PORTARG);
+    if (arguments[a] == NULL)
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): malloc error for rfc4938 port arg\n", __func__,
-                           rfc4938_config_get_node_id ());
-      return;
+        LOGGER(LOG_ERR,"(%u): malloc error for pppoe port arg\n", rfc4938_config_get_node_id ());
+        return;
     }
-  sprintf (arguments[a], "-c%u", port);
-  a++;
+    sprintf (arguments[a], "-r%hu", rfc4938_rolling_pppoe_port);
+    a++;
 
-  /* set debug level */
-  arguments[a] = malloc (sizeof (char) * PORTARG);
-  if (arguments[a] == NULL)
+    /* set the scaling factor */
+    arguments[a] = malloc (sizeof (char) * PORTARG);
+    if (arguments[a] == NULL)
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): malloc error for debug level arg\n", __func__,
-                           rfc4938_config_get_node_id ());
-      return;
+        LOGGER(LOG_ERR,"(%u): malloc error for rfc4938 scalar arg\n", rfc4938_config_get_node_id ());
+        return;
     }
-  sprintf (arguments[a], "-z%u", rfc4938_config_get_debug_level());
-  a++;
+    sprintf (arguments[a], "-x%hu", credit_scalar);
+    a++;
 
-  /* set credit grant amount */
-  arguments[a] = malloc (sizeof (char) * PORTARG);
-  if (arguments[a] == NULL)
+    /* set port for parent process */
+    arguments[a] = malloc (sizeof (char) * PORTARG);
+    if (arguments[a] == NULL)
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): malloc error for credit grant amount arg\n", __func__,
-                           rfc4938_config_get_node_id ());
-      return;
+        LOGGER(LOG_ERR,"(%u): malloc error for rfc4938 port arg\n", rfc4938_config_get_node_id ());
+        return;
     }
-  sprintf (arguments[a], "-g%hu", rfc4938_config_get_credit_grant ());
-  a++;
+    sprintf (arguments[a], "-c%u", port);
+    a++;
 
-  /* set timeout */
-  arguments[a] = malloc (sizeof (char) * PORTARG);
-  if (arguments[a] == NULL)
+    /* set debug level */
+    arguments[a] = malloc (sizeof (char) * PORTARG);
+    if (arguments[a] == NULL)
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): malloc error for session timeout arg\n", __func__,
-                           rfc4938_config_get_node_id ());
-
-      return;
+        LOGGER(LOG_ERR,"(%u): malloc error for debug level arg\n", rfc4938_config_get_node_id ());
+        return;
     }
-  sprintf (arguments[a], "-T%hu", rfc4938_config_get_session_timeout ());
-  a++;
+    sprintf (arguments[a], "-z%u", rfc4938_config_get_debug_level());
+    a++;
 
-  arguments[a] = malloc (sizeof (char) * 
-                  (strlen (ether_ntoa((struct ether_addr*)rfc4938_config_get_hwaddr())) + OPTLEN));
-  if (arguments[a] == NULL)
+    /* set credit grant amount */
+    arguments[a] = malloc (sizeof (char) * PORTARG);
+    if (arguments[a] == NULL)
     {
-      RFC4938_DEBUG_ERROR ("%s:(%u): malloc error for eth addr mode arg\n", __func__,
-                           rfc4938_config_get_node_id ());
-      return;
+        LOGGER(LOG_ERR,"(%u): malloc error for credit grant amount arg\n", rfc4938_config_get_node_id ());
+        return;
     }
-  sprintf (arguments[a], "-E%s", ether_ntoa((struct ether_addr*)rfc4938_config_get_hwaddr()));
-  a++;
+    sprintf (arguments[a], "-g%hu", rfc4938_config_get_credit_grant ());
+    a++;
 
-  /* check if broadcast mode is enabled */
-  if (! rfc4938_config_get_p2p_mode())
+    /* set timeout */
+    arguments[a] = malloc (sizeof (char) * PORTARG);
+    if (arguments[a] == NULL)
     {
-      arguments[a] = malloc (sizeof (char) * PORTARG);
-      if (arguments[a] == NULL)
+        LOGGER(LOG_ERR,"(%u): malloc error for session timeout arg\n", rfc4938_config_get_node_id ());
+
+        return;
+    }
+    sprintf (arguments[a], "-T%hu", rfc4938_config_get_session_timeout ());
+    a++;
+
+    arguments[a] = malloc (sizeof (char) *
+                           (strlen (ether_ntoa((struct ether_addr*)rfc4938_config_get_hwaddr())) + OPTLEN));
+    if (arguments[a] == NULL)
+    {
+        LOGGER(LOG_ERR,"(%u): malloc error for eth addr mode arg\n", rfc4938_config_get_node_id ());
+        return;
+    }
+    sprintf (arguments[a], "-E%s", ether_ntoa((struct ether_addr*)rfc4938_config_get_hwaddr()));
+    a++;
+
+    /* check if broadcast mode is enabled */
+    if (! rfc4938_config_get_p2p_mode())
+    {
+        arguments[a] = malloc (sizeof (char) * PORTARG);
+        if (arguments[a] == NULL)
         {
-          RFC4938_DEBUG_ERROR ("%s:(%u): malloc error for broadcast mode arg\n", __func__,
-                               rfc4938_config_get_node_id ());
-          return;
+            LOGGER(LOG_ERR,"(%u): malloc error for broadcast mode arg\n", rfc4938_config_get_node_id ());
+            return;
         }
-      sprintf (arguments[a], "-B");
-      a++;
+        sprintf (arguments[a], "-B");
+        a++;
     }
 
-  /* check if lcp echo pong mode is enabled */
-  if (rfc4938_config_get_lcp_echo_pong_mode () != 0)
+    /* check if lcp echo pong mode is enabled */
+    if (rfc4938_config_get_lcp_echo_pong_mode () != 0)
     {
-      arguments[a] = malloc (sizeof (char) * PORTARG);
-      if (arguments[a] == NULL)
+        arguments[a] = malloc (sizeof (char) * PORTARG);
+        if (arguments[a] == NULL)
         {
-          RFC4938_DEBUG_ERROR ("%s:(%u): malloc error for lcp echo pong mode arg\n", __func__,
-                               rfc4938_config_get_node_id ());
-          return;
+            LOGGER(LOG_ERR,"(%u): malloc error for lcp echo pong mode arg\n", rfc4938_config_get_node_id ());
+            return;
         }
-      sprintf (arguments[a], "-L");
-      a++;
+        sprintf (arguments[a], "-L");
+        a++;
     }
 
-
-  arguments[a] = NULL;
-
-  RFC4938_DEBUG_EVENT ("%s:(%u): Creating child pppoe session with params:\n", __func__,
-                       rfc4938_config_get_node_id ());
-  for (i = 0; i < a; i++)
+    /* set log file */
+    arguments[a] = malloc (sizeof (char) * PATHLEN);
+    if (arguments[a] == NULL)
     {
-      RFC4938_DEBUG_EVENT (":%s\n", arguments[i]);
+        LOGGER(LOG_ERR,"(%u): malloc error for log file arg\n", rfc4938_config_get_node_id ());
+        return;
+    }
+    sprintf (arguments[a], "-D%s/pppoe_%hu_%hu.log", log_path, rfc4938_config_get_node_id(), nbr->neighbor_id);
+    a++;
+
+    arguments[a] = NULL;
+
+    LOGGER(LOG_INFO, "(%u): Creating child pppoe session with params:\n", rfc4938_config_get_node_id ());
+    for (i = 0; i < a; i++)
+    {
+        LOGGER(LOG_INFO, ":%s\n", arguments[i]);
     }
 
-  pid = fork ();
+    pid = fork ();
 
-  switch (pid)
+    switch (pid)
     {
     case 0:                    /* The child process */
-      execvp (rfc4938_config_get_pppoe_binary_path(), arguments);
+        execvp (rfc4938_config_get_pppoe_binary_path(), arguments);
 
-      break;
+        break;
 
     case -1:                   /* error */
-      RFC4938_DEBUG_ERROR ("%s:(%u): error, fork failed with error: %s for nbr %u\n", __func__,
-                           rfc4938_config_get_node_id (), strerror (errno), nbr->neighbor_id);
-      break;
+        LOGGER(LOG_ERR,"(%u): error, fork failed with error: %s for nbr %u\n",
+                             rfc4938_config_get_node_id (), strerror (errno), nbr->neighbor_id);
+        break;
 
     default:                   /* The parent process */
-      /* save the pid */
-      nbr->child_pid = pid;
+        /* save the pid */
+        nbr->child_pid = pid;
 
-      nbr->nbr_session_state = PENDING;
+        nbr->nbr_session_state = PENDING;
 
-      ++rcf4938_numChildren;
+        ++rcf4938_numChildren;
 
-      if(write (rfc4938_io_signal_pipe[PIPE_WR_FD], "N", 1) < 0)
-       {
-         RFC4938_DEBUG_ERROR ("%s:(%u): error, faled to write to signal pipe,  error: %s\n", __func__,
-                              rfc4938_config_get_node_id (), strerror (errno));
-       }
+        if(write (rfc4938_io_signal_pipe[PIPE_WR_FD], "N", 1) < 0)
+        {
+            LOGGER(LOG_ERR,"(%u): error, faled to write to signal pipe,  error: %s\n",
+                                 rfc4938_config_get_node_id (), strerror (errno));
+        }
 
-      RFC4938_DEBUG_EVENT ("%s:(%u): Child process created ID: %d for nbr %u, total children %d\n",
-                           __func__, rfc4938_config_get_node_id (), nbr->child_pid, nbr->neighbor_id,
-                           rcf4938_numChildren);
-      break;
+        LOGGER(LOG_INFO, "(%u): Child process created ID: %d for nbr %u, total children %d\n",
+                          rfc4938_config_get_node_id (), nbr->child_pid, nbr->neighbor_id,
+                          rcf4938_numChildren);
+        break;
     }
 
-  /* free argument string */
-  for (i = 3; i < a; i++)
+    /* free argument string */
+    for (i = 3; i < a; i++)
     {
-      /* start at 3 since 0,1,2 are statics */
-      if (arguments[i] != NULL)
+        /* start at 3 since 0,1,2 are statics */
+        if (arguments[i] != NULL)
         {
-          free (arguments[i]);
+            free (arguments[i]);
         }
     }
 }
@@ -831,45 +825,45 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
 void
 rfc4938_neighbor_cleanup_children ()
 {
-  pid_t pid;
-  int status;
-  int count = 0;
+    pid_t pid;
+    int status;
+    int count = 0;
 
-  RFC4938_DEBUG_EVENT ("%s:(%u): checking our %d child(ren)\n",
-                       __func__, rfc4938_config_get_node_id (), rcf4938_numChildren);
+    LOGGER(LOG_INFO, "(%u): checking our %d child(ren)\n",
+                     rfc4938_config_get_node_id (), rcf4938_numChildren);
 
-  while (1)
+    while (1)
     {
-      pid = waitpid (-1, &status, WNOHANG);
+        pid = waitpid (-1, &status, WNOHANG);
 
-      if (pid > 0)
+        if (pid > 0)
         {
-          if (WIFEXITED (status) || WIFSIGNALED(status))
+            if (WIFEXITED (status) || WIFSIGNALED(status))
             {
-              RFC4938_DEBUG_EVENT ("%s:(%u): pppoe child %d terminated %s\n",
-                                   __func__, rfc4938_config_get_node_id (),
-                                   pid, (WEXITSTATUS (status) == 0) ? "cleanly" : "unexpectedly");
+                LOGGER(LOG_INFO, "(%u): pppoe child %d terminated %s\n",
+                                 rfc4938_config_get_node_id (),
+                                 pid, (WEXITSTATUS (status) == 0) ? "cleanly" : "unexpectedly");
 
-              --rcf4938_numChildren;
+                --rcf4938_numChildren;
 
-              ++count;
+                ++count;
 
-              rfc4938_neighbor_element_t *nbr = NULL;
+                rfc4938_neighbor_element_t *nbr = NULL;
 
-              if (rfc4938_neighbor_pointer_by_pid (pid, &nbr) == 0)
-               {
-                 rfc4938_neighbor_terminate_neighbor (nbr, CMD_SRC_SELF, 0);
-               }
+                if (rfc4938_neighbor_pointer_by_pid (pid, &nbr) == 0)
+                {
+                    rfc4938_neighbor_terminate_neighbor (nbr, CMD_SRC_SELF, 0);
+                }
             }
         }
-      else
+        else
         {
-          break;
+            break;
         }
     }
 
-  RFC4938_DEBUG_EVENT ("%s:(%u): cleaned up %d child(ren)\n",
-                       __func__, rfc4938_config_get_node_id (), count);
+    LOGGER(LOG_INFO, "(%u): cleaned up %d child(ren)\n",
+                     rfc4938_config_get_node_id (), count);
 }
 
 
@@ -877,176 +871,174 @@ void
 rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr,
                                      UINT16_t cmdSRC, UINT16_t not_used __attribute__ ((unused)))
 {
-  int buflen;
-  void *p2buffer = NULL;
+    int buflen;
+    void *p2buffer = NULL;
 
 
-  if (nbr == NULL)
+    if (nbr == NULL)
     {
-      return;
+        return;
     }
 
-  if(cmdSRC != CMD_SRC_SELF && 
-     cmdSRC != CMD_SRC_CHILD)
-   {
-     if(nbr->nbr_session_state > PENDING)
-       {
-         p2buffer = malloc (SIZEOF_CTL_SESSION_STOP);
+    if(cmdSRC != CMD_SRC_SELF &&
+            cmdSRC != CMD_SRC_CHILD)
+    {
+        if(nbr->nbr_session_state > PENDING)
+        {
+            p2buffer = malloc (SIZEOF_CTL_SESSION_STOP);
 
-         if (p2buffer == NULL)
-          {
-            RFC4938_DEBUG_ERROR ("%s:(%u): malloc error \n", 
-                           __func__, rfc4938_config_get_node_id ());
+            if (p2buffer == NULL)
+            {
+                LOGGER(LOG_ERR,"(%u): malloc error \n",
+                        rfc4938_config_get_node_id ());
+
+                return;
+            }
+
+            if ((buflen = rfc4938_ctl_format_session_stop (u32seqnum++, p2buffer)) != SIZEOF_CTL_SESSION_STOP)
+            {
+                LOGGER(LOG_ERR,"(%u): format error \n",
+                       rfc4938_config_get_node_id ());
+
+                free (p2buffer);
+
+                return;
+            }
+
+            LOGGER(LOG_INFO, "(%u): neighbor %u state is %s, sending termination to child, seqnum %u\n",
+                            rfc4938_config_get_node_id (),
+                            nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state), u32seqnum - 1);
+
+
+            rfc4938_io_send_to_child (nbr->child_port, p2buffer, buflen);
+
+            free(p2buffer);
+        }
+        else
+        {
+            LOGGER(LOG_INFO, "(%u): neighbor %u state is %s, skip sending termination to child\n",
+                             rfc4938_config_get_node_id (),
+                             nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
+        }
+    }
+
+    if(cmdSRC == CMD_SRC_SELF ||
+            cmdSRC == CMD_SRC_CLI  ||
+            cmdSRC == CMD_SRC_PEER ||
+            cmdSRC == CMD_SRC_CHILD)
+    {
+        LOGGER(LOG_INFO, "(%u): neighbor %u state is %s, sending termination to transport\n",
+                          rfc4938_config_get_node_id (),
+                          nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
+
+        rfc4938_transport_neighbor_terminated  (nbr->neighbor_id);
+    }
+
+    if(cmdSRC == CMD_SRC_SELF      ||
+            cmdSRC == CMD_SRC_CLI       ||
+            cmdSRC == CMD_SRC_TRANSPORT ||
+            cmdSRC == CMD_SRC_CHILD)
+    {
+        p2buffer = malloc (SIZEOF_CTL_PEER_SESSION_TERMINATED);
+
+        if (p2buffer == NULL)
+        {
+            LOGGER(LOG_ERR,"(%u): malloc error \n", rfc4938_config_get_node_id ());
 
             return;
-          }
+        }
 
-         if ((buflen = rfc4938_ctl_format_session_stop (u32seqnum++, p2buffer)) != SIZEOF_CTL_SESSION_STOP)
-          {
-            RFC4938_DEBUG_ERROR ("%s:(%u): format error \n", 
-                           __func__, rfc4938_config_get_node_id ());
+        if ((buflen = rfc4938_ctl_format_peer_session_terminated (u32seqnum++,
+                      rfc4938_config_get_node_id (),  // our id
+                      p2buffer)) != SIZEOF_CTL_PEER_SESSION_TERMINATED)
+        {
+            LOGGER(LOG_ERR,"(%u): format error \n", rfc4938_config_get_node_id ());
 
             free (p2buffer);
 
             return;
-          }
+        }
 
-         RFC4938_DEBUG_EVENT ("%s:(%u): neighbor %u state is %s, sending termination to child, seqnum %u\n",
-                               __func__, rfc4938_config_get_node_id (), 
-                               nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state), u32seqnum - 1);
+        LOGGER(LOG_INFO, "(%u): neighbor %u state is %s, sending termination to peer, seqnum %u\n",
+                          rfc4938_config_get_node_id (),
+                             nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state), u32seqnum - 1);
 
 
-         rfc4938_io_send_to_child (nbr->child_port, p2buffer, buflen);
-
-         free(p2buffer);
-       }
-      else
-       {
-         RFC4938_DEBUG_EVENT ("%s:(%u): neighbor %u state is %s, skip sending termination to child\n",
-                             __func__, rfc4938_config_get_node_id (), 
-                             nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
-       }
-    }
-
-  if(cmdSRC == CMD_SRC_SELF ||
-     cmdSRC == CMD_SRC_CLI  ||
-     cmdSRC == CMD_SRC_PEER ||
-     cmdSRC == CMD_SRC_CHILD)
-    {
-      RFC4938_DEBUG_EVENT ("%s:(%u): neighbor %u state is %s, sending termination to transport\n",
-                               __func__, rfc4938_config_get_node_id (), 
-                               nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
-
-      rfc4938_transport_neighbor_terminated  (nbr->neighbor_id);
-    }
-
-  if(cmdSRC == CMD_SRC_SELF      ||
-     cmdSRC == CMD_SRC_CLI       ||
-     cmdSRC == CMD_SRC_TRANSPORT ||
-     cmdSRC == CMD_SRC_CHILD)
-    {
-      p2buffer = malloc (SIZEOF_CTL_PEER_SESSION_TERMINATED);
-
-      if (p2buffer == NULL)
-       {
-         RFC4938_DEBUG_ERROR ("%s:(%u): malloc error \n", 
-                           __func__, rfc4938_config_get_node_id ());
-
-         return;
-       }
-
-     if ((buflen = rfc4938_ctl_format_peer_session_terminated (u32seqnum++, 
-                                                               rfc4938_config_get_node_id (),  // our id
-                                                               p2buffer)) != SIZEOF_CTL_PEER_SESSION_TERMINATED)
-      {
-        RFC4938_DEBUG_ERROR ("%s:(%u): format error \n", 
-                           __func__, rfc4938_config_get_node_id ());
+        rfc4938_io_send_to_nbr (nbr->neighbor_id, 0, p2buffer, buflen);
 
         free (p2buffer);
- 
-        return;
-      }
+    }
 
-      RFC4938_DEBUG_EVENT ("%s:(%u): neighbor %u state is %s, sending termination to peer, seqnum %u\n",
-                       __func__, rfc4938_config_get_node_id (), 
-                       nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state), u32seqnum - 1);
+    nbr->nbr_session_state = INACTIVE;
+    nbr->child_pid     = 0;
+    nbr->child_port    = 0;
+    nbr->session_id    = 0;
+    nbr->neighbor_pid  = 0;
+    nbr->last_seqnum   = 0;
+    nbr->missed_seqnum = 0;
 
+    if(nbr->child_sock >= 0)
+    {
+        close(nbr->child_sock);
 
-     rfc4938_io_send_to_nbr (nbr->neighbor_id, 0, p2buffer, buflen);
+        nbr->child_sock = -1;
+    }
 
-     free (p2buffer);
-   }
-
-  nbr->nbr_session_state = INACTIVE;
-  nbr->child_pid     = 0;
-  nbr->child_port    = 0;
-  nbr->session_id    = 0;
-  nbr->neighbor_pid  = 0;
-  nbr->last_seqnum   = 0;
-  nbr->missed_seqnum = 0;
-
-  if(nbr->child_sock >= 0)
-   {
-     close(nbr->child_sock);
-
-     nbr->child_sock = -1;
-   }
-
-  if(write (rfc4938_io_signal_pipe[PIPE_WR_FD], "D", 1) < 0)
-   {
-     RFC4938_DEBUG_ERROR ("%s:(%u): error, faled to write to signal pipe,  error: %s\n", __func__,
-                          rfc4938_config_get_node_id (), strerror (errno));
-   }
-  else
-   {
-     RFC4938_DEBUG_EVENT ("%s:(%u): wrote 'D' to signal pipe\n", __func__,
-                          rfc4938_config_get_node_id ());
-   }
+    if(write (rfc4938_io_signal_pipe[PIPE_WR_FD], "D", 1) < 0)
+    {
+        LOGGER(LOG_ERR,"(%u): error, faled to write to signal pipe,  error: %s\n",
+                             rfc4938_config_get_node_id (), strerror (errno));
+    }
+    else
+    {
+        LOGGER(LOG_INFO, "(%u): wrote 'D' to signal pipe\n",
+                             rfc4938_config_get_node_id ());
+    }
 }
 
-const char * 
+const char *
 rfc4938_neighbor_status_to_string (rfc4938_neighbor_state_t state)
 {
-  switch (state)
+    switch (state)
     {
-       case INACTIVE: 
+    case INACTIVE:
         return "INACTIVE";
 
-       case READY:    
+    case READY:
         return "READY";
 
-       case PENDING:  
+    case PENDING:
         return "PENDING";
 
-       case ACTIVE:   
+    case ACTIVE:
         return "ACTIVE";
 
-       default:       
+    default:
         return "INVALID";
     }
 }
 
-rfc4938_neighbor_state_t 
+rfc4938_neighbor_state_t
 rfc4938_get_neighbor_state (UINT32_t neighbor_id)
 {
-  rfc4938_neighbor_element_t *nbr = neighbor_head;
+    rfc4938_neighbor_element_t *nbr = neighbor_head;
 
-  while (nbr)
+    while (nbr)
     {
-      if (nbr->neighbor_id == neighbor_id)
+        if (nbr->neighbor_id == neighbor_id)
         {
-           RFC4938_DEBUG_EVENT ("%s:(%u): nbr %u state is %s\n",
-                               __func__, rfc4938_config_get_node_id (), 
-                               neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
-            
-           return  nbr->nbr_session_state;
+            LOGGER(LOG_INFO, "(%u): nbr %u state is %s\n",
+                              rfc4938_config_get_node_id (),
+                                 neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
+
+            return  nbr->nbr_session_state;
         }
 
-      /* move to the next element */
-      nbr = nbr->next;
+        /* move to the next element */
+        nbr = nbr->next;
     }
 
-  return INVALID;
+    return INVALID;
 }
 
 
