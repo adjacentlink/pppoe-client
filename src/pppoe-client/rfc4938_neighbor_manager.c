@@ -874,14 +874,16 @@ rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr,
     int buflen;
     void *p2buffer = NULL;
 
-
     if (nbr == NULL)
     {
+        LOGGER(LOG_ERR, "(%u): Error NULL nbr info\n", rfc4938_config_get_node_id ());
+
         return;
     }
 
-    if(cmdSRC != CMD_SRC_SELF &&
-            cmdSRC != CMD_SRC_CHILD)
+    LOGGER(LOG_INFO, "(%u): nbr %hu, cmd %hu\n", rfc4938_config_get_node_id (), nbr->neighbor_id, cmdSRC);
+
+    if(cmdSRC != CMD_SRC_SELF && cmdSRC != CMD_SRC_CHILD)
     {
         if(nbr->nbr_session_state > PENDING)
         {
@@ -923,9 +925,9 @@ rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr,
     }
 
     if(cmdSRC == CMD_SRC_SELF ||
-            cmdSRC == CMD_SRC_CLI  ||
-            cmdSRC == CMD_SRC_PEER ||
-            cmdSRC == CMD_SRC_CHILD)
+       cmdSRC == CMD_SRC_CLI  ||
+       cmdSRC == CMD_SRC_PEER ||
+       cmdSRC == CMD_SRC_CHILD)
     {
         LOGGER(LOG_INFO, "(%u): neighbor %u state is %s, sending termination to transport\n",
                           rfc4938_config_get_node_id (),
@@ -935,9 +937,9 @@ rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr,
     }
 
     if(cmdSRC == CMD_SRC_SELF      ||
-            cmdSRC == CMD_SRC_CLI       ||
-            cmdSRC == CMD_SRC_TRANSPORT ||
-            cmdSRC == CMD_SRC_CHILD)
+       cmdSRC == CMD_SRC_CLI       ||
+       cmdSRC == CMD_SRC_TRANSPORT ||
+       cmdSRC == CMD_SRC_CHILD)
     {
         p2buffer = malloc (SIZEOF_CTL_PEER_SESSION_TERMINATED);
 
@@ -961,7 +963,9 @@ rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr,
 
         LOGGER(LOG_INFO, "(%u): neighbor %u state is %s, sending termination to peer, seqnum %u\n",
                           rfc4938_config_get_node_id (),
-                             nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state), u32seqnum - 1);
+                          nbr->neighbor_id, 
+                          rfc4938_neighbor_status_to_string(nbr->nbr_session_state), 
+                          u32seqnum - 1);
 
 
         rfc4938_io_send_to_nbr (nbr->neighbor_id, 0, p2buffer, buflen);

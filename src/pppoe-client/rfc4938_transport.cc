@@ -142,7 +142,7 @@ void PPPoETransport::processUpstreamPacket(EMANE::UpstreamPacket & pkt, const EM
       return;
     }
 
-    WorkItem item(WORK_ITEM_TYPE_UPSTREAM_PKT, new EMANE::UpstreamPacket(pkt));
+    WorkItem item(WORK_ITEM_TYPE_RXOTA_PKT, new EMANE::UpstreamPacket(pkt));
 
     enqueueWorkItem_i(item);
  }
@@ -333,7 +333,7 @@ void PPPoETransport::enqueueTransportData(std::uint16_t dst, std::uint16_t credi
       new EMANE::DownstreamPacket(
         EMANE::PacketInfo(id_, dst, 0, EMANE::Clock::now()), p2buffer, buflen), credits);
 
-    WorkItem item(WORK_ITEM_TYPE_DNSTREAM_PKT, p);
+    WorkItem item(WORK_ITEM_TYPE_TXOTA_PKT, p);
 
     enqueueWorkItem_i(item);
  }
@@ -958,13 +958,13 @@ PPPoETransport::processWorkQueue_i()
 
       switch(item.id_)
        {
-         case WORK_ITEM_TYPE_UPSTREAM_PKT:
+         case WORK_ITEM_TYPE_RXOTA_PKT:
           {
             const EMANE::UpstreamPacket * p = reinterpret_cast<const EMANE::UpstreamPacket *>(item.data_);
 
-            rfc4938_parser_parse_upstream_packet(p->get(), 
-                                                 p->length(),
-                                                 rfc4938_config_get_id(p->getPacketInfo().getSource()));
+            rfc4938_parser_parse_rx_ota_packet(p->get(), 
+                                               p->length(),
+                                               rfc4938_config_get_id(p->getPacketInfo().getSource()));
 
             delete p;
           } break;
@@ -986,7 +986,7 @@ PPPoETransport::processWorkQueue_i()
             handleTokenUpdate_i();
           } break;
 
-         case WORK_ITEM_TYPE_DNSTREAM_PKT:
+         case WORK_ITEM_TYPE_TXOTA_PKT:
           {
             const DSPktParams * p = reinterpret_cast<const DSPktParams *>(item.data_);
 

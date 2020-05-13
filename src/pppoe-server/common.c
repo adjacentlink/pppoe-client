@@ -736,8 +736,7 @@ pktLogErrs(char const *pkt,
 * Picks error tags out of a packet and logs them.
 ***********************************************************************/
 void
-parseLogErrs(UINT16_t type, UINT16_t len, unsigned char *data,
-             void *extra)
+parseLogErrs(UINT16_t type, UINT16_t len, unsigned char *data, void *extra)
 {
     pktLogErrs("PADT", type, len, data, extra);
 }

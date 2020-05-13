@@ -62,9 +62,6 @@ getEtherType (PPPoEPacket * packet)
 }
 
 
-
-
-
 int
 send_session_packet_to_ac (PPPoEConnection * conn, PPPoEPacket * packet)
 {

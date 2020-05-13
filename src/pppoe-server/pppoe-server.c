@@ -669,6 +669,8 @@ processPADI(Interface *ethif, PPPoEPacket *packet, int len __attribute__((unused
     int ok = 0;
     unsigned char *myAddr = ethif->mac;
 
+    LOGGER(LOG_INFO, "len %d", len);
+
     /* Ignore PADI's which don't come from a unicast address */
     if (NOT_UNICAST(packet->ethHdr.h_source))
     {
@@ -837,6 +839,8 @@ processPADT(Interface *ethif, PPPoEPacket *packet, int len __attribute__((unused
 
     unsigned char *myAddr = ethif->mac;
 
+    LOGGER(LOG_INFO, "len %d", len);
+
     /* Ignore PADT's not directed at us */
     if (memcmp(packet->ethHdr.h_dest, myAddr, ETH_ALEN))
     {
@@ -908,6 +912,8 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len __attribute__((unused
     unsigned char *myAddr = ethif->mac;
     unsigned slen = 0;
     char const *serviceName = NULL;
+
+    LOGGER(LOG_INFO, "len %d", len);
 
 #ifdef HAVE_LICENSE
     int freemem;
@@ -2038,6 +2044,7 @@ serverProcessPacket(Interface *i)
         break;
 #endif
     default:
+         LOGGER(LOG_ERR, "unhandled packet code %d", packet.code);
         /* Syslog an error */
         break;
     }

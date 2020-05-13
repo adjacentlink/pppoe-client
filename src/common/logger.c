@@ -13,7 +13,7 @@ void logger(int lvl, const char * func, const char *fmt, ...)
          gettimeofday(&tv, NULL); 
          localtime_r(&tv.tv_sec, &tm); 
 
-         const int len = snprintf(buff, sizeof(buff), "[%02u:%02u:%02u.%03lu][%d][%s]:", 
+         int len = snprintf(buff, sizeof(buff), "[%02u:%02u:%02u.%03lu][%d][%s]:", 
                                   tm.tm_hour,      
                                   tm.tm_min,       
                                   tm.tm_sec,       
@@ -23,9 +23,12 @@ void logger(int lvl, const char * func, const char *fmt, ...)
 
          va_list arg;
          va_start(arg, fmt);
-         vsnprintf(buff + len, sizeof(buff) - len, fmt, arg);
+         len += vsnprintf(buff + len, sizeof(buff) - len - 1, fmt, arg);
          va_end(arg);
 
-         fprintf(LoggerFp ? LoggerFp : stdout, "%s", buff); 
+         if(buff[len-1] != '\n')
+           fprintf(LoggerFp ? LoggerFp : stdout, "%s\n", buff); 
+         else
+           fprintf(LoggerFp ? LoggerFp : stdout, "%s", buff); 
        } 
 }

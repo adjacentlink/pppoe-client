@@ -245,14 +245,16 @@ rfc4938_io_get_messages (fd_set readable, int num_fd_ready)
     socklen_t socklen;
     struct sockaddr_in from_addr;
 
-    UINT8_t recvbuf[MAX_SOCK_MSG_LEN];
-
     rfc4938_neighbor_element_t * nbr = rfc4938_neighbor_get_neighbor_head();
 
     while(nbr && num_fd_ready)
     {
+        UINT8_t recvbuf[MAX_SOCK_MSG_LEN] = {0};
+
         if(rfc4938_io_is_fd_ready(nbr->child_sock, &readable))
         {
+            LOGGER(LOG_PKT,"(%u): frame ready from child sock %d\n", rfc4938_config_get_node_id(), nbr->child_sock);
+
             socklen = sizeof (from_addr);
 
             int z = recvfrom (nbr->child_sock, recvbuf, sizeof(recvbuf),
@@ -275,7 +277,7 @@ rfc4938_io_get_messages (fd_set readable, int num_fd_ready)
                                       nbr->session_id,
                                       inet_ntoa (from_addr.sin_addr), htons (from_addr.sin_port), z);
 
-                rfc4938_parser_parse_downstream_packet (recvbuf, z, nbr);
+                rfc4938_parser_parse_child_packet (recvbuf, z, nbr);
 
                 --num_fd_ready;
             }
@@ -434,9 +436,9 @@ rfc4938_io_open_vif (const char *ifname, UINT8_t * hwaddr)
 
 static int rfc4938_io_read_frame(int fd)
 {
-    UINT8_t recvbuf[MAX_SOCK_MSG_LEN];
+    UINT8_t recvbuf[MAX_SOCK_MSG_LEN] = {0};
 
-    int result = read(fd, recvbuf, sizeof(recvbuf));
+    const int result = read(fd, recvbuf, sizeof(recvbuf));
 
     PPPoEPacket *packet = (PPPoEPacket *) recvbuf;
 
@@ -456,11 +458,14 @@ static int rfc4938_io_read_frame(int fd)
     }
     else
     {
+        LOGGER(LOG_INFO,"(%u): reading frame: len %d\n",
+               rfc4938_config_get_node_id(), result);
+
         UINT16_t proto = ntohs(packet->eth_hdr.proto);
 
         if((proto == ETH_PPPOE_DISCOVERY) || (proto == ETH_PPPOE_SESSION))
         {
-            rfc4938_parse_ppp_packet(packet, result, "downstream");
+            rfc4938_parse_ppp_packet(packet, result, __func__);
 
             int sent = 0;
             int skip = 0;
@@ -473,8 +478,8 @@ static int rfc4938_io_read_frame(int fd)
             while(nbr)
             {
                 if((nbr->child_port > 0) &&
-                        (((session_id != 0) && (nbr->session_id == session_id)) ||
-                         ((nbr->session_id == 0) && (nbr->nbr_session_state >= READY))))
+                   (((session_id != 0) && (nbr->session_id == session_id)) ||
+                    ((nbr->session_id == 0) && (nbr->nbr_session_state >= READY))))
                 {
                     if(rfc4938_io_send_frame_to_child (nbr->session_id, nbr->child_port, recvbuf, proto, result) > 0)
                     {
@@ -494,13 +499,12 @@ static int rfc4938_io_read_frame(int fd)
                 nbr = nbr->next;
             }
 
-            LOGGER(LOG_PKT,"(%u): fwd frame to %d children, skipped %d, errors %d\n",
-                   rfc4938_config_get_node_id (), sent, skip, err);
+            LOGGER(LOG_PKT,"(%u): fwd frame session %d, to %d children, skipped %d, errors %d\n",
+                   rfc4938_config_get_node_id (), session_id, sent, skip, err);
         }
         else
         {
-            LOGGER(LOG_PKT,"(%u): recv non pppoe frame len %d, drop\n",
-                   rfc4938_config_get_node_id (), result);
+            LOGGER(LOG_ERR,"(%u): recv non pppoe frame len %d, drop\n", rfc4938_config_get_node_id (), result);
         }
     }
 
@@ -562,11 +566,10 @@ static int rfc4938_io_send_frame_to_child(UINT16_t session_id, UINT16_t port, vo
 
 int rfc4938_io_send_frame_to_device (const void *p2buffer, int buflen, UINT16_t proto)
 {
-    rfc4938_parse_ppp_packet(p2buffer, buflen, "upstream");
+    rfc4938_parse_ppp_packet(p2buffer, buflen, __func__);
 
     if(rfc4938_config_get_vif_mode() == 1)
     {
-
         if(write(rfc4938_vif_fd, p2buffer, buflen) < 0)
         {
             LOGGER(LOG_ERR,"(%u): error writting to vif: %s\n",

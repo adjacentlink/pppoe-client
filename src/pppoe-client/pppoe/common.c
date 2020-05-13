@@ -400,18 +400,18 @@ sendPADTandExit (PPPoEConnection * conn, char const *msg, int tellParent)
     send_discovery_packet_to_ac (conn, &packet);
 
     LOGGER(LOG_PKT, "(%u,%hu,%d): sent PADT (%s)\n",
-                        conn->peer_id, conn->sessionId, conn->host_id, msg);
+           conn->peer_id, conn->sessionId, conn->host_id, msg);
 
 do_exit:
+    LOGGER(LOG_INFO, "(%u,%hu): Host Id %u (0x%x) will terminate in 5 sec\n",
+                       conn->peer_id, conn->sessionId, conn->host_id, conn->host_id);
 
-    if (conn->udpIPCSocket)
+    sleep(5);
+
+    if(conn->udpIPCSocket)
     {
         close (conn->udpIPCSocket);
     }
-
-    LOGGER(LOG_INFO, "(%u,%hu): Host Id %u (0x%x) will terminate now\n",
-                       conn->peer_id, conn->sessionId, conn->host_id, conn->host_id);
-
 
     exit (EXIT_SUCCESS);
 }

@@ -175,13 +175,13 @@ const char * ppp_lcp_code_to_string(UINT16_t code)
 
 
 void
-rfc4938_parser_parse_upstream_packet (const void *buff, int bufsize, UINT32_t neighbor_id)
+rfc4938_parser_parse_rx_ota_packet (const void *buff, int bufsize, UINT32_t neighbor_id)
 {
     rfc4938_neighbor_element_t *nbr;
 
     if (rfc4938_neighbor_pointer_by_nbr_id (neighbor_id, &nbr) != 0)
     {
-        LOGGER(LOG_ERR,"(%u): error, unable to find neighbor_id %u\n",
+        LOGGER(LOG_INFO,"(%u): error, unable to find neighbor_id %u\n",
                         rfc4938_config_get_node_id (), neighbor_id);
 
         return;
@@ -195,7 +195,7 @@ rfc4938_parser_parse_upstream_packet (const void *buff, int bufsize, UINT32_t ne
 
 
 void
-rfc4938_parser_parse_downstream_packet (const void *buff, int bufsize, rfc4938_neighbor_element_t *nbr)
+rfc4938_parser_parse_child_packet (const void *buff, int bufsize, rfc4938_neighbor_element_t *nbr)
 {
     LOGGER(LOG_INFO, "(%u): len %u, nbr %u\n",
                          rfc4938_config_get_node_id (), bufsize, nbr->neighbor_id);
@@ -270,8 +270,10 @@ rfc4938_parser_parse_packet_i(const void *buff, int bufsize, rfc4938_neighbor_el
 
     /* from peer to our child */
     case CTL_SESSION_START_READY:
-        rfc4938_io_forward_to_child(
-            rfc4938_config_get_id(ntohl(p2ctlmsg->ctl_start_ready_payload.u32neighbor_id)), buff, bufsize, nbr);
+        rfc4938_io_forward_to_child(rfc4938_config_get_id(ntohl(p2ctlmsg->ctl_start_ready_payload.u32neighbor_id)), 
+                                    buff,
+                                    bufsize,
+                                    nbr);
         break;
 
     /* from our child */
@@ -284,14 +286,19 @@ rfc4938_parser_parse_packet_i(const void *buff, int bufsize, rfc4938_neighbor_el
     /* from our child */
     case CTL_CHILD_SESSION_UP:
         rfc4938_parser_ctl_recv_child_session_up_i(ntohl(p2ctlmsg->ctl_child_session_up_payload.u32neighbor_id),
-                ntohs(p2ctlmsg->ctl_child_session_up_payload.u16session_id),
-                ntohl(p2ctlmsg->ctl_child_session_up_payload.u32pid));
+                                                   ntohs(p2ctlmsg->ctl_child_session_up_payload.u16session_id),
+                                                   ntohl(p2ctlmsg->ctl_child_session_up_payload.u32pid));
         break;
 
     /* from our child */
     case CTL_CHILD_SESSION_TERMINATED:
         rfc4938_parser_ctl_recv_child_session_terminated_i(ntohl(p2ctlmsg->ctl_child_session_terminated_payload.u32neighbor_id),
-                ntohs(p2ctlmsg->ctl_child_session_terminated_payload.u16session_id));
+                                                           ntohs(p2ctlmsg->ctl_child_session_terminated_payload.u16session_id));
+
+        rfc4938_io_send_frame_to_device(p2ctlmsg->ctl_frame_data_payload.data,
+                                        ntohs(p2ctlmsg->ctl_frame_data_payload.u16data_len),
+                                        ntohs(p2ctlmsg->ctl_frame_data_payload.u16proto));
+
         break;
 
     /* from our peer */
@@ -310,9 +317,9 @@ rfc4938_parser_parse_packet_i(const void *buff, int bufsize, rfc4938_neighbor_el
     /* from child to peer */
     case CTL_CHILD_SESSION_DATA:
         rfc4938_parser_ctl_recv_child_session_data_i(ntohl(p2ctlmsg->ctl_session_data_payload.u32neighbor_id),
-                ntohs(p2ctlmsg->ctl_session_data_payload.u16credits),
-                buff,
-                bufsize);
+                                                     ntohs(p2ctlmsg->ctl_session_data_payload.u16credits),
+                                                     buff,
+                                                     bufsize);
         break;
 
     /* from our child */
@@ -519,16 +526,16 @@ void rfc4938_parse_ppp_packet(const PPPoEPacket *packet, int framelen, const cha
 
         switch(ntohs(tag->type))
         {
-        case TAG_RFC4938_CREDITS:
-        case TAG_RFC4938_METRICS:
-        case TAG_RFC4938_SEQ_NUM:
-        case TAG_RFC4938_SCALAR:
+          case TAG_RFC4938_CREDITS:
+          case TAG_RFC4938_METRICS:
+          case TAG_RFC4938_SEQ_NUM:
+          case TAG_RFC4938_SCALAR:
 
             LOGGER(LOG_PKT,"found tag 0x%04hx, skip %d bytes\n", ntohs(tag->type),
                                   ntohs(tag->length) + TAG_HDR_SIZE);
 
             p += ntohs(tag->length) + TAG_HDR_SIZE;
-            break;
+          break;
         }
 
         const PPPHeader * p2ppp = (const PPPHeader *) p;

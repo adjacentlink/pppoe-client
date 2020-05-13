@@ -124,7 +124,7 @@ dumpPacket(FILE *fp, PPPoEPacket *packet, char const *dir)
     millisec = tv.tv_usec / 1000;
     lt = localtime(&now);
     strftime(timebuf, 256, "%H:%M:%S", lt);
-    fprintf(fp, "%s.%03d %s PPPoE ", timebuf, millisec, dir);
+    fprintf(fp, "[%s.%03d] %s PPPoE ", timebuf, millisec, dir);
     if (type == Eth_PPPOE_Discovery)
     {
         fprintf(fp, "Discovery (%x) ", (unsigned) type);
@@ -166,14 +166,12 @@ dumpPacket(FILE *fp, PPPoEPacket *packet, char const *dir)
         break;
     }
 
-    fprintf(fp, "sess-id %d length %d\n",
-            (int) ntohs(packet->session),
-            len);
+    fprintf(fp, "sess-id %d length %d\n", (int) ntohs(packet->session), len);
 
     /* Ugly... I apologize... */
     fprintf(fp,
-            "SourceAddr %02x:%02x:%02x:%02x:%02x:%02x "
-            "DestAddr %02x:%02x:%02x:%02x:%02x:%02x\n",
+            "SourceAddr %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx "
+            "DestAddr %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx\n",
             (unsigned) packet->ethHdr.h_source[0],
             (unsigned) packet->ethHdr.h_source[1],
             (unsigned) packet->ethHdr.h_source[2],

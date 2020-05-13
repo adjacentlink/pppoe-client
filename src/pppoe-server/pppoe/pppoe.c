@@ -143,6 +143,8 @@ sendSessionPacket(PPPoEConnection *conn, PPPoEPacket *packet, int len)
 static void
 sessionDiscoveryPacket(PPPoEPacket *packet)
 {
+    LOGGER(LOG_INFO, "packet %p", packet);
+
     /* Sanity check */
     if (packet->code != CODE_PADT)
     {
@@ -168,8 +170,11 @@ sessionDiscoveryPacket(PPPoEPacket *packet)
     LOGGER(LOG_INFO,
            "Session %d terminated -- received PADT from peer",
            (int) ntohs(packet->session));
+
     parsePacket(packet, parseLogErrs, NULL);
+
     sendPADT(Connection, "Received PADT from peer");
+
     exit(EXIT_SUCCESS);
 }
 #else
@@ -186,11 +191,14 @@ sessionDiscoveryPacket(PPPoEPacket *packet)
 static void
 sessionDiscoveryPacket(PPPoEConnection *conn)
 {
+    LOGGER(LOG_INFO, "conn %p", conn);
+
     PPPoEPacket packet;
     int len;
 
     if (receivePacket(conn->discoverySocket, &packet, &len) < 0)
     {
+        LOGGER(LOG_ERR, "Error in receivePacket");
         return;
     }
 
@@ -235,8 +243,11 @@ sessionDiscoveryPacket(PPPoEConnection *conn)
     LOGGER(LOG_INFO,
            "Session %d terminated -- received PADT from peer",
            (int) ntohs(packet.session));
+
     parsePacket(&packet, parseLogErrs, NULL);
+
     sendPADT(conn, "Received PADT from peer");
+
     exit(EXIT_SUCCESS);
 }
 #endif /* USE_BPF */
@@ -686,7 +697,9 @@ session(PPPoEConnection *conn)
         {
             LOGGER(LOG_ERR, "Inactivity timeout... something wicked happened on session %d",
                    (int) ntohs(conn->session));
+
             sendPADT(conn, "RP-PPPoE: Inactivity timeout");
+
             exit(EXIT_FAILURE);
         }
 
@@ -798,7 +811,9 @@ sigPADT(int src)
 {
     LOGGER(LOG_DEBUG,"Received signal %d on session %d.",
            (int)src, (int) ntohs(Connection->session));
+
     sendPADTf(Connection, "RP-PPPoE: Received signal %d", src);
+
     exit(EXIT_SUCCESS);
 }
 
@@ -1280,9 +1295,12 @@ fatalSys(char const *str)
     char buf[1024];
     sprintf(buf, "%.256s: Session %d: %.256s",
             str, (int) ntohs(Connection->session), strerror(errno));
+
     printErr(buf);
+
     sendPADTf(Connection, "RP-PPPoE: System call error: %s",
               strerror(errno));
+
     exit(EXIT_FAILURE);
 }
 
@@ -1316,8 +1334,10 @@ void
 rp_fatal(char const *str)
 {
     printErr(str);
+
     sendPADTf(Connection, "RP-PPPoE: Session %d: %.256s",
               (int) ntohs(Connection->session), str);
+
     exit(EXIT_FAILURE);
 }
 
@@ -1352,6 +1372,7 @@ asyncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
 
     if (receivePacket(sock, &packet, &len) < 0)
     {
+        LOGGER(LOG_ERR, "Error in receivePacket\n");
         return;
     }
 
@@ -1549,14 +1570,14 @@ syncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
 
     if (receivePacket(sock, &packet, &len) < 0)
     {
+        LOGGER(LOG_ERR, "Error in receivePacket\n");
         return;
     }
 
     /* Check length */
     if (ntohs(packet.length) + HDR_SIZE > (unsigned)len)
     {
-        LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)",
-               (unsigned int) ntohs(packet.length));
+        LOGGER(LOG_ERR, "Bogus PPPoE length field (%u)\n", (unsigned int) ntohs(packet.length));
         return;
     }
 #ifdef DEBUGGING_ENABLED

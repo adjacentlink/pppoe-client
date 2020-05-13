@@ -32,8 +32,8 @@ const unsigned long WORK_ITEM_TYPE_NONE         = 0;
 const unsigned long WORK_ITEM_TYPE_PADG_MSG     = 1;   // padg msg ready
 const unsigned long WORK_ITEM_TYPE_PADI_MSG     = 2;   // padi msg ready
 const unsigned long WORK_ITEM_TYPE_FLOWCTRL_MSG = 3;   // flow control
-const unsigned long WORK_ITEM_TYPE_UPSTREAM_PKT = 4;   // upstream pkt ready
-const unsigned long WORK_ITEM_TYPE_DNSTREAM_PKT = 5;   // downstream pkt ready
+const unsigned long WORK_ITEM_TYPE_RXOTA_PKT    = 4;   // upstream/ota pkt ready
+const unsigned long WORK_ITEM_TYPE_TXOTA_PKT    = 5;   // downstream/ota pkt ready
 const unsigned long WORK_ITEM_TYPE_DEL_NBR      = 6;   // delete nbr
 const unsigned long WORK_ITEM_TYPE_FD_READY     = 7;   // file desriptor ready
 const unsigned long WORK_ITEM_TYPE_METRIC_MSG   = 8;   // nbr, queue and self metrics
@@ -58,11 +58,11 @@ inline const char * workIdToString(unsigned long id)
     case WORK_ITEM_TYPE_METRIC_MSG:
         return "metric";
 
-    case WORK_ITEM_TYPE_UPSTREAM_PKT:
-        return "upstream_pkt";
+    case WORK_ITEM_TYPE_RXOTA_PKT:
+        return "txota_pkt";
 
-    case WORK_ITEM_TYPE_DNSTREAM_PKT:
-        return "downstream_pkt";
+    case WORK_ITEM_TYPE_TXOTA_PKT:
+        return "rxota_pkt";
 
     case WORK_ITEM_TYPE_DEL_NBR:
         return "delete_nbr";

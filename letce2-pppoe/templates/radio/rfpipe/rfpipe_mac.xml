@@ -9,4 +9,5 @@
   <param name="flowcontrolenable"             value="off"/>
   <param name="radiometricenable"             value="on"/>
   <param name="radiometricreportinterval"     value="10"/>
+  <param name="neighbormetricdeletetime"      value="20"/>
 </mac>

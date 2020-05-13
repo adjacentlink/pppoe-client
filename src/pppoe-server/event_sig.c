@@ -16,8 +16,8 @@
 
 //static char const RCSID[] = "$Id$";
 
-// #define _POSIX_SOURCE 1 /* For sigaction defines */
-// #define _BSD_SOURCE   1 /* For SA_RESTART */
+// #define _POSIX_SOURCE 1 /* For sigaction defines
+// #define _BSD_SOURCE   1 /* For SA_RESTART
 
 #include <signal.h>
 #include <sys/types.h>

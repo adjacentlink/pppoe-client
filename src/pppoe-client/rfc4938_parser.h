@@ -43,9 +43,9 @@
 
 extern UINT32_t u32seqnum;
 
-void rfc4938_parser_parse_upstream_packet (const void *recvbuf, int bufsize, UINT32_t neighbor_id);
+void rfc4938_parser_parse_rx_ota_packet (const void *recvbuf, int bufsize, UINT32_t neighbor_id);
 
-void rfc4938_parser_parse_downstream_packet (const void *recvbuf, int bufsize, rfc4938_neighbor_element_t * nbr);
+void rfc4938_parser_parse_child_packet (const void *recvbuf, int bufsize, rfc4938_neighbor_element_t * nbr);
 
 int rfc4938_parser_cli_initiate_session (UINT32_t neighbor_id, UINT16_t credit_scalar);
 

@@ -790,8 +790,7 @@ sendPADQ (PPPoEConnection * conn, UINT16_t mdr, UINT8_t mdr_scalar,
 
     send_discovery_packet_to_ac (conn, &packet);
 
-    LOGGER(LOG_PKT, "(%u,%hu): sent PADQ packet with mdr:%hu cdr:%hu latency:%hu\n"
-                        " resources %hhu, rlq %hhu\n",
+    LOGGER(LOG_PKT, "(%u,%hu): sent PADQ packet with mdr:%hu cdr:%hu latency:%hu, resources %hhu, rlq %hhu",
                         conn->peer_id, conn->sessionId, mdr, cdr, latency, resources, rlq);
 }
 
