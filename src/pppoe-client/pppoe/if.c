@@ -63,15 +63,15 @@ getEtherType (PPPoEPacket * packet)
 
 
 int
-send_session_packet_to_ac (PPPoEConnection * conn, PPPoEPacket * packet)
+send_session_packet_to_conn (PPPoEConnection * conn, PPPoEPacket * packet)
 {
-    return (send_packet_to_ac(conn, packet, Eth_PPPOE_Session));
+    return (send_packet_to_conn(conn, packet, Eth_PPPOE_Session));
 }
 
 
 int
-send_discovery_packet_to_ac (PPPoEConnection * conn, PPPoEPacket * packet)
+send_discovery_packet_to_conn (PPPoEConnection * conn, PPPoEPacket * packet)
 {
-    return (send_packet_to_ac(conn, packet, Eth_PPPOE_Discovery));
+    return (send_packet_to_conn(conn, packet, Eth_PPPOE_Discovery));
 }
 

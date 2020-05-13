@@ -111,7 +111,7 @@ rfc4938_neighbor_print (UINT32_t neighbor_id)
     {
         if (nbr->neighbor_id == neighbor_id)
         {
-            printf ("\nNeighbor ID %u remote pid %u, local pid %u, port %hu, session id %hu, last seqnum %u, num missed seqnum %u\n",
+            LOGGER(LOG_INFO, "\nNeighbor ID %u remote pid %u, local pid %u, port %hu, session id %hu, last seqnum %u, num missed seqnum %u",
                     nbr->neighbor_id,
                     nbr->neighbor_pid,
                     nbr->child_pid,
@@ -126,7 +126,6 @@ rfc4938_neighbor_print (UINT32_t neighbor_id)
         /* move to the next element */
         nbr = nbr->next;
     }
-    printf ("\n");
 
     return;
 }
@@ -153,15 +152,14 @@ rfc4938_neighbor_print_all (void)
 {
     rfc4938_neighbor_element_t *nbr = neighbor_head;
 
-    printf ("Neighbor\t Active\n");
+    LOGGER(LOG_INFO, "Neighbor\t Active");
     while (nbr)
     {
-        printf ("%u\t\t %s", nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
+        LOGGER(LOG_INFO, "%u\t\t %s", nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
 
         /* move to the next element */
         nbr = nbr->next;
     }
-    printf ("\n");
 
     return;
 }
@@ -189,7 +187,7 @@ rfc4938_neighbor_print_all_string (char *dgram, size_t max_len)
 
     char tmp_str[LNLEN] = {0};
 
-    size_t total_len = snprintf (dgram, max_len, "Neighbor\t Active\n");
+    size_t total_len = snprintf (dgram, max_len, "Neighbor\t Active");
 
     while (nbr && total_len < max_len)
     {
@@ -234,6 +232,8 @@ rfc4938_neighbor_print_all_string (char *dgram, size_t max_len)
 int
 rfc4938_neighbor_query (UINT32_t neighbor_id, rfc4938_neighbor_element_t * p2neighbor)
 {
+    LOGGER(LOG_INFO, "neighbor_id %u", neighbor_id);
+
     if (p2neighbor == NULL)
     {
         return (-1);
@@ -281,6 +281,8 @@ rfc4938_neighbor_query (UINT32_t neighbor_id, rfc4938_neighbor_element_t * p2nei
 int
 rfc4938_neighbor_pointer_by_nbr_id (UINT32_t neighbor_id, rfc4938_neighbor_element_t ** p2neighbor)
 {
+    LOGGER(LOG_INFO, "neighbor_id %u", neighbor_id);
+
     if (p2neighbor == NULL)
     {
         return (-1);
@@ -329,6 +331,8 @@ rfc4938_neighbor_pointer_by_nbr_id (UINT32_t neighbor_id, rfc4938_neighbor_eleme
 int
 rfc4938_neighbor_pointer_by_pid (pid_t pid, rfc4938_neighbor_element_t ** p2neighbor)
 {
+    LOGGER(LOG_INFO, "pid %u", pid);
+
     if (p2neighbor == NULL)
     {
         return (-1);
@@ -358,6 +362,8 @@ rfc4938_neighbor_pointer_by_pid (pid_t pid, rfc4938_neighbor_element_t ** p2neig
 int
 rfc4938_neighbor_pointer_by_port (UINT16_t port, rfc4938_neighbor_element_t ** p2neighbor)
 {
+    LOGGER(LOG_INFO, "port %u", port);
+
     if (p2neighbor == NULL)
     {
         return (-1);
@@ -387,6 +393,8 @@ rfc4938_neighbor_pointer_by_port (UINT16_t port, rfc4938_neighbor_element_t ** p
 int
 rfc4938_neighbor_pointer_by_session_id (UINT16_t session_id, rfc4938_neighbor_element_t ** p2neighbor)
 {
+    LOGGER(LOG_INFO, "session_id %u", session_id);
+
     if (p2neighbor == NULL)
     {
         return (-1);
@@ -455,6 +463,8 @@ rfc4938_neighbor_toggle_all (void (*pt2func) (rfc4938_neighbor_element_t *, UINT
 rfc4938_neighbor_element_t *
 rfc4938_neighbor_init (UINT32_t neighbor_id)
 {
+    LOGGER(LOG_INFO, "neighbor_id %u", neighbor_id);
+
     if(rcf4938_numChildren >= rfc4938_config_get_max_nbrs())
     {
         return NULL;
@@ -479,7 +489,7 @@ rfc4938_neighbor_init (UINT32_t neighbor_id)
 
     if (nbr == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): malloc error \n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error", rfc4938_config_get_node_id ());
 
         return NULL;
     }
@@ -506,6 +516,8 @@ rfc4938_neighbor_init (UINT32_t neighbor_id)
 int
 rfc4938_neighbor_release (UINT32_t neighbor_id)
 {
+    LOGGER(LOG_INFO, "neighbor_id %u", neighbor_id);
+
     rfc4938_neighbor_element_t *curr = neighbor_head;
     rfc4938_neighbor_element_t *prev = NULL;
 
@@ -551,18 +563,20 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
 
     char *arguments[MAXARGS];
 
+    LOGGER(LOG_INFO, "neighbor_id %u", neighbor_id);
+
     rfc4938_neighbor_element_t * nbr = rfc4938_neighbor_init (neighbor_id);
 
     if (nbr == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): could not allocate neighbor %u\n",
+        LOGGER(LOG_ERR,"(%u): could not allocate neighbor %u",
                         rfc4938_config_get_node_id (), nbr->neighbor_id);
         return;
     }
 
     if (nbr->nbr_session_state == ACTIVE)
     {
-        LOGGER(LOG_INFO, "(%u): neighbor %u already ACTIVE, not initiating new one\n",
+        LOGGER(LOG_INFO, "(%u): neighbor %u already ACTIVE, not initiating new one",
                           rfc4938_config_get_node_id (), nbr->neighbor_id);
         return;
     }
@@ -570,21 +584,21 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
     if (nbr->child_pid != 0)
     {
         LOGGER(LOG_INFO, "(%u): already have a pppoe process (%d), for neighbor %u,"
-                             " not initiating new one\n", rfc4938_config_get_node_id (),
+                             " not initiating new one", rfc4938_config_get_node_id (),
                              nbr->child_pid, nbr->neighbor_id);
         return;
     }
 
     if((nbr->child_sock = rfc4938_io_get_udp_socket(0, &port)) < 0)
     {
-        LOGGER(LOG_ERR,"(%u): could get child sock for pid (%d), for neighbor %u\n",
+        LOGGER(LOG_ERR,"(%u): could get child sock for pid (%d), for neighbor %u",
                              rfc4938_config_get_node_id (),
                              nbr->child_pid, nbr->neighbor_id);
         return;
     }
     else
     {
-        LOGGER(LOG_INFO, "(%u): opened child sock (%d), port %hu, for neighbor %u\n",
+        LOGGER(LOG_INFO, "(%u): opened child sock (%d), port %hu, for neighbor %u",
                           rfc4938_config_get_node_id (),
                              nbr->child_sock, nbr->child_port, nbr->neighbor_id);
     }
@@ -615,7 +629,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
     arguments[a] = malloc (sizeof (char) * (strlen (rfc4938_config_get_iface ()) + OPTLEN));
     if (arguments[a] == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): malloc error for iface name\n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error for iface name", rfc4938_config_get_node_id ());
         return;
     }
     sprintf (arguments[a], "-I%s", rfc4938_config_get_iface ());
@@ -625,7 +639,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
     arguments[a] = malloc (sizeof (char) * (strlen (rfc4938_config_get_service_name ()) + OPTLEN));
     if (arguments[a] == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): malloc error for service name\n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error for service name", rfc4938_config_get_node_id ());
         return;
     }
     sprintf (arguments[a], "-S%s", rfc4938_config_get_service_name ());
@@ -635,7 +649,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
     arguments[a] = malloc (sizeof (char *) * PORTARG);
     if (arguments[a] == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): malloc error for nbr id arg\n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error for nbr id arg", rfc4938_config_get_node_id ());
         return;
     }
     sprintf (arguments[a], "-y%u", nbr->neighbor_id);
@@ -645,7 +659,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
     arguments[a] = malloc (sizeof (char *) * PORTARG);
     if (arguments[a] == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): malloc error for parent id arg\n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error for parent id arg", rfc4938_config_get_node_id ());
         return;
     }
     sprintf (arguments[a], "-Y%u", rfc4938_config_get_node_id ());
@@ -655,7 +669,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
     arguments[a] = malloc (sizeof (char *) * PORTARG);
     if (arguments[a] == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): malloc error for nbr pid arg\n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error for nbr pid arg", rfc4938_config_get_node_id ());
         return;
     }
     sprintf (arguments[a], "-R%u", peer_pid);
@@ -665,7 +679,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
     arguments[a] = malloc (sizeof (char) * PORTARG);
     if (arguments[a] == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): malloc error for pppoe port arg\n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error for pppoe port arg", rfc4938_config_get_node_id ());
         return;
     }
     sprintf (arguments[a], "-r%hu", rfc4938_rolling_pppoe_port);
@@ -675,7 +689,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
     arguments[a] = malloc (sizeof (char) * PORTARG);
     if (arguments[a] == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): malloc error for rfc4938 scalar arg\n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error for rfc4938 scalar arg", rfc4938_config_get_node_id ());
         return;
     }
     sprintf (arguments[a], "-x%hu", credit_scalar);
@@ -685,7 +699,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
     arguments[a] = malloc (sizeof (char) * PORTARG);
     if (arguments[a] == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): malloc error for rfc4938 port arg\n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error for rfc4938 port arg", rfc4938_config_get_node_id ());
         return;
     }
     sprintf (arguments[a], "-c%u", port);
@@ -695,7 +709,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
     arguments[a] = malloc (sizeof (char) * PORTARG);
     if (arguments[a] == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): malloc error for debug level arg\n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error for debug level arg", rfc4938_config_get_node_id ());
         return;
     }
     sprintf (arguments[a], "-z%u", rfc4938_config_get_debug_level());
@@ -705,7 +719,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
     arguments[a] = malloc (sizeof (char) * PORTARG);
     if (arguments[a] == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): malloc error for credit grant amount arg\n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error for credit grant amount arg", rfc4938_config_get_node_id ());
         return;
     }
     sprintf (arguments[a], "-g%hu", rfc4938_config_get_credit_grant ());
@@ -715,7 +729,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
     arguments[a] = malloc (sizeof (char) * PORTARG);
     if (arguments[a] == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): malloc error for session timeout arg\n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error for session timeout arg", rfc4938_config_get_node_id ());
 
         return;
     }
@@ -726,7 +740,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
                            (strlen (ether_ntoa((struct ether_addr*)rfc4938_config_get_hwaddr())) + OPTLEN));
     if (arguments[a] == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): malloc error for eth addr mode arg\n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error for eth addr mode arg", rfc4938_config_get_node_id ());
         return;
     }
     sprintf (arguments[a], "-E%s", ether_ntoa((struct ether_addr*)rfc4938_config_get_hwaddr()));
@@ -738,7 +752,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
         arguments[a] = malloc (sizeof (char) * PORTARG);
         if (arguments[a] == NULL)
         {
-            LOGGER(LOG_ERR,"(%u): malloc error for broadcast mode arg\n", rfc4938_config_get_node_id ());
+            LOGGER(LOG_ERR,"(%u): malloc error for broadcast mode arg", rfc4938_config_get_node_id ());
             return;
         }
         sprintf (arguments[a], "-B");
@@ -751,7 +765,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
         arguments[a] = malloc (sizeof (char) * PORTARG);
         if (arguments[a] == NULL)
         {
-            LOGGER(LOG_ERR,"(%u): malloc error for lcp echo pong mode arg\n", rfc4938_config_get_node_id ());
+            LOGGER(LOG_ERR,"(%u): malloc error for lcp echo pong mode arg", rfc4938_config_get_node_id ());
             return;
         }
         sprintf (arguments[a], "-L");
@@ -762,7 +776,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
     arguments[a] = malloc (sizeof (char) * PATHLEN);
     if (arguments[a] == NULL)
     {
-        LOGGER(LOG_ERR,"(%u): malloc error for log file arg\n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR,"(%u): malloc error for log file arg", rfc4938_config_get_node_id ());
         return;
     }
     sprintf (arguments[a], "-D%s/pppoe_%hu_%hu.log", log_path, rfc4938_config_get_node_id(), nbr->neighbor_id);
@@ -770,10 +784,10 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
 
     arguments[a] = NULL;
 
-    LOGGER(LOG_INFO, "(%u): Creating child pppoe session with params:\n", rfc4938_config_get_node_id ());
+    LOGGER(LOG_INFO, "(%u): Creating child pppoe session with params:", rfc4938_config_get_node_id ());
     for (i = 0; i < a; i++)
     {
-        LOGGER(LOG_INFO, ":%s\n", arguments[i]);
+        LOGGER(LOG_INFO, ":%s", arguments[i]);
     }
 
     pid = fork ();
@@ -786,7 +800,7 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
         break;
 
     case -1:                   /* error */
-        LOGGER(LOG_ERR,"(%u): error, fork failed with error: %s for nbr %u\n",
+        LOGGER(LOG_ERR,"(%u): error, fork failed with error: %s for nbr %u",
                              rfc4938_config_get_node_id (), strerror (errno), nbr->neighbor_id);
         break;
 
@@ -800,11 +814,11 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
 
         if(write (rfc4938_io_signal_pipe[PIPE_WR_FD], "N", 1) < 0)
         {
-            LOGGER(LOG_ERR,"(%u): error, faled to write to signal pipe,  error: %s\n",
+            LOGGER(LOG_ERR,"(%u): error, faled to write to signal pipe,  error: %s",
                                  rfc4938_config_get_node_id (), strerror (errno));
         }
 
-        LOGGER(LOG_INFO, "(%u): Child process created ID: %d for nbr %u, total children %d\n",
+        LOGGER(LOG_INFO, "(%u): Child process created ID: %d for nbr %u, total children %d",
                           rfc4938_config_get_node_id (), nbr->child_pid, nbr->neighbor_id,
                           rcf4938_numChildren);
         break;
@@ -829,7 +843,7 @@ rfc4938_neighbor_cleanup_children ()
     int status;
     int count = 0;
 
-    LOGGER(LOG_INFO, "(%u): checking our %d child(ren)\n",
+    LOGGER(LOG_INFO, "(%u): checking our %d child(ren)",
                      rfc4938_config_get_node_id (), rcf4938_numChildren);
 
     while (1)
@@ -840,7 +854,7 @@ rfc4938_neighbor_cleanup_children ()
         {
             if (WIFEXITED (status) || WIFSIGNALED(status))
             {
-                LOGGER(LOG_INFO, "(%u): pppoe child %d terminated %s\n",
+                LOGGER(LOG_INFO, "(%u): pppoe child %d terminated %s",
                                  rfc4938_config_get_node_id (),
                                  pid, (WEXITSTATUS (status) == 0) ? "cleanly" : "unexpectedly");
 
@@ -862,7 +876,7 @@ rfc4938_neighbor_cleanup_children ()
         }
     }
 
-    LOGGER(LOG_INFO, "(%u): cleaned up %d child(ren)\n",
+    LOGGER(LOG_INFO, "(%u): cleaned up %d child(ren)",
                      rfc4938_config_get_node_id (), count);
 }
 
@@ -876,12 +890,12 @@ rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr,
 
     if (nbr == NULL)
     {
-        LOGGER(LOG_ERR, "(%u): Error NULL nbr info\n", rfc4938_config_get_node_id ());
+        LOGGER(LOG_ERR, "(%u): Error NULL nbr info", rfc4938_config_get_node_id ());
 
         return;
     }
 
-    LOGGER(LOG_INFO, "(%u): nbr %hu, cmd %hu\n", rfc4938_config_get_node_id (), nbr->neighbor_id, cmdSRC);
+    LOGGER(LOG_INFO, "(%u): nbr %hu, cmd %hu", rfc4938_config_get_node_id (), nbr->neighbor_id, cmdSRC);
 
     if(cmdSRC != CMD_SRC_SELF && cmdSRC != CMD_SRC_CHILD)
     {
@@ -891,7 +905,7 @@ rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr,
 
             if (p2buffer == NULL)
             {
-                LOGGER(LOG_ERR,"(%u): malloc error \n",
+                LOGGER(LOG_ERR,"(%u): malloc error",
                         rfc4938_config_get_node_id ());
 
                 return;
@@ -899,7 +913,7 @@ rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr,
 
             if ((buflen = rfc4938_ctl_format_session_stop (u32seqnum++, p2buffer)) != SIZEOF_CTL_SESSION_STOP)
             {
-                LOGGER(LOG_ERR,"(%u): format error \n",
+                LOGGER(LOG_ERR,"(%u): format error",
                        rfc4938_config_get_node_id ());
 
                 free (p2buffer);
@@ -907,7 +921,7 @@ rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr,
                 return;
             }
 
-            LOGGER(LOG_INFO, "(%u): neighbor %u state is %s, sending termination to child, seqnum %u\n",
+            LOGGER(LOG_INFO, "(%u): neighbor %u state is %s, sending termination to child, seqnum %u",
                             rfc4938_config_get_node_id (),
                             nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state), u32seqnum - 1);
 
@@ -918,7 +932,7 @@ rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr,
         }
         else
         {
-            LOGGER(LOG_INFO, "(%u): neighbor %u state is %s, skip sending termination to child\n",
+            LOGGER(LOG_INFO, "(%u): neighbor %u state is %s, skip sending termination to child",
                              rfc4938_config_get_node_id (),
                              nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
         }
@@ -929,7 +943,7 @@ rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr,
        cmdSRC == CMD_SRC_PEER ||
        cmdSRC == CMD_SRC_CHILD)
     {
-        LOGGER(LOG_INFO, "(%u): neighbor %u state is %s, sending termination to transport\n",
+        LOGGER(LOG_INFO, "(%u): neighbor %u state is %s, sending termination to transport",
                           rfc4938_config_get_node_id (),
                           nbr->neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
 
@@ -945,7 +959,7 @@ rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr,
 
         if (p2buffer == NULL)
         {
-            LOGGER(LOG_ERR,"(%u): malloc error \n", rfc4938_config_get_node_id ());
+            LOGGER(LOG_ERR,"(%u): malloc error", rfc4938_config_get_node_id ());
 
             return;
         }
@@ -954,14 +968,14 @@ rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr,
                       rfc4938_config_get_node_id (),  // our id
                       p2buffer)) != SIZEOF_CTL_PEER_SESSION_TERMINATED)
         {
-            LOGGER(LOG_ERR,"(%u): format error \n", rfc4938_config_get_node_id ());
+            LOGGER(LOG_ERR,"(%u): format error", rfc4938_config_get_node_id ());
 
             free (p2buffer);
 
             return;
         }
 
-        LOGGER(LOG_INFO, "(%u): neighbor %u state is %s, sending termination to peer, seqnum %u\n",
+        LOGGER(LOG_INFO, "(%u): neighbor %u state is %s, sending termination to peer, seqnum %u",
                           rfc4938_config_get_node_id (),
                           nbr->neighbor_id, 
                           rfc4938_neighbor_status_to_string(nbr->nbr_session_state), 
@@ -973,30 +987,44 @@ rfc4938_neighbor_terminate_neighbor (rfc4938_neighbor_element_t * nbr,
         free (p2buffer);
     }
 
-    nbr->nbr_session_state = INACTIVE;
-    nbr->child_pid     = 0;
-    nbr->child_port    = 0;
-    nbr->session_id    = 0;
-    nbr->neighbor_pid  = 0;
-    nbr->last_seqnum   = 0;
-    nbr->missed_seqnum = 0;
+// XXX TODO
+    if(nbr->nbr_session_state == ACTIVE)
+      {
+        LOGGER(LOG_INFO,"(%u): set ACTIVE nbr entry %u to INACTIVE", 
+                rfc4938_config_get_node_id(), nbr->neighbor_id);
 
-    if(nbr->child_sock >= 0)
-    {
-        close(nbr->child_sock);
+        nbr->nbr_session_state = INACTIVE;
+      }
+    else
+     {
+        LOGGER(LOG_INFO,"(%u): clear %s nbr entry %u", 
+               rfc4938_config_get_node_id(), 
+               rfc4938_neighbor_status_to_string(nbr->nbr_session_state), 
+               nbr->neighbor_id);
 
-        nbr->child_sock = -1;
-    }
+       nbr->child_pid     = 0;
+       nbr->child_port    = 0;
+       nbr->session_id    = 0;
+       nbr->neighbor_pid  = 0;
+       nbr->last_seqnum   = 0;
+       nbr->missed_seqnum = 0;
+
+       if(nbr->child_sock >= 0)
+        {
+          close(nbr->child_sock);
+
+          nbr->child_sock = -1;
+        }
+     }
 
     if(write (rfc4938_io_signal_pipe[PIPE_WR_FD], "D", 1) < 0)
     {
-        LOGGER(LOG_ERR,"(%u): error, faled to write to signal pipe,  error: %s\n",
+        LOGGER(LOG_ERR,"(%u): error, faled to write to signal pipe,  error: %s",
                              rfc4938_config_get_node_id (), strerror (errno));
     }
     else
     {
-        LOGGER(LOG_INFO, "(%u): wrote 'D' to signal pipe\n",
-                             rfc4938_config_get_node_id ());
+        LOGGER(LOG_INFO, "(%u): wrote 'D' to signal pipe", rfc4938_config_get_node_id ());
     }
 }
 
@@ -1031,7 +1059,7 @@ rfc4938_get_neighbor_state (UINT32_t neighbor_id)
     {
         if (nbr->neighbor_id == neighbor_id)
         {
-            LOGGER(LOG_INFO, "(%u): nbr %u state is %s\n",
+            LOGGER(LOG_INFO, "(%u): nbr %u state is %s",
                               rfc4938_config_get_node_id (),
                                  neighbor_id, rfc4938_neighbor_status_to_string(nbr->nbr_session_state));
 

@@ -33,7 +33,7 @@
 *%FUNCTION: dumpHex
 *%ARGUMENTS:
 * fp -- file to dump to
-* buf -- buffer to dump
+* pkt_buf -- buffer to dump
 * len -- length of data
 *%RETURNS:
 * Nothing
@@ -41,7 +41,7 @@
 * Dumps buffer to fp in an easy-to-read format
 ***********************************************************************/
 void
-dumpHex (FILE * fp, unsigned char const *buf, int len)
+dumpHex (FILE * fp, unsigned char const *pkt_buf, int len)
 {
     int i;
     int base;
@@ -52,7 +52,7 @@ dumpHex (FILE * fp, unsigned char const *buf, int len)
     }
 
     /* do NOT dump PAP packets */
-    if (len >= 2 && buf[0] == 0xC0 && buf[1] == 0x23)
+    if (len >= 2 && pkt_buf[0] == 0xC0 && pkt_buf[1] == 0x23)
     {
         fprintf (fp, "(PAP Authentication Frame -- Contents not dumped)\n");
         return;
@@ -64,7 +64,7 @@ dumpHex (FILE * fp, unsigned char const *buf, int len)
         {
             if (i < len)
             {
-                fprintf (fp, "%02x ", (unsigned) buf[i]);
+                fprintf (fp, "%02x ", (unsigned) pkt_buf[i]);
             }
             else
             {
@@ -76,9 +76,9 @@ dumpHex (FILE * fp, unsigned char const *buf, int len)
         {
             if (i < len)
             {
-                if (isprint (buf[i]))
+                if (isprint (pkt_buf[i]))
                 {
-                    fprintf (fp, "%c", buf[i]);
+                    fprintf (fp, "%c", pkt_buf[i]);
                 }
                 else
                 {
@@ -97,7 +97,7 @@ dumpHex (FILE * fp, unsigned char const *buf, int len)
 /**********************************************************************
 *%FUNCTION: printHex
 *%ARGUMENTS:
-* buf -- buffer to dump
+* pkt_buf -- buffer to dump
 * len -- length of data
 *%RETURNS:
 * Nothing
@@ -105,53 +105,56 @@ dumpHex (FILE * fp, unsigned char const *buf, int len)
 * Prints buffer in an easy-to-read format
 ***********************************************************************/
 void
-printHex (unsigned char const *buf, int len)
+printHex (unsigned char const *pkt_buf, int pkt_len)
 {
     int i;
     int base;
 
-    if (buf == NULL)
+    int len = 0;
+    char buff[512] = {0};
+
+    if (pkt_buf == NULL)
     {
         return;
     }
 
-    if (len > BIGBUF)
+    if (pkt_len > BIGBUF)
     {
         return;
     }
 
     /* do NOT dump PAP packets */
-    if (len >= 2 && buf[0] == 0xC0 && buf[1] == 0x23)
+    if (pkt_len >= 2 && pkt_buf[0] == 0xC0 && pkt_buf[1] == 0x23)
     {
-        printf ("(PAP Authentication Frame -- Contents not dumped)\n");
+        len += snprintf(buff, sizeof(buff) - len, "(PAP Authentication Frame -- Contents not dumped)\n");
         return;
     }
 
-    for (base = 0; base < len; base += 16)
+    for (base = 0; base < pkt_len; base += 16)
     {
         for (i = base; i < base + 16; i++)
         {
-            if (i < len)
+            if (i < pkt_len)
             {
-                printf ("%02x ", (unsigned) buf[i]);
+                len += snprintf(buff, sizeof(buff) - len, "%02x ", (unsigned) pkt_buf[i]);
             }
             else
             {
-                printf ("   ");
+                len += snprintf(buff, sizeof(buff) - len, "   ");
             }
         }
-        printf ("  ");
+        len += snprintf(buff, sizeof(buff) - len, "  ");
         for (i = base; i < base + 16; i++)
         {
-            if (i < len)
+            if (i < pkt_len)
             {
-                if (isprint (buf[i]))
+                if (isprint (pkt_buf[i]))
                 {
-                    printf ("%c", buf[i]);
+                    len += snprintf(buff, sizeof(buff) - len, "%c", pkt_buf[i]);
                 }
                 else
                 {
-                    printf (".");
+                    len += snprintf(buff, sizeof(buff) - len, ".");
                 }
             }
             else
@@ -159,7 +162,7 @@ printHex (unsigned char const *buf, int len)
                 break;
             }
         }
-        printf ("\n");
+        len += snprintf(buff, sizeof(buff) - len, "\n");
     }
 }
 
@@ -285,8 +288,7 @@ dumpPacket (FILE * fp, PPPoEPacket * packet, char const *dir)
 void
 printPacket (PPPoEPacket * packet, char const *dir)
 {
-    int len = ntohs (packet->length);
-
+#if 0
     /* Sheesh... printing times is a pain... */
     struct timeval tv;
     time_t now;
@@ -301,61 +303,65 @@ printPacket (PPPoEPacket * packet, char const *dir)
     lt = localtime (&now);
     strftime (timebuf, 256, "%H:%M:%S", lt);
     printf ("%s.%03d %s PPPoE ", timebuf, millisec, dir);
+#endif
 
+    char buff[512] = {0};
+
+    int len = 0;
     if (type == Eth_PPPOE_Discovery)
     {
-        printf ("Discovery (%x) ", (unsigned) type);
+        len += snprintf(buff, sizeof(buff) - len, "Discovery (%x) ", (unsigned) type);
     }
     else if (type == Eth_PPPOE_Session)
     {
-        printf ("Session (%x) ", (unsigned) type);
+        len += snprintf(buff, sizeof(buff) - len, "Session (%x) ", (unsigned) type);
     }
     else
     {
-        printf ("Unknown (%x) ", (unsigned) type);
+        len += snprintf(buff, sizeof(buff) - len, "Unknown (%x) ", (unsigned) type);
     }
 
     switch (packet->code)
     {
     case CODE_PADI:
-        printf ("PADI ");
+        len += snprintf(buff, sizeof(buff) - len, "PADI ");
         break;
     case CODE_PADO:
-        printf ("PADO ");
+        len += snprintf(buff, sizeof(buff) - len, "PADO ");
         break;
     case CODE_PADR:
-        printf ("PADR ");
+        len += snprintf(buff, sizeof(buff) - len, "PADR ");
         break;
     case CODE_PADS:
-        printf ("PADS ");
+        len += snprintf(buff, sizeof(buff) - len, "PADS ");
         break;
     case CODE_PADT:
-        printf ("PADT ");
+        len += snprintf(buff, sizeof(buff) - len, "PADT ");
         break;
     case CODE_PADM:
-        printf ("PADM ");
+        len += snprintf(buff, sizeof(buff) - len, "PADM ");
         break;
     case CODE_PADC:
-        printf ("PADC ");
+        len += snprintf(buff, sizeof(buff) - len, "PADC ");
         break;
     case CODE_PADG:
-        printf ("PADG ");
+        len += snprintf(buff, sizeof(buff) - len, "PADG ");
         break;
     case CODE_PADQ:
-        printf ("PADQ ");
+        len += snprintf(buff, sizeof(buff) - len, "PADQ ");
         break;
     case CODE_PADN:
-        printf ("PADN ");
+        len += snprintf(buff, sizeof(buff) - len, "PADN ");
         break;
     case CODE_SESS:
-        printf ("SESS ");
+        len += snprintf(buff, sizeof(buff) - len, "SESS ");
         break;
     }
 
-    printf ("sess-id %d length %d\n", (int) ntohs (packet->session), len);
+    len += snprintf(buff, sizeof(buff) - len, "sess-id %d length %d\n", (int) ntohs (packet->session), len);
 
     /* Ugly... I apologize... */
-    printf ("SourceAddr %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx "
+    len += snprintf(buff, sizeof(buff) - len, "SourceAddr %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx "
             "DestAddr %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx\n",
             packet->eth_hdr.source[0],
             packet->eth_hdr.source[1],
@@ -369,6 +375,8 @@ printPacket (PPPoEPacket * packet, char const *dir)
             packet->eth_hdr.dest[3],
             packet->eth_hdr.dest[4],
             packet->eth_hdr.dest[5]);
+
+    LOGGER(LOG_PKT("%s", buff);
 
     printHex (packet->payload, ntohs (packet->length));
 }

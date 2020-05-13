@@ -110,6 +110,32 @@ static int handle_ipcp_code_reject(PPPoEConnection *conn, PPPoEPacket *packet, P
 
 static UINT32_t u32seqnum = 0;
 
+static const char * code_to_string(UINT8_t code)
+{
+    switch(code)
+    {
+    case CODE_PADI:
+        return "PADI";
+    case CODE_PADO:
+        return "PADO";
+    case CODE_PADR:
+        return "PADR";
+    case CODE_PADS:
+        return "PADS";
+    case CODE_PADT:
+        return "PADT";
+    case CODE_PADG:
+        return "PADG";
+    case CODE_PADC:
+        return "PADC";
+    case CODE_PADQ:
+        return "PADQ";
+    case CODE_SESS:
+        return "SESS";
+    default:
+        return "?";
+    }
+}
 
 int
 handle_session_packet_to_peer (PPPoEConnection * conn, PPPoEPacket * packet, UINT16_t credits)
@@ -187,7 +213,7 @@ send_session_packet_to_peer (PPPoEConnection * conn, PPPoEPacket * packet, UINT1
 
 
 int
-send_packet_to_ac (PPPoEConnection * conn, PPPoEPacket * packet, UINT16_t proto)
+send_packet_to_conn (PPPoEConnection * conn, PPPoEPacket * packet, UINT16_t proto)
 {
     int retval;
     int buflen;
@@ -218,9 +244,14 @@ send_packet_to_ac (PPPoEConnection * conn, PPPoEPacket * packet, UINT16_t proto)
         return -1;
     }
 
-    LOGGER(LOG_PKT, "(%u,%hu): sending to parent, dst %u, seqnum %u, len %hu, proto 0x%04hx\n",
-                        conn->peer_id, conn->sessionId, conn->peer_id,
-                        u32seqnum, buflen, proto);
+    LOGGER(LOG_PKT, "(%u,%hu): sending to parent, dst %u, seqnum %u, code %s, len %hu, proto 0x%04hx\n",
+           conn->peer_id, 
+           conn->sessionId,
+           conn->peer_id,
+           u32seqnum, 
+           code_to_string(packet->pppoe_hdr.code),
+           buflen,
+           proto);
 
     if((retval = send_packet_to_parent (conn, p2buffer, buflen)) == 0)
     {
@@ -580,7 +611,7 @@ send_packet_to_peer (PPPoEConnection * conn, void *p2buffer, int buflen)
     LOGGER(LOG_PKT, "(%u,%hu): sending packet len %d\n",
                         conn->peer_id, conn->sessionId, buflen);
 
-    int z = send_udp_packet (conn, p2buffer, buflen);
+    const int z = send_udp_packet (conn, p2buffer, buflen);
 
     if (z < 0)
     {
@@ -597,7 +628,7 @@ send_packet_to_peer (PPPoEConnection * conn, void *p2buffer, int buflen)
 static int
 send_packet_to_parent (PPPoEConnection * conn, void *p2buffer, int buflen)
 {
-    int z = send_udp_packet (conn, p2buffer, buflen);
+    const int z = send_udp_packet (conn, p2buffer, buflen);
 
     if (z < 0)
     {
@@ -606,8 +637,13 @@ send_packet_to_parent (PPPoEConnection * conn, void *p2buffer, int buflen)
 
         return -1;
     }
+   else
+    {
+        LOGGER(LOG_ERR, "(%u,%hu): sending packet len %d\n",
+                           conn->peer_id, conn->sessionId, buflen);
 
-    return 0;
+        return 0;
+    }
 }
 
 
@@ -617,7 +653,6 @@ send_udp_packet (PPPoEConnection * conn, void *p2buffer, int buflen)
 {
     struct sockaddr_in dst_addr;
     socklen_t len_inet;
-    int z;
 
     if (conn == NULL)
     {
@@ -647,7 +682,7 @@ send_udp_packet (PPPoEConnection * conn, void *p2buffer, int buflen)
 
     len_inet = sizeof (dst_addr);
 
-    z = sendto (conn->udpIPCSocket, p2buffer, buflen, 0, (struct sockaddr *) &dst_addr, len_inet);
+    const int z = sendto (conn->udpIPCSocket, p2buffer, buflen, 0, (struct sockaddr *) &dst_addr, len_inet);
 
     if (z < 0)
     {
@@ -659,8 +694,6 @@ send_udp_packet (PPPoEConnection * conn, void *p2buffer, int buflen)
         LOGGER(LOG_INFO, "(%u,%hu): %s:%hu\n",
                            conn->peer_id, conn->sessionId,
                            inet_ntoa(dst_addr.sin_addr), conn->parent_port);
-
-
     }
 
     return z;
@@ -853,7 +886,7 @@ handle_session_data_from_peer (rfc4938_ctl_message_t * p2ctlmsg, PPPoEPacket * p
         check_for_remote_magic_number(conn, packet);
     }
 
-    consume_credits_and_send_frame_to_ac (conn, packet);
+    consume_credits_and_send_frame_to_conn (conn, packet);
 
     return 0;
 }
@@ -901,7 +934,7 @@ handle_frame_data (rfc4938_ctl_message_t * p2ctlmsg, PPPoEPacket * packet)
         LOGGER(LOG_PKT, "(%u,%hu): recv %d byte session msg\n",
                             conn->peer_id, conn->sessionId, len);
 
-        return handle_session_frame_from_ac (conn, (PPPoEPacket *) p2ctlmsg->ctl_frame_data_payload.data, len);
+        return handle_session_frame_from_conn (conn, (PPPoEPacket *) p2ctlmsg->ctl_frame_data_payload.data, len);
     }
     else
     {
@@ -1064,7 +1097,7 @@ static int handle_lcp_echo_req(PPPoEConnection *conn, PPPoEPacket *packet, PPPHe
 
             *p2magic = htonl(conn->peer_magic);
 
-            send_session_packet_to_ac(conn, packet);
+            send_session_packet_to_conn(conn, packet);
 
             return 0;
         }
@@ -1134,7 +1167,7 @@ static int handle_lcp_config_req(PPPoEConnection *conn, PPPoEPacket *packet, PPP
 
     p2ppp->code = PPP_CONFIG_ACK;
 
-    send_session_packet_to_ac(conn, packet);
+    send_session_packet_to_conn(conn, packet);
 
     UINT32_t *p2magic = get_lcp_config_magic_number(conn, p2ppp);
 
@@ -1148,7 +1181,7 @@ static int handle_lcp_config_req(PPPoEConnection *conn, PPPoEPacket *packet, PPP
 
     p2ppp->code = PPP_CONFIG_REQ;
 
-    send_session_packet_to_ac(conn, packet);
+    send_session_packet_to_conn(conn, packet);
 
     return 0;
 }
@@ -1198,7 +1231,7 @@ static int handle_lcp_terminate_req(PPPoEConnection *conn, PPPoEPacket *packet, 
 
     p2ppp->code = PPP_TERMINATE_ACK;
 
-    send_session_packet_to_ac(conn, packet);
+    send_session_packet_to_conn(conn, packet);
 
     return 0;
 }
@@ -1240,7 +1273,7 @@ static int handle_ipcp_config_req(PPPoEConnection *conn, PPPoEPacket *packet, PP
 
     p2ppp->code = PPP_CONFIG_ACK;
 
-    send_session_packet_to_ac(conn, packet);
+    send_session_packet_to_conn(conn, packet);
 
     if(p2opt->opt == PPP_IPCP_OPT_IP_ADDRESS)
     {
@@ -1254,7 +1287,7 @@ static int handle_ipcp_config_req(PPPoEConnection *conn, PPPoEPacket *packet, PP
 
     p2ppp->code = PPP_CONFIG_REQ;
 
-    send_session_packet_to_ac(conn, packet);
+    send_session_packet_to_conn(conn, packet);
 
     return 0;
 }
@@ -1304,7 +1337,7 @@ static int handle_ipcp_terminate_req(PPPoEConnection *conn, PPPoEPacket *packet,
 
     p2ppp->code = PPP_TERMINATE_ACK;
 
-    send_session_packet_to_ac(conn, packet);
+    send_session_packet_to_conn(conn, packet);
 
     return 0;
 }

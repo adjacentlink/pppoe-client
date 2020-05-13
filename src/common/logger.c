@@ -13,11 +13,11 @@ void logger(int lvl, const char * func, const char *fmt, ...)
          gettimeofday(&tv, NULL); 
          localtime_r(&tv.tv_sec, &tm); 
 
-         int len = snprintf(buff, sizeof(buff), "[%02u:%02u:%02u.%03lu][%d][%s]:", 
+         int len = snprintf(buff, sizeof(buff), "[%02u:%02u:%02u.%03lu][%06d][%s]:", 
                                   tm.tm_hour,      
                                   tm.tm_min,       
                                   tm.tm_sec,       
-                                  tv.tv_usec/1000, 
+                                  tv.tv_usec, 
                                   lvl,              
                                   func);
 

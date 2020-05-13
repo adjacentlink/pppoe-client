@@ -201,13 +201,13 @@ UINT16_t getEtherType(PPPoEPacket *packet);
 
 
 
-int handle_session_frame_from_ac (PPPoEConnection * conn, PPPoEPacket * packet, int len);
+int handle_session_frame_from_conn (PPPoEConnection * conn, PPPoEPacket * packet, int len);
 
-int consume_credits_and_send_frame_to_ac (PPPoEConnection * conn, PPPoEPacket * packet);
+int consume_credits_and_send_frame_to_conn (PPPoEConnection * conn, PPPoEPacket * packet);
 
-int send_session_packet_to_ac(PPPoEConnection *conn, PPPoEPacket *pkt);
+int send_session_packet_to_conn(PPPoEConnection *conn, PPPoEPacket *pkt);
 
-int send_discovery_packet_to_ac(PPPoEConnection *conn, PPPoEPacket *pkt);
+int send_discovery_packet_to_conn(PPPoEConnection *conn, PPPoEPacket *pkt);
 
 void handle_credit_grant(PPPoEConnection *conn, UINT16_t fcn, UINT16_t bcn);
 

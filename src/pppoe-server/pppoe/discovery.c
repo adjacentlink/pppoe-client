@@ -300,6 +300,8 @@ sendPADI(PPPoEConnection *conn)
         }
     }
 
+    memset(&packet, 0x0, sizeof(packet));
+
     /* Set destination to Ethernet broadcast address */
     memset(packet.ethHdr.h_dest, 0xFF, ETH_ALEN);
     memcpy(packet.ethHdr.h_source, conn->myEth, ETH_ALEN);
@@ -442,6 +444,7 @@ waitForPADO(PPPoEConnection *conn, int timeout)
             }
         }
 
+        memset(&packet, 0x0, sizeof(packet));
         /* Get the packet */
         receivePacket(conn->discoverySocket, &packet, &len);
 
@@ -542,6 +545,8 @@ sendPADR(PPPoEConnection *conn)
     }
     plen = TAG_HDR_SIZE + namelen;
     CHECK_ROOM(cursor, packet.payload, plen);
+
+    memset(&packet, 0x0, sizeof(packet));
 
     memcpy(packet.ethHdr.h_dest, conn->peerEth, ETH_ALEN);
     memcpy(packet.ethHdr.h_source, conn->myEth, ETH_ALEN);
@@ -699,6 +704,8 @@ waitForPADS(PPPoEConnection *conn, int timeout)
                 return;
             }
         }
+ 
+        memset(&packet, 0x0, sizeof(packet));
 
         /* Get the packet */
         receivePacket(conn->discoverySocket, &packet, &len);

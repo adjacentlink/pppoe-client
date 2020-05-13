@@ -196,6 +196,8 @@ sessionDiscoveryPacket(PPPoEConnection *conn)
     PPPoEPacket packet;
     int len;
 
+    memset(&packet, 0x0, sizeof(packet));
+
     if (receivePacket(conn->discoverySocket, &packet, &len) < 0)
     {
         LOGGER(LOG_ERR, "Error in receivePacket");
@@ -342,6 +344,8 @@ sendPADG (PPPoEConnection *conn, UINT16_t credits)
         return;
     }
 
+    memset(&packet, 0x0, sizeof(packet));
+
     memcpy(packet.ethHdr.h_dest, conn->peerEth, ETH_ALEN);
     memcpy(packet.ethHdr.h_source, conn->myEth, ETH_ALEN);
 
@@ -408,6 +412,8 @@ processRfc4938Packet(PPPoEConnection *conn)
     int size, plen;
     PPPoEPacket packet;
     UINT16_t credits;
+
+    memset(&packet, 0x0, sizeof(packet));
 
     /* grab the packet */
     if ((size = recv(conn->rfc4938Socket, &packet, sizeof(PPPoEPacket), 0)) < 0)
@@ -623,6 +629,8 @@ session(PPPoEConnection *conn)
         maxFD = conn->discoverySocket;
     }
     maxFD++;
+
+    memset(&packet, 0x0, sizeof(packet));
 
     /* Fill in the constant fields of the packet to save time */
     memcpy(packet.ethHdr.h_dest, conn->peerEth, ETH_ALEN);
@@ -1037,7 +1045,7 @@ main(int argc, char *argv[])
 #ifdef DEBUGGING_ENABLED
         case 'D':
             switchToRealID();
-            conn.debugFile = fopen(optarg, "w");
+            conn.debugFile = fopen(optarg, "a");
             switchToEffectiveID();
             if (!conn.debugFile)
             {
@@ -1046,8 +1054,7 @@ main(int argc, char *argv[])
             }
             LoggerFp = conn.debugFile;
 
-            fprintf(conn.debugFile, "rp-pppoe-%s\n", VERSION);
-            fflush(conn.debugFile);
+            LOGGER(LOG_INFO, "XXXXXXXXX BEGIN XXXXXXXX");
             break;
 #endif
 #ifdef SUPPORT_RFC4938
@@ -1370,6 +1377,8 @@ asyncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
     int type;
 #endif
 
+    memset(&packet, 0x0, sizeof(packet));
+
     if (receivePacket(sock, &packet, &len) < 0)
     {
         LOGGER(LOG_ERR, "Error in receivePacket\n");
@@ -1567,6 +1576,8 @@ syncReadFromEth(PPPoEConnection *conn, int sock, int clampMss)
 #ifdef USE_BPF
     int type;
 #endif
+
+    memset(&packet, 0x0, sizeof(packet));
 
     if (receivePacket(sock, &packet, &len) < 0)
     {

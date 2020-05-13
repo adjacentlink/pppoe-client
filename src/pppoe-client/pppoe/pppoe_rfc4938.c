@@ -403,6 +403,7 @@ sendPADG (PPPoEConnection * conn, UINT16_t grant_req)
         return;
     }
 
+    memset(&packet, 0x0, sizeof(packet));
     memcpy (packet.eth_hdr.dest, conn->peerEth, PPPOE_ETH_ALEN);
     memcpy (packet.eth_hdr.source, conn->myEth, PPPOE_ETH_ALEN);
 
@@ -465,7 +466,7 @@ sendPADG (PPPoEConnection * conn, UINT16_t grant_req)
 
     packet.pppoe_length = htons (plen);
 
-    send_discovery_packet_to_ac (conn, &packet);
+    send_discovery_packet_to_conn (conn, &packet);
 
     LOGGER(LOG_PKT, "(%u,%hu): sent PADG fcn:%hu (peer), pending_padc %hu, bcn:%hu (local), seq:0x%04hx, try %u\n",
                         conn->peer_id, conn->sessionId, fcn, conn->credits_pending_padc,
@@ -507,6 +508,7 @@ sendPADC (PPPoEConnection * conn, UINT16_t seq)
         return;
     }
 
+    memset(&packet, 0x0, sizeof(packet));
     memcpy (packet.eth_hdr.dest, conn->peerEth, PPPOE_ETH_ALEN);
     memcpy (packet.eth_hdr.source, conn->myEth, PPPOE_ETH_ALEN);
 
@@ -530,7 +532,7 @@ sendPADC (PPPoEConnection * conn, UINT16_t seq)
 
     packet.pppoe_length = htons (plen);
 
-    send_discovery_packet_to_ac (conn, &packet);
+    send_discovery_packet_to_conn (conn, &packet);
 
     LOGGER(LOG_PKT, "(%u,%hu): sent PADC fcn:%hu (peer), bcn:%hu (local), seq:0x%04hx\n",
                         conn->peer_id, conn->sessionId, fcn, bcn, seq);
@@ -712,6 +714,7 @@ sendPADQ (PPPoEConnection * conn, UINT16_t mdr, UINT8_t mdr_scalar,
         return;
     }
 
+    memset(&packet, 0x0, sizeof(packet));
     memcpy (packet.eth_hdr.dest, conn->peerEth, PPPOE_ETH_ALEN);
     memcpy (packet.eth_hdr.source, conn->myEth, PPPOE_ETH_ALEN);
 
@@ -788,7 +791,7 @@ sendPADQ (PPPoEConnection * conn, UINT16_t mdr, UINT8_t mdr_scalar,
 
     packet.pppoe_length = htons (plen);
 
-    send_discovery_packet_to_ac (conn, &packet);
+    send_discovery_packet_to_conn (conn, &packet);
 
     LOGGER(LOG_PKT, "(%u,%hu): sent PADQ packet with mdr:%hu cdr:%hu latency:%hu, resources %hhu, rlq %hhu",
                         conn->peer_id, conn->sessionId, mdr, cdr, latency, resources, rlq);

@@ -46,7 +46,7 @@ extern int  send_session_up (PPPoEConnection * conn);
 
 extern int  handle_session_packet_to_peer(PPPoEConnection *conn, PPPoEPacket *packet, UINT16_t credits);
 extern int  send_session_packet_to_peer(PPPoEConnection *conn, PPPoEPacket *packet, UINT16_t credits);
-extern int  send_packet_to_ac(PPPoEConnection *conn, PPPoEPacket *packet, UINT16_t proto);
+extern int  send_packet_to_conn(PPPoEConnection *conn, PPPoEPacket *packet, UINT16_t proto);
 extern int  recv_packet_from_parent(PPPoEConnection *conn, PPPoEPacket *packet);
 
 #endif

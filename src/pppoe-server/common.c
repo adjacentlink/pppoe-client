@@ -557,6 +557,8 @@ sendPADT(PPPoEConnection *conn, char const *msg)
     PPPoEPacket packet;
     unsigned char *cursor = packet.payload;
 
+    memset(&packet, 0x0, sizeof(packet));
+
     UINT16_t plen = 0;
 
     /* Do nothing if no session established yet */

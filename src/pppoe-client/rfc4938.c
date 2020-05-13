@@ -124,6 +124,10 @@ main (int argc, char *argv[])
       {
         fprintf(stderr, "could not open client log file '%s', %s\n", buff, strerror(errno));
       }
+    else
+      {
+        LOGGER(LOG_INFO, "XXXXXXXXX BEGIN XXXXXXXX");
+      }
 #endif
 
     if (filename[0] == 0)
@@ -147,13 +151,6 @@ main (int argc, char *argv[])
         LOGGER(LOG_ERR,"error: could not find NODE_ID in connfig file %s\n", filename);
 
         return (-1);
-    }
-
-    if (pipe(rfc4938_io_signal_pipe) < 0)
-    {
-        LOGGER(LOG_ERR,"%s: Could NOT create pipe %s\n", argv[0], strerror(errno));
-
-        return -1;
     }
 
     if (pipe(rfc4938_io_signal_pipe) < 0)

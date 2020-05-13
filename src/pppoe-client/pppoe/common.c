@@ -318,12 +318,6 @@ sendPADTandExit (PPPoEConnection * conn, char const *msg, int tellParent)
 
     UINT16_t plen = 0;
 
-    if(tellParent)
-    {
-        /* Inform rfc4938 process that session is closing */
-        send_child_session_terminated (conn);
-    }
-
     /* Do nothing if no session established yet */
     if (!conn->sessionId)
     {
@@ -331,6 +325,8 @@ sendPADTandExit (PPPoEConnection * conn, char const *msg, int tellParent)
 
         goto do_exit;
     }
+
+    memset(&packet, 0x0, sizeof(packet));
 
     memcpy (packet.eth_hdr.dest, conn->peerEth, PPPOE_ETH_ALEN);
     memcpy (packet.eth_hdr.source, conn->myEth, PPPOE_ETH_ALEN);
@@ -397,16 +393,23 @@ sendPADTandExit (PPPoEConnection * conn, char const *msg, int tellParent)
 
     packet.pppoe_length = htons (plen);
 
-    send_discovery_packet_to_ac (conn, &packet);
+    send_discovery_packet_to_conn (conn, &packet);
 
     LOGGER(LOG_PKT, "(%u,%hu,%d): sent PADT (%s)\n",
            conn->peer_id, conn->sessionId, conn->host_id, msg);
 
+    if(tellParent)
+    {
+        LOGGER(LOG_INFO, "(%u): inform parent \n", conn->peer_id);
+        /* Inform rfc4938 process that session is closing */
+        send_child_session_terminated (conn);
+    }
+
 do_exit:
-    LOGGER(LOG_INFO, "(%u,%hu): Host Id %u (0x%x) will terminate in 5 sec\n",
+    LOGGER(LOG_INFO, "(%u,%hu): Host Id %u (0x%x) will terminate in 1 sec\n",
                        conn->peer_id, conn->sessionId, conn->host_id, conn->host_id);
 
-    sleep(5);
+    sleep(1);
 
     if(conn->udpIPCSocket)
     {
@@ -430,7 +433,7 @@ do_exit:
 void
 sendPADTf (PPPoEConnection * conn, char const *fmt, ...)
 {
-    char msg[512];
+    char msg[512] = {0};
     va_list ap;
 
     va_start (ap, fmt);

@@ -45,12 +45,12 @@ PPPoEConnection *Connection = NULL;     /* Must be global -- used
                                            in signal handler */
 
 
-static int handle_discovery_frame_from_ac (PPPoEConnection * conn, PPPoEPacket * packet, int len);
+static int handle_discovery_frame_from_conn (PPPoEConnection * conn, PPPoEPacket * packet, int len);
 
 static void initSessionPacket(PPPoEConnection * conn, PPPoEPacket * packet);
 
 int
-consume_credits_and_send_frame_to_ac (PPPoEConnection * conn, PPPoEPacket * packet)
+consume_credits_and_send_frame_to_conn (PPPoEConnection * conn, PPPoEPacket * packet)
 {
     UINT16_t consumed_credits = 0;
 
@@ -94,12 +94,12 @@ consume_credits_and_send_frame_to_ac (PPPoEConnection * conn, PPPoEPacket * pack
                         conn->peer_id, conn->sessionId, required_credits, consumed_credits,
                         conn->local_credits);
 
-    return send_session_packet_to_ac (conn, packet);
+    return send_session_packet_to_conn (conn, packet);
 }
 
 
 static int
-handle_discovery_frame_from_ac (PPPoEConnection * conn, PPPoEPacket * packet, int len)
+handle_discovery_frame_from_conn (PPPoEConnection * conn, PPPoEPacket * packet, int len)
 {
     /* Check length */
     if ((int) (ntohs (packet->pppoe_length) + ETH_PPPOE_OVERHEAD) != len)
@@ -306,7 +306,7 @@ doSession (PPPoEConnection * conn)
                 LOGGER(LOG_PKT, "(%u,%hu): parse result %d, frame has discovery info \n",
                                     conn->peer_id, conn->sessionId, result);
 
-                handle_discovery_frame_from_ac (conn, &packet, result);
+                handle_discovery_frame_from_conn (conn, &packet, result);
 
                 initSessionPacket(conn, &packet);
             }
@@ -561,6 +561,10 @@ main (int argc, char *argv[])
             {
                 fprintf(stderr, "could not open child log file '%s', %s\n", optarg, strerror(errno));
             }
+            else
+            {
+              LOGGER(LOG_INFO, "XXXXXXXXX BEGIN XXXXXXXX");
+            }
         break;
 
         default:
@@ -693,7 +697,7 @@ rp_fatal (char const *str)
 }
 
 int
-handle_session_frame_from_ac (PPPoEConnection * conn, PPPoEPacket * packet, int len)
+handle_session_frame_from_conn (PPPoEConnection * conn, PPPoEPacket * packet, int len)
 {
     /* Check length */
     if ((int) (ntohs (packet->pppoe_length) + ETH_PPPOE_OVERHEAD) != len)

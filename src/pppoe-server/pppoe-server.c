@@ -743,6 +743,7 @@ processPADI(Interface *ethif, PPPoEPacket *packet, int len __attribute__((unused
     cookie.length = htons(COOKIE_LEN);
     genCookie(packet->ethHdr.h_source, myAddr, CookieSeed, cookie.payload);
 
+    memset(&pado, 0x0, sizeof(pado));
     /* Construct a PADO packet */
     memcpy(pado.ethHdr.h_dest, packet->ethHdr.h_source, ETH_ALEN);
     memcpy(pado.ethHdr.h_source, myAddr, ETH_ALEN);
@@ -912,6 +913,7 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len __attribute__((unused
     unsigned char *myAddr = ethif->mac;
     unsigned slen = 0;
     char const *serviceName = NULL;
+
 
     LOGGER(LOG_INFO, "len %d", len);
 
@@ -1112,6 +1114,7 @@ processPADR(Interface *ethif, PPPoEPacket *packet, int len __attribute__((unused
        Start a new session to stop pppd from killing us! */
     setsid();
 
+    memset(&pads, 0x0, sizeof(pads));
     /* Send PADS and Start pppd */
     memcpy(pads.ethHdr.h_dest, packet->ethHdr.h_source, ETH_ALEN);
     memcpy(pads.ethHdr.h_source, myAddr, ETH_ALEN);
@@ -1637,6 +1640,10 @@ main(int argc, char **argv)
      {
        fprintf(stderr, "could not open server log file '%s', %s\n", buff, strerror(errno));
      }
+    else
+      {
+        LOGGER(LOG_INFO, "XXXXXXXXX BEGIN XXXXXXXX");
+      }
 #endif
 
 #ifdef HAVE_LICENSE
@@ -1996,6 +2003,8 @@ serverProcessPacket(Interface *i)
     PPPoEPacket packet;
     int sock = i->sock;
 
+    memset(&packet, 0x0, sizeof(packet));
+
     if (receivePacket(sock, &packet, &len) < 0)
     {
         return;
@@ -2075,7 +2084,8 @@ sendErrorPADS(int sock,
     UINT16_t plen;
     PPPoETag err;
     int elen = strlen(errorMsg);
-
+  
+    memset(&pads, 0x0, sizeof(pads));
     memcpy(pads.ethHdr.h_dest, dest, ETH_ALEN);
     memcpy(pads.ethHdr.h_source, source, ETH_ALEN);
     pads.ethHdr.h_proto = htons(Eth_PPPOE_Discovery);
@@ -2484,6 +2494,8 @@ CoordinationHandler(EventSelector *es __attribute__((unused)),
     int index, len;
     PPPoEPacket packet;
 
+    memset(&packet, 0x0, sizeof(packet));
+
     /* Recieve a packet and do some basic error checking */
     if (receivePacket(fd, &packet, &len) < 0)
     {
@@ -2790,6 +2802,8 @@ sendHURLorMOTM(PPPoEConnection *conn, char const *url, UINT16_t tag)
     {
         tag = TAG_MOTM;
     }
+
+    memset(&packet, 0x0, sizeof(packet));
 
     memcpy(packet.ethHdr.h_dest, conn->peerEth, ETH_ALEN);
     memcpy(packet.ethHdr.h_source, conn->myEth, ETH_ALEN);

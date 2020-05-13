@@ -333,38 +333,33 @@ rfc4938_io_handle_signal_event ()
 
     if (read (rfc4938_io_signal_pipe[PIPE_RD_FD], &signal_code, sizeof(signal_code)) != sizeof(signal_code))
     {
-        LOGGER(LOG_ERR,"rfc4938_io_handle_signal_event(): Could NOT read from pipe\n");
+        LOGGER(LOG_ERR,"Could NOT read from pipe\n");
 
         return;
     }
     else
     {
-        LOGGER(LOG_INFO, "rfc4938_io_handle_signal_event(): read signal code [%c] read from pipe\n", signal_code);
+        LOGGER(LOG_INFO, "read signal code [%c] read from pipe\n", signal_code);
     }
 
     switch (signal_code)
     {
-    /* child */
-    case 'C':
-    {
+      /* child */
+      case 'C':
         rfc4938_neighbor_cleanup_children();
-    }
-    break;
+      break;
 
-    /* terminate */
-    case 'T':
-    {
+      /* terminate */
+      case 'T':
         rfc4938_parser_cli_terminate_session (0, 0);
 
         terminated = 1;
-    }
-    break;
+      break;
 
-    /* deleted entry */
-    case 'D':
-    {
+      /* deleted entry */
+      case 'D':
         // no op
-    } break;
+      break;
     }
 }
 

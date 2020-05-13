@@ -89,7 +89,6 @@ struct pppoehdr
 #define pppoe_session pppoe_hdr.session
 #define pppoe_length  pppoe_hdr.length
 
-
 /* A PPPoE Packet, including Ethernet headers */
 typedef struct PPPoEPacketStruct
 {

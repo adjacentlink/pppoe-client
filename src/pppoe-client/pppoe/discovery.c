@@ -297,6 +297,8 @@ sendPADI (PPPoEConnection * conn)
         }
     }
 
+    memset(&packet, 0x0, sizeof(packet));
+
     /* Set destination to Ethernet broadcast address */
     memset (packet.eth_hdr.dest, 0xFF, PPPOE_ETH_ALEN);
     memcpy (packet.eth_hdr.source, conn->myEth, PPPOE_ETH_ALEN);
@@ -348,7 +350,7 @@ sendPADI (PPPoEConnection * conn)
 
     packet.pppoe_length = htons (plen);
 
-    send_discovery_packet_to_ac (conn, &packet);
+    send_discovery_packet_to_conn (conn, &packet);
 }
 
 /**********************************************************************
@@ -375,6 +377,7 @@ waitForPADO (PPPoEConnection * conn, int timeout)
 
     const int endtime = time(NULL) + timeout;
 
+    memset(&packet, 0x0, sizeof(packet));
     do
     {
         int r;
@@ -529,6 +532,8 @@ sendPADR (PPPoEConnection * conn)
     plen = TAG_HDR_SIZE + namelen;
     CHECK_ROOM (cursor, packet.payload, plen);
 
+    memset(&packet, 0x0, sizeof(packet));
+
     memcpy (packet.eth_hdr.dest, conn->peerEth, PPPOE_ETH_ALEN);
     memcpy (packet.eth_hdr.source, conn->myEth, PPPOE_ETH_ALEN);
 
@@ -616,7 +621,7 @@ sendPADR (PPPoEConnection * conn)
 
     packet.pppoe_length = htons (plen);
 
-    send_discovery_packet_to_ac (conn, &packet);
+    send_discovery_packet_to_conn (conn, &packet);
 }
 
 /**********************************************************************
@@ -639,6 +644,8 @@ waitForPADS (PPPoEConnection * conn, int timeout)
     do
     {
         int r;
+
+        memset(&packet, 0x0, sizeof(packet));
 
         if(timeout > 0)
         {

@@ -418,7 +418,7 @@ int PPPoETransport::getResources_i(const EMANE::DoubleSeconds & totalBandWidthCo
      result = 100;
    }
 
-  LOGGER(LOG_INFO, "(%hu): consumption %64.lf sec, interval %64.lf sec, result %d\n", 
+  LOGGER(LOG_INFO, "(%hu): consumption %6.4lf sec, interval %6.4lf sec, result %d\n", 
                       id_, 
                       totalBandWidthConsumption.count(), 
                       interval.count(), 
