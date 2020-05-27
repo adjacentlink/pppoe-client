@@ -39,6 +39,9 @@
 #include "rfc4938_io.h"
 
 #include <sched.h>
+#include <unistd.h>
+#include <getopt.h>
+#include <signal.h>
 
 /* rfc4938 usage information */
 static char rfc4938_usage[] =

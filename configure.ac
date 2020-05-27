@@ -55,7 +55,7 @@ PKG_CHECK_MODULES([libpcre], libpcre)
 PKG_CHECK_MODULES([libuuid], uuid)
 
 # compiler options
-CFLAGS="$CFLAGS -W -Wall -g3 -O0 -Wformat"
+CFLAGS="$CFLAGS -W -Wall -g3 -O0 -Wformat -std=c99"
 
 # Checks for libraries.
 # Saving original cpp and ld flags

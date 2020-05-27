@@ -39,6 +39,7 @@
 
 #include "rfc4938_types.h"
 #include <unistd.h>
+#include <sys/types.h>
 
 #ifndef LNLEN
 #define LNLEN ( 100 )

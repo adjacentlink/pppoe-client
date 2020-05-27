@@ -34,6 +34,8 @@
 #include "rfc4938_neighbor_manager.h"
 
 #include <sys/types.h>
+#include <sys/time.h>
+#include <sys/select.h>
 #include <unistd.h>
 
 int rfc4938_io_send_udp_packet(char *ip, UINT16_t port, const void *p2buffer, int buflen);
