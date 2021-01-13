@@ -58,7 +58,7 @@ int rfc4938_io_open_vif(const char *ifname,  UINT8_t *hwaddr);
 
 int rfc4938_io_open_interface(char const *ifname, UINT16_t type, unsigned char *hwaddr);
 
-int rfc4938_io_signal_pipe[2];
+extern int rfc4938_io_signal_pipe[2];
 
 int rfc4938_io_get_udp_socket(int req_port, int * real_port);
 
