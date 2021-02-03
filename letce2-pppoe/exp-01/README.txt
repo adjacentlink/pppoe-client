@@ -17,4 +17,3 @@ nobsdcomp
 nopcomp
 ipcp-accept-local
 ipcp-accept-remote
-~                                  

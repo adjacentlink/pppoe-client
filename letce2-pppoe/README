@@ -32,13 +32,30 @@ The output of `letce2 lxc build` is a directory for every node defined
 in the experiment. For 10 nodes, this results in 10 node directories:
 `node-1` through `node-10`, and one server directory: `host`.
 
+At a minimum you will need to install emane and install the rfc4938 applications.
+
+At the project top level run:
+
+./autogen.sh && ./configure --prefix=/tmp/pppoe && make install
+
+will install:
+rfc4938client  rfc4938ctl  rfc4938pppoe  rfc4938pppoes  rfc4938server
+to /tmp/ppope/sbin
+
 # Experiment Start and Stop
 
 An experiment can be run with the `letce2 lxc start` command:
 
 letce2 lxc start
 
-then ssh 10.99.0.1 aka node-1/radio-1 
+sudo lxc-ls -f
+NAME     STATE   AUTOSTART GROUPS IPV4                 IPV6 UNPRIVILEGED 
+radio-1  RUNNING 0         -      10.98.1.1, 10.99.0.1 -    false        
+radio-2  RUNNING 0         -      10.98.2.1, 10.99.0.2 -    false        
+router-1 RUNNING 0         -      10.98.1.2, 10.99.1.1 -    false        
+router-2 RUNNING 0         -      10.98.2.2, 10.99.1.2 -    false  
+
+then ssh 10.99.0.1 or radio-1 
 
 client/radio side processes should look like this:
 
@@ -46,7 +63,7 @@ client/radio side processes should look like this:
    /tmp/pppoe/sbin/rfc4938client -f pppoe_client.conf
    /tmp/pppoe/sbin/rfc4938pppoe -U -Ilan0 -Srfc4938 -y2 -Y1 -R0 -r10001 -x0 -c50893 -z3 -g256 -T60 -E36:a6:10:67:70:9
 
-then ssh 10.99.1.1 aka host-1/router-1 
+then ssh 10.99.1.1 or router-1 
 
 server/router side process should look like this:
 
