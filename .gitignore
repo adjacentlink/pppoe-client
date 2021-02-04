@@ -1,5 +1,4 @@
 # configure output
-**/Makefile
 config.log
 config.status
 libtool
