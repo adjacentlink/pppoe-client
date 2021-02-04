@@ -104,6 +104,8 @@ PING 11.0.0.2 (11.0.0.2) 56(84) bytes of data.
 
 
 tcpdump of lan0 should yield something like this:
+# tcpdump -i lan0 -xxx pppoed
+
 
 17:52:29.846533 PPPoE PADI [Service-Name "rfc4938"] [Host-Uniq 0x0000005C]
 17:52:29.846709 PPPoE PADO [AC-Name "router-1"] [Service-Name "rfc4938"] [AC-Cookie 0xA30C619A3DF110F9EA4A608397216D3719000000] [Host-Uniq 0x0000005C]

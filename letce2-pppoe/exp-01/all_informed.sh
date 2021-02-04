@@ -1,4 +1,3 @@
- . /home/jgiovatto/Devel/environments/emane.env
 
 DEV=letce0
 

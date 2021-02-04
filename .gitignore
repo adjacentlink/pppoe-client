@@ -33,6 +33,7 @@ src/pppoe/Makefile.in
 *.o
 **/.deps
 **/.libs
+src/common/.dirstamp
 
 # rpm
 pppoe-client.spec
@@ -51,6 +52,10 @@ conf/rfc4938.conf
 scripts/rfc4938clientd
 
 # applications
+src/pppoe-client/.dirstamp
+src/pppoe-client/pppoe/rfc4938pppoe
+src/pppoe-client/rfc4938client
+src/pppoe-server/.dirstamp
+src/pppoe-server/pppoe/rfc4938pppoes
+src/pppoe-server/rfc4938server
 src/ctrl/rfc4938ctl
-src/pppoe/rfc4938pppoe
-src/rfc4938client
