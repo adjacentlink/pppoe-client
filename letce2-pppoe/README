@@ -49,13 +49,36 @@ An experiment can be run with the `letce2 lxc start` command:
 letce2 lxc start
 
 sudo lxc-ls -f
-NAME     STATE   AUTOSTART GROUPS IPV4                 IPV6 UNPRIVILEGED 
-radio-1  RUNNING 0         -      10.98.1.1, 10.99.0.1 -    false        
-radio-2  RUNNING 0         -      10.98.2.1, 10.99.0.2 -    false        
-router-1 RUNNING 0         -      10.98.1.2, 10.99.1.1 -    false        
-router-2 RUNNING 0         -      10.98.2.2, 10.99.1.2 -    false  
+NAME     STATE   AUTOSTART GROUPS IPV4      IPV6 UNPRIVILEGED 
+radio-1  RUNNING 0         -      10.99.0.1 -    false        
+radio-2  RUNNING 0         -      10.99.0.2 -    false        
+router-1 RUNNING 0         -      10.99.1.1 -    false        
+router-2 RUNNING 0         -      10.99.1.2 -    false  
 
-then ssh 10.99.0.1 or radio-1 
+
+add the following to your /etc/hosts file
+10.99.1.1       router1
+10.99.1.2       router2
+10.99.1.3       router3
+10.99.1.4       router4
+10.99.1.5       router5
+10.99.0.1       radio1
+10.99.0.2       radio2
+10.99.0.3       radio3
+10.99.0.4       radio4
+10.99.0.5       radio5
+
+
+add a default ssh key to login w/o a password
+
+in your .ssh directory
+run "ssh-keygen" and take all the defaults
+
+then "cat id_rsa.pub >> authorized_keys"
+
+now you should be able to ssh localhost or any lxc container w/o a password.
+
+ssh radio1 ps -ax
 
 client/radio side processes should look like this:
 
@@ -63,7 +86,7 @@ client/radio side processes should look like this:
    /tmp/pppoe/sbin/rfc4938client -f pppoe_client.conf
    /tmp/pppoe/sbin/rfc4938pppoe -U -Ilan0 -Srfc4938 -y2 -Y1 -R0 -r10001 -x0 -c50893 -z3 -g256 -T60 -E36:a6:10:67:70:9
 
-then ssh 10.99.1.1 or router-1 
+ssh router1 ps -ax
 
 server/router side process should look like this:
 
