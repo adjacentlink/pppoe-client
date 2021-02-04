@@ -42,6 +42,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <signal.h>
+#include <string.h>
 
 /* rfc4938 usage information */
 static char rfc4938_usage[] =
