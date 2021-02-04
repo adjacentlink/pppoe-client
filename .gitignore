@@ -3,10 +3,8 @@ config.log
 config.status
 libtool
 autom4te.cache
-Makefile.in
 aclocal.m4
 compile
-conf/Makefile.in
 config.guess
 config.sub
 configure
@@ -19,11 +17,21 @@ m4/ltsugar.m4
 m4/ltversion.m4
 m4/lt~obsolete.m4
 missing
+Makefile.in
+conf/Makefile.in
 scripts/Makefile.in
 src/Makefile.in
 src/ctrl/Makefile.in
 src/pppoe/Makefile.in
-
+Makefile
+conf/Makefile
+scripts/Makefile
+src/Makefile
+src/ctrl/Makefile
+src/pppoe-client/Makefile
+src/pppoe-client/pppoe/Makefile
+src/pppoe-server/Makefile
+src/pppoe-server/pppoe/Makefile
 
 
 # object files/dependencies
