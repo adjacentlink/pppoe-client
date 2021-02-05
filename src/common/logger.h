@@ -39,7 +39,7 @@ void logger(int lvl, const char * func, const char *fmt, ...) __attribute__((for
                                        _tv.tv_usec/1000, \
                                        lvl,              \
                                        __func__);        \
-             snprintf(_buff + _len, sizeof(_buff) + _len, fmt, ##__VA_ARGS__); \
+             snprintf(_buff + _len, sizeof(_buff) - _len, fmt, ##__VA_ARGS__); \
              fprintf(LoggerFp ? LoggerFp : stdout, "%s", _buff); \
            } \
          } while (0)
