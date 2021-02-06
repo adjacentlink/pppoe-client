@@ -26,9 +26,21 @@ void logger(int lvl, const char * func, const char *fmt, ...)
          len += vsnprintf(buff + len, sizeof(buff) - len - 1, fmt, arg);
          va_end(arg);
 
-         if(buff[len-1] != '\n')
+#undef PRINT_LOG_STDERR
+
+         if(buff[len-1] != '\n') {
+#ifdef PRINT_LOG_STDERR
+           fprintf(stderr, "%s\n", buff);
+#else
            fprintf(LoggerFp ? LoggerFp : stdout, "%s\n", buff); 
-         else
+#endif
+          }
+         else {
+#ifdef PRINT_LOG_STDERR
+           fprintf(stderr, "%s", buff);
+#else
            fprintf(LoggerFp ? LoggerFp : stdout, "%s", buff); 
+#endif
+          }
        } 
 }
