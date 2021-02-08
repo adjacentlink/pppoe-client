@@ -34,8 +34,6 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 
-#include <net/if.h>
-
 #include <linux/if_tun.h>
 #include <linux/if.h>
 #include <linux/if_packet.h>
