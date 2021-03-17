@@ -1352,7 +1352,7 @@ main(int argc, char **argv)
     int use_clustering = 0;
 #endif
 
-    char *options = "x:hI:C:L:R:T:m:FN:f:O:o:s:q:Q:D:"
+    char *options = "x:hI:C:L:R:T:m:FN:f:O:o:sq:Q:D:"
 #ifdef HAVE_LICENSE
                     "c:1"
 #endif
