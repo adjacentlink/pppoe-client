@@ -3,7 +3,7 @@
 <mac name="RF-PIPE MAC" library="rfpipemaclayer">
   <param name="enablepromiscuousmode"         value="off"/>
   <param name="pcrcurveuri"                   value="rfpipe_pcr.xml"/>
-  <param name="datarate"                      value="1M"/>
+  <param name="datarate"                      value="${datarate}"/>
   <param name="delay"                         value="0.0"/>
   <param name="jitter"                        value="0.0"/>
   <param name="flowcontrolenable"             value="off"/>
