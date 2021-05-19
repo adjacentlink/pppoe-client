@@ -4,9 +4,11 @@
 #include<time.h>
 #include<sys/time.h>
 
+int verbose_level = 3;
+
 void logger(int lvl, const char * func, const char *fmt, ...)
 {
-     if (lvl) { 
+     if (lvl <= verbose_level) { 
          char buff[1024] = {0}; 
          struct tm tm; 
          struct timeval tv; 

@@ -155,7 +155,7 @@ syncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
     }
     if (r == 0)
     {
-        LOGGER(LOG_INFO, "end-of-file in syncReadFromPPP");
+        LOGGER(LOG_ERR, "end-of-file in syncReadFromPPP");
         sendPADT(conn, "RP-PPPoE: EOF in syncReadFromPPP");
         exit(0);
     }
@@ -186,7 +186,7 @@ syncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
 
         if ((conn->hostCredits - creditCost) < RFC_MIN_CREDITS)
         {
-            LOGGER(LOG_INFO, "Not enough credits: %d < %d", conn->hostCredits,
+            LOGGER(LOG_ERR, "Not enough credits: %d < %d", conn->hostCredits,
                    creditCost);
             packet->length = r + (conn->avoidInBandFlowControl ? 0 :
                                   TAG_CREDITS_SIZE + TAG_HDR_SIZE) - 2;
@@ -360,7 +360,7 @@ asyncReadFromPPP(PPPoEConnection *conn, PPPoEPacket *packet)
 
                     if ((conn->hostCredits - creditCost) < RFC_MIN_CREDITS)
                     {
-                        LOGGER(LOG_INFO, "Not enough credits: %d < %d",
+                        LOGGER(LOG_ERR, "Not enough credits: %d < %d",
                                conn->hostCredits, creditCost);
                         packet->length = PPPPacketSize - 2;
                         conn->held = packet;

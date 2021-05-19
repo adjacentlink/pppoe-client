@@ -22,6 +22,8 @@
 
 extern FILE * LoggerFp;
 
+extern int verbose_level;
+
 void logger(int lvl, const char * func, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
 
 #define LOGGER(lvl, fmt, ...) \

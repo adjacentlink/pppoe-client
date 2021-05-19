@@ -1316,6 +1316,7 @@ usage(char const *argv0)
 #endif
 
     fprintf(stderr, "   -D logfile     -- logfile\n\n");
+    fprintf(stderr, "   -V verbose     -- verbose log level [0-4]\n\n");
     fprintf(stderr, "   -h             -- Print usage information.\n\n");
     fprintf(stderr, "PPPoE-Server Version %s, Copyright (C) 2001-2006 Roaring Penguin Software Inc.\n", VERSION);
 
@@ -1352,7 +1353,7 @@ main(int argc, char **argv)
     int use_clustering = 0;
 #endif
 
-    char *options = "x:hI:C:L:R:T:m:FN:f:O:o:sq:Q:D:"
+    char *options = "x:hI:C:L:R:T:m:FN:f:O:o:sq:Q:D:V:"
 #ifdef HAVE_LICENSE
                     "c:1"
 #endif
@@ -1608,6 +1609,10 @@ main(int argc, char **argv)
 
         case 'D':
             log_path = strdup(optarg);
+        break;
+
+        case 'V':
+            verbose_level = atoi(optarg);
         break;
 
         case 'h':

@@ -294,6 +294,8 @@ main (int argc, char *argv[])
         rfc4938_debug_set_mask (RFC4938_G_PACKET_DEBUG);
     }
 
+    verbose_level = rfc4938_debug;
+
     /* open a socket an listen for messages, blocking */
     rfc4938_io_listen_for_messages ();
 

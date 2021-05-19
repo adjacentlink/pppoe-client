@@ -782,6 +782,15 @@ rfc4938_neighbor_initiate_neighbor(UINT32_t neighbor_id,
     sprintf (arguments[a], "-D%s/pppoe_%hu_%hu.log", log_path, rfc4938_config_get_node_id(), nbr->neighbor_id);
     a++;
 
+    arguments[a] = malloc (8);
+    if (arguments[a] == NULL)
+    {
+        LOGGER(LOG_ERR,"(%u): malloc error for log level arg", rfc4938_config_get_node_id ());
+        return;
+    }
+    sprintf (arguments[a], "-V%d", verbose_level);
+    a++;
+
     arguments[a] = NULL;
 
     LOGGER(LOG_INFO, "(%u): Creating child pppoe session with params:", rfc4938_config_get_node_id ());

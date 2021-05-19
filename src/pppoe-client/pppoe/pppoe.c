@@ -345,7 +345,7 @@ usage (char const *argv0)
     fprintf (stderr,
              "   -T timeout     -- Specify inactivity timeout in seconds.\n"
              "   -t timeout     -- Initial timeout for discovery packets in seconds\n"
-             "   -V             -- Print version and exit.\n"
+             "   -v             -- Print version and exit.\n"
              "   -S name        -- Set desired service name.\n"
              "   -C name        -- Set desired access concentrator name.\n"
              "   -U             -- Use Host-Unique to allow multiple PPPoE sessions.\n"
@@ -365,6 +365,7 @@ usage (char const *argv0)
              "   -E             -- our ethernet address.\n"
              "   -h             -- Print usage information.\n\n"
              "   -D logfile     -- logfile.\n\n"
+             "   -V verbose     -- verbose log level [0-4].\n\n"
              "PPPoE Version %s, Copyright (C) 2001-2006 Roaring Penguin Software Inc.\n"
              "\t                   Copyright (C) 2007-2008 by Cisco Systems, Inc.\n"
              "\t\n"
@@ -424,7 +425,7 @@ main (int argc, char *argv[])
     /* For signal handler */
     Connection = &conn;
 
-    char const * options = "I:VT:hS:C:Up:f:t:y:Y:x:z:r:R:c:g:G:E:BLD:";
+    char const * options = "I:vT:hS:C:Up:f:t:y:Y:x:z:r:R:c:g:G:E:BLD:V:";
 
     while ((opt = getopt (argc, argv, options)) != -1)
     {
@@ -504,7 +505,7 @@ main (int argc, char *argv[])
             SET_STRING (conn.ifName, optarg);
             break;
 
-        case 'V':
+        case 'v':
             printf ("Roaring Penguin PPPoE RFC4938 + EMANE Version %s\n", VERSION);
             exit (EXIT_SUCCESS);
 
@@ -566,6 +567,10 @@ main (int argc, char *argv[])
               LOGGER(LOG_INFO, "XXXXXXXXX BEGIN XXXXXXXX");
             }
         break;
+
+        case 'V':
+            verbose_level = atoi(optarg); 
+            break;
 
         default:
             usage (argv[0]);

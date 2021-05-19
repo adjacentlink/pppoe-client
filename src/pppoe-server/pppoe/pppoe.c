@@ -847,6 +847,7 @@ usage(char const *argv0)
 #endif
 #ifdef DEBUGGING_ENABLED
     fprintf(stderr, "   -D filename    -- Log debugging information in filename.\n");
+    fprintf(stderr, "   -V verbose     -- Log debugging level [0-4].\n");
 #endif
 #ifdef SUPPORT_RFC4938
     fprintf(stderr, "   -X             -- Enable RFC4938 flow control.\n");
@@ -856,7 +857,7 @@ usage(char const *argv0)
     fprintf(stderr,
             "   -T timeout     -- Specify inactivity timeout in seconds.\n"
             "   -t timeout     -- Initial timeout for discovery packets in seconds\n"
-            "   -V             -- Print version and exit.\n"
+            "   -v             -- Print version and exit.\n"
             "   -A             -- Print access concentrator names and exit.\n"
             "   -S name        -- Set desired service name.\n"
             "   -C name        -- Set desired access concentrator name.\n"
@@ -933,9 +934,9 @@ main(int argc, char *argv[])
     openlog("pppoe", LOG_PID, LOG_DAEMON);
 #endif
 
-    options = "I:VAT:"
+    options = "I:vAT:"
 #ifdef DEBUGGING_ENABLED
-              "D:"
+              "D:V:"
 #endif
 #ifdef SUPPORT_RFC4938
               "Xx:a"
@@ -1056,6 +1057,10 @@ main(int argc, char *argv[])
 
             LOGGER(LOG_INFO, "XXXXXXXXX BEGIN XXXXXXXX");
             break;
+
+        case 'V':
+            verbose_level = atoi(optarg);
+            break;
 #endif
 #ifdef SUPPORT_RFC4938
         case 'x':
@@ -1119,7 +1124,7 @@ main(int argc, char *argv[])
         case 'I':
             SET_STRING(conn.ifName, optarg);
             break;
-        case 'V':
+        case 'v':
             printf("Roaring Penguin PPPoE Version %s\n", VERSION);
             exit(EXIT_SUCCESS);
         case 'A':

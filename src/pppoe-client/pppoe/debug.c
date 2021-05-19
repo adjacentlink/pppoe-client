@@ -271,7 +271,9 @@ dumpPacket (FILE * fp, PPPoEPacket * packet, char const *dir)
              packet->eth_hdr.dest[4],
              packet->eth_hdr.dest[5]);
 
+#ifdef DUMP_HEX
     dumpHex (fp, packet->payload, ntohs (packet->length));
+#endif
 }
 
 

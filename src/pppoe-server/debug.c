@@ -184,6 +184,8 @@ dumpPacket(FILE *fp, PPPoEPacket *packet, char const *dir)
             (unsigned) packet->ethHdr.h_dest[3],
             (unsigned) packet->ethHdr.h_dest[4],
             (unsigned) packet->ethHdr.h_dest[5]);
+#ifdef DUMP_HEX
     dumpHex(fp, packet->payload, ntohs(packet->length));
+#endif
 }
 #endif /* DEBUGGING_ENABLED */

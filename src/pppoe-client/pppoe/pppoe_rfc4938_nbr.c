@@ -271,7 +271,7 @@ int
 recv_packet_from_parent (PPPoEConnection * conn, PPPoEPacket * packet)
 {
     struct sockaddr_in src_addr;
-    unsigned char rcv_buffer[MAX_SOCK_MSG_LEN];
+    unsigned char rcv_buffer[MAX_SOCK_MSG_LEN] = {0};
 
     socklen_t len_inet = sizeof (src_addr);
 
@@ -639,7 +639,7 @@ send_packet_to_parent (PPPoEConnection * conn, void *p2buffer, int buflen)
     }
    else
     {
-        LOGGER(LOG_ERR, "(%u,%hu): sending packet len %d\n",
+        LOGGER(LOG_INFO, "(%u,%hu): sending packet len %d\n",
                            conn->peer_id, conn->sessionId, buflen);
 
         return 0;
@@ -691,9 +691,9 @@ send_udp_packet (PPPoEConnection * conn, void *p2buffer, int buflen)
     }
     else
     {
-        LOGGER(LOG_INFO, "(%u,%hu): %s:%hu\n",
+        LOGGER(LOG_INFO, "(%u,%hu): %s:%hu len %d\n",
                            conn->peer_id, conn->sessionId,
-                           inet_ntoa(dst_addr.sin_addr), conn->parent_port);
+                           inet_ntoa(dst_addr.sin_addr), conn->parent_port, z);
     }
 
     return z;
