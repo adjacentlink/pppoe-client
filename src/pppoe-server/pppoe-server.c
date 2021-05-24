@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <sched.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -1347,6 +1348,7 @@ main(int argc, char **argv)
     int d[IPV4ALEN];
     int beDaemon = 1;
     int found;
+    int priority = 0;
     unsigned int discoveryType, sessionType, ui;
     char *addressPoolFname = NULL;
 #ifdef HAVE_LICENSE
@@ -1363,7 +1365,7 @@ main(int argc, char **argv)
 #ifdef SUPPORT_RFC4938
                     "XU:ae"
 #endif
-                    "p:lrudPS:";
+                    "p:lrudPS:Z:";
 
     if (getuid() != geteuid() ||
             getgid() != getegid())
@@ -1615,6 +1617,11 @@ main(int argc, char **argv)
             verbose_level = atoi(optarg);
         break;
 
+        case 'Z':
+            priority = atoi(optarg);
+        break;
+
+
         case 'h':
             usage(argv[0]);
             exit(EXIT_SUCCESS);
@@ -1746,6 +1753,21 @@ main(int argc, char **argv)
             incrementIPAddress(RemoteIP);
         }
     }
+
+    if (priority > 0)
+    {
+        struct sched_param sp;
+        memset(&sp, 0x0, sizeof(sp));
+
+        sp.sched_priority = 1;
+
+        if(sched_setscheduler(0, SCHED_RR, &sp) < 0)
+        {
+            LOGGER(LOG_ERR,"%s: Could NOT set rt priority %d %s\n",
+                   argv[0], priority, strerror(errno));
+        }
+    }
+
 
     /* Initialize our random cookie.  Try /dev/urandom; if that fails,
        use PID and rand() */

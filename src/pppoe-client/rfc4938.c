@@ -52,7 +52,7 @@ static char rfc4938_usage[] =
     "  Options:\n"
     "      -h                : Show this help menu\n"
     "      -f (filepath)     : Override the default config file path\n"
-    "      -p (priority)     : sched priority default 1\n"
+    "      -Z (priority)     : sched priority default 1\n"
     "      -v                : Display version info\n" "\n"
     "      -D logpath        : log file path\n" "\n";
 
@@ -89,7 +89,7 @@ main (int argc, char *argv[])
     signal (SIGTSTP, rfc4938client_signal_handler);
 
     /* read options */
-    while ((c = getopt (argc, argv, "vhf:p:D:")) != EOF)
+    while ((c = getopt (argc, argv, "vhf:Z:D:")) != EOF)
     {
         switch (c)
         {
@@ -105,7 +105,7 @@ main (int argc, char *argv[])
             strncpy (filename, optarg, MAXFILENAME-1);
             break;
 
-        case 'p':              /* priority */
+        case 'Z':              /* priority */
             priority = atoi(optarg);
             break;
 
